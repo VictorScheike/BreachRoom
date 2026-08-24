@@ -28,10 +28,24 @@ export const decisionOptionSchema = z
   })
   .strict();
 
+export const incidentEventTypeSchema = z.enum([
+  "System alert",
+  "IT update",
+  "Management request",
+  "Media enquiry",
+  "Attacker message",
+  "Recovery update",
+]);
+
+export const incidentSeveritySchema = z.enum(["SEV-1", "SEV-2", "SEV-3"]);
+
 export const scenarioStageSchema = z
   .object({
     id: nonEmptyString,
     timestamp: nonEmptyString,
+    clockTime: z.string().regex(/^\d{2}:\d{2}$/),
+    severity: incidentSeveritySchema,
+    eventType: incidentEventTypeSchema,
     title: nonEmptyString,
     incidentUpdate: nonEmptyString,
     availableFacts: nonEmptyStringList,

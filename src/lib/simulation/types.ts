@@ -24,14 +24,45 @@ export interface DecisionOption {
   recommendedFollowUp: string[];
 }
 
+export const INCIDENT_EVENT_TYPES = [
+  "System alert",
+  "IT update",
+  "Management request",
+  "Media enquiry",
+  "Attacker message",
+  "Recovery update",
+] as const;
+
+export const DECISION_EVENT_TYPE = "Decision recorded";
+
+export type IncidentEventType = (typeof INCIDENT_EVENT_TYPES)[number];
+export type TimelineEventType = IncidentEventType | typeof DECISION_EVENT_TYPE;
+
+export const INCIDENT_SEVERITIES = ["SEV-1", "SEV-2", "SEV-3"] as const;
+export type IncidentSeverity = (typeof INCIDENT_SEVERITIES)[number];
+
 export interface ScenarioStage {
   id: string;
   timestamp: string;
+  clockTime: string;
+  severity: IncidentSeverity;
+  eventType: IncidentEventType;
   title: string;
   incidentUpdate: string;
   availableFacts: string[];
   knownUnknowns: string[];
   options: DecisionOption[];
+}
+
+export interface TimelineEvent {
+  id: string;
+  kind: "incident" | "decision";
+  eventType: TimelineEventType;
+  timestamp: string;
+  clockTime: string;
+  title: string;
+  detail: string;
+  isCurrent: boolean;
 }
 
 export interface OrganisationProfile {
@@ -104,6 +135,8 @@ export interface AfterActionReport {
   categoryGaps: ScoreDimension[];
   timeline: DecisionReviewItem[];
   strengths: string[];
+  tradeOffs: string[];
   gaps: string[];
   recommendedFollowUp: string[];
+  decisionsMade: number;
 }

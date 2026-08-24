@@ -48,6 +48,8 @@ describe("report generation", () => {
     const report = generateReport(scenario, state.decisions);
     expect(report.scoreCaption).toBe("BreachRoom simulation score");
     expect(report.timeline).toHaveLength(8);
+    expect(report.decisionsMade).toBe(8);
+    expect(report.tradeOffs.length).toBeGreaterThan(0);
     expect(report.overallScore).toBeGreaterThanOrEqual(0);
     expect(report.overallScore).toBeLessThanOrEqual(100);
     expect(report.resultLabel).toBe("Strong response");

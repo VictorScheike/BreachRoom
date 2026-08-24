@@ -25,7 +25,7 @@ export function BreachRoomApp() {
   }, [state.decisions, state.screen]);
 
   return (
-    <div className="min-h-full bg-[radial-gradient(circle_at_top,_#152238,_#070b14_52%)]">
+    <div className="command-shell min-h-full">
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>

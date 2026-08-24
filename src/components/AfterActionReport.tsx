@@ -3,6 +3,7 @@ import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
 import { ScoreSummary } from "@/components/ScoreSummary";
 import { requireStage } from "@/lib/simulation/lookups";
+import { buildTimelineEvents } from "@/lib/simulation/timeline";
 import type { AfterActionReport, RecordedDecision, Scenario } from "@/lib/simulation/types";
 
 interface AfterActionReportViewProps {
@@ -21,6 +22,12 @@ export function AfterActionReport({
   onHome,
 }: AfterActionReportViewProps) {
   const lastStage = requireStage(scenario, scenario.stages.length - 1);
+  const timelineEvents = buildTimelineEvents(
+    scenario,
+    decisions,
+    lastStage.id,
+    "report",
+  );
 
   return (
     <main id="main-content" className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
@@ -40,34 +47,38 @@ export function AfterActionReport({
 
       <ScoreSummary report={report} />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]">
-        <section className="panel p-6">
-          <h2 className="text-lg font-semibold">Strengths</h2>
-          <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-muted">
-            {report.strengths.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-        <IncidentTimeline
-          scenario={scenario}
-          currentStage={lastStage}
-          decisions={decisions}
-          variant="report"
-        />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
+        <div className="flex flex-col gap-6">
+          <section className="panel border-strength/25 p-6">
+            <h2 className="text-lg font-semibold text-strength">Strengths</h2>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-muted">
+              {report.strengths.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+          <section className="panel border-amber/25 p-6">
+            <h2 className="text-lg font-semibold text-amber">Trade-offs</h2>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-muted">
+              {report.tradeOffs.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+          <section className="panel border-incident/25 p-6">
+            <h2 className="text-lg font-semibold text-incident">Important gaps</h2>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-muted">
+              {report.gaps.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        </div>
+        <IncidentTimeline events={timelineEvents} variant="report" />
       </div>
 
       <section className="panel p-6">
-        <h2 className="text-lg font-semibold">Identified gaps</h2>
-        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-muted">
-          {report.gaps.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="panel p-6">
-        <h2 className="text-lg font-semibold">Recommended follow-up actions</h2>
+        <h2 className="text-lg font-semibold text-cyan">Recommended actions</h2>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-6 text-muted">
           {report.recommendedFollowUp.map((item) => (
             <li key={item}>{item}</li>

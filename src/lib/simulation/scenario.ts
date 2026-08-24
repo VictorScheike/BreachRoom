@@ -30,6 +30,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-1-initial-detection",
       timestamp: "Monday 08:15 CET",
+      clockTime: "08:15",
+      severity: "SEV-3",
+      eventType: "System alert",
       title: "Initial detection and triage",
       incidentUpdate:
         "The service desk queue fills with reports that finance and operations files on a shared drive will not open. Two workstations in the planning team show a burst of file-rename activity. The outsourced IT provider has not yet been contacted.",
@@ -141,6 +144,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-2-containment",
       timestamp: "Monday 08:48 CET",
+      clockTime: "08:48",
+      severity: "SEV-2",
+      eventType: "IT update",
       title: "Containment of affected devices and systems",
       incidentUpdate:
         "More files on the operations share now fail to open. A short text file demanding payment has appeared in two folders. Warehouse Wi-Fi still works. Microsoft 365 email is up. The on-premises logistics platform is responding slowly but is still reachable.",
@@ -252,6 +258,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-3-privileged-account",
       timestamp: "Monday 09:25 CET",
+      clockTime: "09:25",
+      severity: "SEV-2",
+      eventType: "IT update",
       title: "Suspected privileged-account compromise",
       incidentUpdate:
         "Helpdesk notes show a domain-administration password reset was completed overnight after a request that now looks unusual. Azure sign-in logs show repeated failed multi-factor prompts for a privileged cloud account, followed by a successful sign-in from an unexpected location.",
@@ -363,6 +372,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-4-operational-disruption",
       timestamp: "Monday 10:10 CET",
+      clockTime: "10:10",
+      severity: "SEV-1",
+      eventType: "Management request",
       title: "Operational disruption affecting deliveries",
       incidentUpdate:
         "Warehouse scanners cannot update the on-premises logistics platform. Several trucks are waiting on the yard. Customer service is already receiving calls about collection windows. The planning team can still use personal knowledge and paper run-sheets for some routes, but not for the full Monday plan.",
@@ -474,6 +486,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-5-possible-data-theft",
       timestamp: "Monday 11:45 CET",
+      clockTime: "11:45",
+      severity: "SEV-1",
+      eventType: "Attacker message",
       title: "Possible theft of employee or customer data",
       incidentUpdate:
         "A message claiming to represent the incident now says files were copied before they were locked. Overnight network records show unusual outbound volume from a server that hosts HR documents. Customer delivery records sit on the same storage environment as some internal folders.",
@@ -585,6 +600,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-6-communication",
       timestamp: "Monday 13:20 CET",
+      clockTime: "13:20",
+      severity: "SEV-1",
+      eventType: "Media enquiry",
       title: "Communication with management, customers and media",
       incidentUpdate:
         "The managing director wants a statement before the afternoon leadership call. A trade journalist has left a voicemail asking about ‘a cyber attack at Northstar’. Two key customers have asked, in writing, why collections did not happen this morning.",
@@ -696,6 +714,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-7-backup-recovery",
       timestamp: "Monday 15:40 CET",
+      clockTime: "15:40",
+      severity: "SEV-2",
+      eventType: "Recovery update",
       title: "Backup validation and recovery decision",
       incidentUpdate:
         "The provider reports that backups of the logistics platform and several file shares exist. The last backup set that currently looks complete is from Friday 22:00. A more recent overnight copy sits on storage that was reachable from the affected network. A payment-demand message offers a decryptor if payment is made. Some customer orders created this morning exist only in memory, on paper, or in mailboxes.",
@@ -807,6 +828,9 @@ const lockedOutScenarioDefinition = {
     {
       id: "stage-8-lessons-learned",
       timestamp: "Tuesday 09:00 CET",
+      clockTime: "09:00",
+      severity: "SEV-3",
+      eventType: "Recovery update",
       title: "Post-incident actions and lessons learned",
       incidentUpdate:
         "Core email is available. A limited logistics-platform restore is in progress from the Friday backup, with Monday consignments being rebuilt manually. Two devices remain isolated. The theft claim is still unconfirmed. Staff are tired and want to know whether the incident is over.",

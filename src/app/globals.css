@@ -7,6 +7,7 @@
   --navy-700: #182235;
   --navy-600: #243049;
   --line: #31415f;
+  --line-bright: #4b5f84;
   --text: #e8eef8;
   --muted: #9aa8c0;
   --cyan: #7dd3fc;
@@ -14,6 +15,7 @@
   --amber: #f0b429;
   --amber-dim: #8a6914;
   --red: #e06c75;
+  --green: #34d399;
   --focus: #bae6fd;
 }
 
@@ -24,6 +26,7 @@
   --color-navy-700: var(--navy-700);
   --color-navy-600: var(--navy-600);
   --color-line: var(--line);
+  --color-line-bright: var(--line-bright);
   --color-ink: var(--text);
   --color-muted: var(--muted);
   --color-cyan: var(--cyan);
@@ -31,6 +34,7 @@
   --color-amber: var(--amber);
   --color-amber-dim: var(--amber-dim);
   --color-incident: var(--red);
+  --color-strength: var(--green);
   --color-focus: var(--focus);
   --font-sans: var(--font-ibm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-ibm-mono), ui-monospace, SFMono-Regular, monospace;
@@ -58,6 +62,14 @@ body {
   border-radius: 1rem;
 }
 
+.command-shell {
+  background-color: var(--navy-950);
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
 .skip-link {
   position: absolute;
   left: 1rem;
@@ -79,4 +91,86 @@ summary {
 
 summary::-webkit-details-marker {
   display: none;
+}
+
+.timeline-item {
+  animation: timeline-in 280ms ease-out;
+}
+
+.incident-enter {
+  animation: incident-in 320ms ease-out;
+}
+
+.toast-enter {
+  animation: toast-in 240ms ease-out;
+}
+
+.status-dot {
+  animation: status-pulse 1.8s ease-in-out infinite;
+}
+
+.status-dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.status-dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+@keyframes timeline-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes incident-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-item,
+  .incident-enter,
+  .toast-enter,
+  .status-dot {
+    animation: none;
+  }
+
+  .decision-card,
+  .confirm-button,
+  .score-bar {
+    transition: none !important;
+  }
 }

@@ -98,7 +98,9 @@ export function generateReport(
     categoryGaps,
     timeline,
     strengths,
+    tradeOffs: uniqueStrings(timeline.map((item) => item.tradeOffs)),
     gaps,
     recommendedFollowUp,
+    decisionsMade: decisions.length,
   };
 }

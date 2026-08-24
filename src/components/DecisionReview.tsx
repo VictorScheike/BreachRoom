@@ -25,36 +25,39 @@ export function DecisionReview({ item, index }: DecisionReviewProps) {
       </summary>
       <div className="space-y-4 border-t border-line px-5 py-5 text-sm leading-6">
         <section>
-          <h4 className="font-semibold">What happened</h4>
+          <h4 className="font-semibold text-cyan">What happened</h4>
           <p className="mt-1 text-muted">{item.incidentUpdate}</p>
         </section>
         <section>
-          <h4 className="font-semibold">What you selected</h4>
+          <h4 className="font-semibold text-cyan">What you selected</h4>
           <p className="mt-1 text-muted">{item.selectedDescription}</p>
         </section>
         <section>
-          <h4 className="font-semibold">Why the decision mattered</h4>
+          <h4 className="font-semibold text-cyan">Why the decision mattered</h4>
           <p className="mt-1 text-muted">{item.rationale}</p>
         </section>
-        <section>
-          <h4 className="font-semibold">Positive aspects</h4>
+        <section className="rounded-xl border border-strength/30 bg-strength/5 p-4">
+          <h4 className="font-semibold text-strength">Positive aspects</h4>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
             {item.strengths.map((strength) => (
               <li key={strength}>{strength}</li>
             ))}
           </ul>
         </section>
-        <section>
-          <h4 className="font-semibold">Risks or trade-offs</h4>
+        <section className="rounded-xl border border-amber/30 bg-amber/5 p-4">
+          <h4 className="font-semibold text-amber">Risks or trade-offs</h4>
           <p className="mt-1 text-muted">{item.tradeOffs}</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted">
+        </section>
+        <section className="rounded-xl border border-incident/30 bg-incident/5 p-4">
+          <h4 className="font-semibold text-incident">Important gaps</h4>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
             {item.potentialGaps.map((gap) => (
               <li key={gap}>{gap}</li>
             ))}
           </ul>
         </section>
         <section>
-          <h4 className="font-semibold">A better next step</h4>
+          <h4 className="font-semibold text-cyan">A better next step</h4>
           <ul className="mt-1 list-disc space-y-1 pl-5 text-muted">
             {item.recommendedFollowUp.map((step) => (
               <li key={step}>{step}</li>

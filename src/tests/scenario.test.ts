@@ -20,6 +20,9 @@ function makeStage(id: string, prefix: string) {
   return {
     id,
     timestamp: "Monday 08:15 CET",
+    clockTime: "08:15",
+    severity: "SEV-2" as const,
+    eventType: "System alert" as const,
     title: `Stage ${id}`,
     incidentUpdate: "An incident update",
     availableFacts: ["A known fact"],
@@ -63,6 +66,9 @@ describe("scenario schema validation", () => {
     expect(parsed.organisation.fictionalLabel).toContain("Fictional");
     expect(parsed.stages).toHaveLength(8);
     expect(parsed.stages.every((stage) => stage.options.length === 3)).toBe(true);
+    expect(parsed.stages[0]?.eventType).toBe("System alert");
+    expect(parsed.stages[0]?.severity).toBe("SEV-3");
+    expect(parsed.stages[3]?.severity).toBe("SEV-1");
   });
 
   it("accepts a well-formed scenario definition", () => {
@@ -148,6 +154,17 @@ describe("scenario schema validation", () => {
       ...makeValidScenario(),
       extraField: true,
     };
+    const result = safeParseScenario(invalid);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an unknown incident event type", () => {
+    const invalid = makeValidScenario();
+    const firstStage = invalid.stages[0];
+    if (!firstStage) {
+      throw new Error("Expected a first stage");
+    }
+    (firstStage as { eventType: string }).eventType = "Hacker cinematic";
     const result = safeParseScenario(invalid);
     expect(result.success).toBe(false);
   });

@@ -18,7 +18,7 @@ export function LandingPage({ estimatedDuration, onStart }: LandingPageProps) {
     <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
       <header className="panel p-6 sm:p-10">
         <p className="font-mono text-xs tracking-[0.2em] text-cyan uppercase">
-          Educational tabletop simulator
+          Interactive cyber crisis exercise
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
           {PRODUCT_NAME}

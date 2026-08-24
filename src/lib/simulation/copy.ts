@@ -6,7 +6,7 @@ export const EDUCATIONAL_DISCLAIMER =
 export const LANDING_HEADLINE = "When the incident starts, what do you do next?";
 
 export const LANDING_DESCRIPTION =
-  "BreachRoom is an interactive tabletop simulator for practising cybersecurity incident decisions. You work through a fictional ransomware situation, choose a response at each stage, and receive a structured after-action report.";
+  "BreachRoom is an interactive cyber crisis exercise. You sit in a fictional incident command centre, choose a response as the situation develops, and receive a structured after-action report."
 
 export const PRACTICE_AREAS = [
   "Incident identification",

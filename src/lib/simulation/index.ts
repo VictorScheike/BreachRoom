@@ -1,5 +1,6 @@
 export type { AfterActionReport, Scenario, SimulationState } from "./types";
 export { SCORE_DIMENSIONS } from "./types";
+export { buildTimelineEvents } from "./timeline";
 export { parseScenario, safeParseScenario, scenarioSchema } from "./schemas";
 export { scenario, STAGE_COUNT } from "./scenario";
 export {

@@ -155,7 +155,9 @@ The exercise starts at **08:15 on a Monday** and runs through eight stages:
 7. Backup validation and recovery decision
 8. Post-incident actions and lessons learned
 
-Each stage has a unique id, simulated timestamp, title, incident update, available facts, known unknowns, and exactly three decision options.
+Each stage has a unique id, simulated timestamp, clock time, fictional incident severity, event type, title, incident update, available facts, known unknowns, and exactly three decision options.
+
+Event types used in the bundled scenario include System alert, IT update, Management request, Media enquiry, Attacker message and Recovery update. Confirmed choices appear on the timeline as “Decision recorded”. Incident severity (SEV-1 to SEV-3) is part of the fictional narrative and does not change with the hidden simulation score.
 
 Each option has a unique id, title, description, score impacts, rationale, trade-offs, strengths, potential gaps and recommended follow-up actions.
 
