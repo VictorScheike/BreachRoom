@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --navy-950: #070b14;
+  --navy-900: #0b1220;
+  --navy-800: #121a2b;
+  --navy-700: #182235;
+  --navy-600: #243049;
+  --line: #31415f;
+  --text: #e8eef8;
+  --muted: #9aa8c0;
+  --cyan: #7dd3fc;
+  --cyan-strong: #38bdf8;
+  --amber: #f0b429;
+  --amber-dim: #8a6914;
+  --red: #e06c75;
+  --focus: #bae6fd;
+}
+
+@theme inline {
+  --color-navy-950: var(--navy-950);
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-navy-600: var(--navy-600);
+  --color-line: var(--line);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-cyan: var(--cyan);
+  --color-cyan-strong: var(--cyan-strong);
+  --color-amber: var(--amber);
+  --color-amber-dim: var(--amber-dim);
+  --color-incident: var(--red);
+  --color-focus: var(--focus);
+  --font-sans: var(--font-ibm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+html,
+body {
+  background: var(--navy-950);
+  color: var(--text);
+}
+
+body {
+  min-height: 100%;
+  font-family: var(--font-sans);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.panel {
+  background: var(--navy-800);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 50;
+  border-radius: 0.5rem;
+  background: var(--cyan-strong);
+  color: var(--navy-950);
+  padding: 0.5rem 0.75rem;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
