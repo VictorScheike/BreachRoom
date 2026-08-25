@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MISSION_LIST } from "@/lib/missions/catalog";
+import { publishedMissions } from "@/lib/missions/catalog";
 import type { MissionId } from "@/lib/missions/types";
 
 interface MissionSelectProps {
@@ -22,7 +22,7 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
           </Link>
         </p>
         <div className="mission-grid">
-          {MISSION_LIST.map((mission) => (
+          {publishedMissions().map((mission) => (
             <article
               key={mission.id}
               className={`mission-card mission-card-${mission.id}`}

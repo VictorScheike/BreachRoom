@@ -11,6 +11,7 @@ export interface RoleGroupDefinition {
   id: RoleGroupId;
   name: string;
   sentence: string;
+  focus: string;
   topicHints: readonly string[];
   roleIds: readonly RoleId[];
   defaultRole: RoleId;
@@ -20,6 +21,7 @@ export const ROLE_GROUPS: readonly RoleGroupDefinition[] = [
   {
     id: "general-employees",
     name: "General employees",
+    focus: "Recognition, safe action and reporting",
     sentence: "Pause on suspicious messages, protect credentials, and report through the official channel.",
     topicHints: ["Phishing", "Safe reporting", "Everyday incidents"],
     roleIds: ["employee"],
@@ -28,6 +30,7 @@ export const ROLE_GROUPS: readonly RoleGroupDefinition[] = [
   {
     id: "finance-hr",
     name: "Finance & HR",
+    focus: "Payments, sensitive requests and personal data",
     sentence: "Verify payment and people requests before money, payroll or personal data moves.",
     topicHints: ["Phishing", "Payment fraud", "Personal data"],
     roleIds: ["finance", "hr"],
@@ -36,6 +39,7 @@ export const ROLE_GROUPS: readonly RoleGroupDefinition[] = [
   {
     id: "developers-devops",
     name: "Developers & DevOps",
+    focus: "Code, pipelines, secrets and secure releases",
     sentence: "Protect code, pipelines, secrets and the path from commit to production.",
     topicHints: ["Supply chain", "Secure development", "CI/CD"],
     roleIds: ["developer", "devops"],
@@ -44,6 +48,7 @@ export const ROLE_GROUPS: readonly RoleGroupDefinition[] = [
   {
     id: "it-security",
     name: "IT & Security",
+    focus: "Containment, evidence and technical recovery",
     sentence: "Contain active threats, verify identity requests, and keep evidence for the response.",
     topicHints: ["Incident response", "Identity", "Ransomware"],
     roleIds: ["it-support", "incident-responder", "security-architect"],
@@ -52,6 +57,7 @@ export const ROLE_GROUPS: readonly RoleGroupDefinition[] = [
   {
     id: "leaders-risk",
     name: "Leaders, Risk & Governance",
+    focus: "Ownership, communication and business trade-offs",
     sentence: "Decide what to say, who to tell, and which trade-offs the organisation can live with.",
     topicHints: ["Crisis communication", "Accountability", "Continuity"],
     roleIds: ["business-leader", "risk-governance"],

@@ -1,5 +1,6 @@
 import {
-  DIMENSION_MAX_POINTS,
+  POINTS_PER_ANSWER_MAX,
+  playthroughLength,
   type AnswerQuality,
   type MissionDefinition,
   type OutcomeLevel,
@@ -7,8 +8,15 @@ import {
   type ScorePoints,
 } from "./types";
 
-export function pointsToPercent(points: number): number {
-  return Math.round((points / DIMENSION_MAX_POINTS) * 100);
+export function dimensionCap(mission: MissionDefinition): number {
+  return playthroughLength(mission) * POINTS_PER_ANSWER_MAX;
+}
+
+export function pointsToPercent(points: number, cap: number): number {
+  if (cap <= 0) {
+    return 0;
+  }
+  return Math.round((points / cap) * 100);
 }
 
 export function outcomeLevel(overall: number): OutcomeLevel {
@@ -46,6 +54,7 @@ export interface DimensionScore {
   label: string;
   points: number;
   percent: number;
+  cap: number;
 }
 
 export interface PlayScore {
@@ -75,13 +84,15 @@ export function scorePlaythrough(
     }
   }
 
+  const cap = dimensionCap(mission);
   const dimensions = mission.dimensions.map((dimension) => {
     const points = totals[dimension.id] ?? 0;
     return {
       id: dimension.id,
       label: dimension.label,
       points,
-      percent: pointsToPercent(points),
+      percent: pointsToPercent(points, cap),
+      cap,
     };
   });
 
@@ -96,5 +107,9 @@ export function scorePlaythrough(
   };
 }
 
-export const SCORING_EXPLAINER =
-  "Each answer gives 0–3 points in three dimensions. Eight decisions make 24 points per dimension. The dimension score is points ÷ 24 × 100. The overall score is the rounded average of those three percentages. It is a BreachRoom simulation score, not a certification.";
+export function scoringExplainer(decisionCount: number): string {
+  const cap = decisionCount * POINTS_PER_ANSWER_MAX;
+  return `Each answer gives 0–3 points in three dimensions. ${decisionCount} decisions make ${cap} points per dimension. The dimension score is points ÷ ${cap} × 100. The overall score is the rounded average of those three percentages. It is a BreachRoom simulation score, not a certification.`;
+}
+
+export const SCORING_EXPLAINER = scoringExplainer(8);

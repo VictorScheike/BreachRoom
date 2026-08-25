@@ -6,7 +6,16 @@ export type MissionId =
   | "locked-out"
   | "ai-forge"
   | "dependency-depths"
-  | "inbox-under-siege";
+  | "inbox-under-siege"
+  | "northstar-zero-hour";
+
+export type AudienceMode = "role" | "general";
+
+export interface SessionPhase {
+  id: StoryPhase;
+  label: string;
+  pick: number;
+}
 
 export type RoleId =
   | "employee"
@@ -34,7 +43,12 @@ export type StoryPhase =
   | "evidence"
   | "communicate"
   | "recover"
-  | "close";
+  | "close"
+  | "detection"
+  | "containment"
+  | "escalation"
+  | "continuity"
+  | "recovery";
 
 export const STORY_PHASES: readonly StoryPhase[] = [
   "start",
@@ -113,6 +127,21 @@ export interface MissionDefinition {
   questions: readonly Question[];
   published: boolean;
   summary: string;
+  organisation?: string;
+  subtitle?: string;
+  audienceMode?: AudienceMode;
+  audienceLabel?: string;
+  requiresRoleSelection?: boolean;
+  decisionsPerSession?: number;
+  questionPoolSize?: number;
+  sessionPhases?: readonly SessionPhase[];
+}
+
+export function playthroughLength(mission: MissionDefinition): number {
+  if (mission.decisionsPerSession && mission.decisionsPerSession > 0) {
+    return mission.decisionsPerSession;
+  }
+  return PLAYTHROUGH_LENGTH;
 }
 
 export interface RecordedChoice {

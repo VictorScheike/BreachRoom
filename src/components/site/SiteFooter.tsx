@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { EDUCATIONAL_DISCLAIMER } from "@/lib/simulation/copy";
-import { SITE_NAME } from "@/lib/site/copy";
+import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 
 function normalisePath(path: string): string {
   if (path.length > 1 && path.endsWith("/")) {
@@ -67,11 +66,7 @@ export function SiteFooter() {
             </li>
           </ul>
         </nav>
-        <p>
-          {SITE_NAME} is an educational tabletop. The organisation and incident in the exercise are
-          fictional.
-        </p>
-        <p>{EDUCATIONAL_DISCLAIMER}</p>
+        <EducationalDisclaimer />
       </div>
     </footer>
   );

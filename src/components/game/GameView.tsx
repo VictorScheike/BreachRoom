@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DecisionDock } from "@/components/game/DecisionDock";
+import { DestinationMarker } from "@/components/game/DestinationMarker";
 import { MissionPlayer } from "@/components/game/MissionPlayer";
+import { MissionRoleBadge } from "@/components/game/MissionRoleBadge";
 import {
   currentQuestion,
   currentScore,
@@ -25,6 +27,7 @@ import {
 } from "@/lib/game/world";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { requireMission } from "@/lib/missions/catalog";
+import { perspectiveFromState } from "@/lib/game/perspective";
 import { trainingIntro, trainingObjective } from "@/lib/training/briefing";
 import type { AnswerOption } from "@/lib/missions/types";
 
@@ -52,6 +55,7 @@ interface GameViewProps {
   onOpenReport: () => void;
   onToggleMute: () => void;
   onChooseAnother: () => void;
+  onEndEarly: () => void;
 }
 
 function orderedOptions(
@@ -78,6 +82,7 @@ export function GameView({
   onOpenReport,
   onToggleMute,
   onChooseAnother,
+  onEndEarly,
 }: GameViewProps) {
   const [facing, setFacing] = useState<MoveDirection>("right");
   const [endConfirm, setEndConfirm] = useState(false);
@@ -158,14 +163,28 @@ export function GameView({
   const briefingBody = state.trainingConfig
     ? trainingIntro(state.trainingConfig)
     : `${mission.story} ${state.playthrough.scenarioId ? mission.scenarios.find((item) => item.id === state.playthrough?.scenarioId)?.setup ?? "" : ""}`;
+  const total = state.playthrough.questions.length;
+  const currentPhase = question
+    ? mission.sessionPhases?.find((phase) => phase.id === question.phase)
+    : mission.sessionPhases?.[
+        Math.min(
+          mission.sessionPhases.length - 1,
+          Math.floor(Math.max(0, state.choices.length - 1) / 3),
+        )
+      ];
+  const phaseCaption = currentPhase
+    ? `Phase ${1 + (mission.sessionPhases?.findIndex((phase) => phase.id === currentPhase.id) ?? 0)}: ${currentPhase.label}`
+    : null;
   const letters: ("A" | "B" | "C")[] = ["A", "B", "C"];
   const encounterActive = hasActiveDecision(state.screen) || hasDecisionFeedback(state.screen);
+  const perspective = perspectiveFromState(state, mission);
+  const exitUnlocked = state.choices.length >= total;
 
   let dock = (
     <DecisionDock
       mode="explore"
       decisionNumber={state.choices.length}
-      total={8}
+      total={total}
         title={objective}
       body="Walk toward the destination. Checkpoints trigger the next decision automatically — you do not need to hunt tiles."
     />
@@ -176,7 +195,7 @@ export function GameView({
       <DecisionDock
         mode="briefing"
         decisionNumber={0}
-        total={8}
+        total={total}
         title={state.trainingConfig?.title ?? mission.title}
         body={briefingBody}
         npcLine={mission.tagline}
@@ -189,12 +208,13 @@ export function GameView({
       <DecisionDock
         mode="encounter"
         decisionNumber={state.choices.length + 1}
-        total={8}
+        total={total}
         title={question.title}
         body={question.situation}
         npcLine={question.npcLine}
         options={displayed}
         letters={letters}
+        roleChip={perspective.chipLabel}
         onChoose={(optionId, letter) => {
           playTone(state.muted || reducedMotion, 220, 80);
           onChoose(optionId, letter);
@@ -206,7 +226,7 @@ export function GameView({
       <DecisionDock
         mode="consequence"
         decisionNumber={state.choices.length}
-        total={8}
+        total={total}
         title="What happened"
         body={selected.consequence}
         selected={selected}
@@ -225,8 +245,8 @@ export function GameView({
     dock = (
       <DecisionDock
         mode="final"
-        decisionNumber={8}
-        total={8}
+        decisionNumber={total}
+        total={total}
         title={mission.destination}
         body={
           overall >= 70
@@ -246,7 +266,8 @@ export function GameView({
             Objective: Reach {world.destinationLabel} · {manhattan(state.position, world.destination)} tiles
           </p>
           <p className="game-progress">
-            Decisions: {state.choices.length} / 8
+            Decisions: {state.choices.length} / {total}
+            {phaseCaption ? ` · ${phaseCaption}` : ""}
           </p>
           <ul className="game-status" aria-label="Mission status">
             {(score?.dimensions ?? mission.dimensions.map((dimension) => ({
@@ -261,6 +282,7 @@ export function GameView({
               </li>
             ))}
           </ul>
+          <MissionRoleBadge perspective={perspective} />
           <div className="hud-actions">
             <button
               type="button"
@@ -322,26 +344,11 @@ export function GameView({
               <div className="torch-veil" aria-hidden="true" />
             ) : null}
             {mission.id === "ai-forge" ? <div className="ember-layer" aria-hidden="true" /> : null}
-            {mission.id === "locked-out" ? (
-              <div className="server-sign" aria-hidden="true">
-                CORE SERVER ROOM
-              </div>
-            ) : null}
-            {mission.id === "ai-forge" ? (
-              <div className="server-sign forge-sign" aria-hidden="true">
-                MODEL LAUNCH GATEWAY
-              </div>
-            ) : null}
-            {mission.id === "dependency-depths" ? (
-              <div className="server-sign vault-sign" aria-hidden="true">
-                TRUSTED BUILD EXIT
-              </div>
-            ) : null}
-            {mission.id === "inbox-under-siege" ? (
-              <div className="server-sign" aria-hidden="true">
-                SECURITY HUB
-              </div>
-            ) : null}
+            <DestinationMarker
+              destination={world.destination}
+              world={world}
+              unlocked={exitUnlocked}
+            />
             {showPlayer ? (
               <MissionPlayer
                 position={state.position}
@@ -360,8 +367,11 @@ export function GameView({
           {endConfirm ? (
             <div className="end-mission-modal" role="dialog" aria-labelledby="end-mission-title">
               <h2 id="end-mission-title">End this mission?</h2>
-              <p>Progress will be discarded. No report is created for an unfinished run.</p>
-              <button type="button" className="game-primary" onClick={onChooseAnother}>
+              <p>You can view an unfinished report. It will not count as a completed mission.</p>
+              <button type="button" className="game-primary" onClick={onEndEarly}>
+                End and view unfinished report
+              </button>
+              <button type="button" className="hud-button" onClick={onChooseAnother}>
                 Discard and leave
               </button>
               <button type="button" className="hud-button" onClick={() => setEndConfirm(false)}>

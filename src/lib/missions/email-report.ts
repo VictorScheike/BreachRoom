@@ -1,5 +1,6 @@
 import type { MissionReport } from "@/lib/missions/report";
 import type { VerdictId } from "@/lib/missions/verdicts";
+import { EDUCATIONAL_DISCLAIMER } from "@/lib/simulation/copy";
 
 const VERDICT_TEXT: Record<VerdictId, { border: string; icon: string }> = {
   correct: { border: "#15803d", icon: "✓" },
@@ -12,6 +13,7 @@ export function buildEmailReportText(report: MissionReport): string {
     `BreachRoom mission result`,
     `Mission: ${report.missionTitle}`,
     `Scenario: ${report.scenarioTitle}`,
+    report.perspectiveLine,
     `Overall score: ${report.score.overall}/100`,
     `Outcome: ${report.outcomeLabel}`,
     report.outcomeSentence,
@@ -56,6 +58,7 @@ export function buildEmailReportText(report: MissionReport): string {
     ...report.nextSteps.map((step, index) => `${index + 1}. ${step}`),
     "",
     "This is a BreachRoom simulation debrief, not a certification.",
+    EDUCATIONAL_DISCLAIMER,
   ];
   return lines.join("\n");
 }
@@ -103,6 +106,7 @@ export function buildEmailReportHtml(report: MissionReport): string {
       <p style="margin:0 0 8px 0;letter-spacing:0.12em;text-transform:uppercase;font-size:12px;color:#0f172a;">Mission result</p>
       <h1 style="margin:0 0 8px 0;font-size:22px;">${escapeHtml(report.missionTitle)}</h1>
       <p style="margin:0 0 8px 0;">Scenario: ${escapeHtml(report.scenarioTitle)}</p>
+      <p style="margin:0 0 8px 0;">${escapeHtml(report.perspectiveLine)}</p>
       <p style="margin:0 0 8px 0;font-size:18px;"><strong>Overall score: ${report.score.overall}/100</strong></p>
       <p style="margin:0 0 4px 0;"><strong>${escapeHtml(report.outcomeLabel)}</strong></p>
       <p style="margin:0 0 20px 0;">${escapeHtml(report.outcomeSentence)}</p>
@@ -118,7 +122,7 @@ export function buildEmailReportHtml(report: MissionReport): string {
       ${decisions}
       <h2 style="font-size:18px;">Next steps</h2>
       ${listHtml(report.nextSteps, "")}
-      <p style="font-size:12px;color:#4b5563;margin-top:24px;">This is a BreachRoom simulation debrief, not a certification. Colours support the labels; each verdict also has an icon and text.</p>
+      <p style="font-size:12px;color:#4b5563;margin-top:24px;">${escapeHtml(EDUCATIONAL_DISCLAIMER)} Colours support the labels; each verdict also has an icon and text.</p>
     </td></tr>
   </table>
 </body>

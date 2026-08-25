@@ -4,18 +4,15 @@ import Link from "next/link";
 import { useState } from "react";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { mailtoForReport } from "@/lib/missions/email-report";
-import {
-  qualityLabel,
-  SCORING_EXPLAINER,
-  type DecisionDebrief,
-  type MissionReport,
-} from "@/lib/missions/report";
+import { qualityLabel, type DecisionDebrief, type MissionReport } from "@/lib/missions/report";
+import { scoringExplainer } from "@/lib/missions/scoring";
 import { topicLabel } from "@/lib/training/labels";
 
 type JourneyFilter = "all" | "strong" | "tradeoffs" | "improve";
 
 interface GameReportProps {
   report: MissionReport;
+  endedEarly?: boolean;
   onReplay: () => void;
   onNewScenario: () => void;
   onOtherMission: () => void;
@@ -58,6 +55,7 @@ function matchesFilter(item: DecisionDebrief, filter: JourneyFilter): boolean {
 
 export function GameReport({
   report,
+  endedEarly = false,
   onReplay,
   onNewScenario,
   onOtherMission,
@@ -86,6 +84,13 @@ export function GameReport({
             {report.missionTitle} · {report.scenarioTitle}
           </p>
           <h1 className="game-panel-title">{report.outcomeHeadline}</h1>
+          <p className="report-perspective">{report.perspectiveLine}</p>
+          {endedEarly ? (
+            <p className="game-panel-copy">
+              This mission ended early. It is not recorded as complete. The scores below cover only
+              the decisions you made.
+            </p>
+          ) : null}
           {report.training ? (
             <section className="training-report-summary">
               <h2 className="report-h2">Training session</h2>
@@ -128,7 +133,7 @@ export function GameReport({
               <article key={dimension.id} className="dimension-card">
                 <h3>{dimension.label}</h3>
                 <p className="dimension-score">
-                  {dimension.percent}/100 · {dimension.points} of 24 points
+                  {dimension.percent}/100 · {dimension.points} of {dimension.cap} points
                 </p>
                 <div className="bar" aria-hidden="true">
                   <span style={{ width: `${dimension.percent}%` }} />
@@ -148,7 +153,7 @@ export function GameReport({
           >
             How scoring works
           </button>
-          {scoringOpen ? <p className="game-panel-copy">{SCORING_EXPLAINER}</p> : null}
+          {scoringOpen ? <p className="game-panel-copy">{scoringExplainer(Math.round((report.dimensions[0]?.cap ?? 24) / 3))}</p> : null}
         </section>
 
         <section>
@@ -315,22 +320,27 @@ export function GameReport({
           </ul>
         </section>
 
-        <div className="report-actions">
-          <a className="game-primary" href={mailtoForReport(report)}>
-            Email this report
-          </a>
-          <button type="button" className="game-primary" onClick={onReplay}>
-            Replay this mission
-          </button>
-          <button type="button" className="hud-button" onClick={onNewScenario}>
-            Play a different scenario
-          </button>
-          <button type="button" className="hud-button" onClick={onOtherMission}>
-            Choose another mission
-          </button>
-          <Link href="/" className="hud-button">
-            Return to the BreachRoom homepage
-          </Link>
+        <div className="report-action-block">
+          <div className="report-actions">
+            <a className="report-action report-action--current" href={mailtoForReport(report)}>
+              Email this report
+            </a>
+            <button type="button" className="report-action report-action--current" onClick={onReplay}>
+              Replay this mission
+            </button>
+            <button type="button" className="report-action report-action--navigate" onClick={onNewScenario}>
+              Play a different scenario
+            </button>
+            <button type="button" className="report-action report-action--navigate" onClick={onOtherMission}>
+              Choose another mission
+            </button>
+          </div>
+          <div className="report-home">
+            <Link href="/" className="button--home">
+              <span aria-hidden="true">← </span>
+              Return to the BreachRoom homepage
+            </Link>
+          </div>
         </div>
         <EducationalDisclaimer />
       </div>

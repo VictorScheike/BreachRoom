@@ -1,4 +1,3 @@
-import { PLAYTHROUGH_LENGTH } from "@/lib/missions/types";
 import type { MissionId } from "@/lib/missions/types";
 
 export interface GridPoint {
@@ -67,6 +66,14 @@ const TILE_CHARS: Record<string, TileKind> = {
   Z: "desk",
 };
 
+export type DestinationIcon = "server" | "gate" | "launch" | "hub" | "coordination";
+
+export interface MissionDestination extends GridPoint {
+  label: string;
+  shortLabel: string;
+  icon: DestinationIcon;
+}
+
 export interface WorldMap {
   id: MissionId;
   columns: number;
@@ -74,7 +81,7 @@ export interface WorldMap {
   tiles: TileKind[][];
   zones: number[][];
   start: GridPoint;
-  destination: GridPoint;
+  destination: MissionDestination;
   landmarkTiles: readonly GridPoint[];
   destinationLabel: string;
 }
@@ -132,7 +139,7 @@ export function parseZones(layout: readonly string[]): number[][] {
       if (char === ".") {
         return -1;
       }
-      const zone = Number.parseInt(char, 10);
+      const zone = Number.parseInt(char, 36);
       if (Number.isNaN(zone)) {
         throw new Error(`Unknown zone "${char}"`);
       }
@@ -149,6 +156,8 @@ export interface WorldSpec {
   zonesLayout: readonly string[];
   landmarkTiles: readonly GridPoint[];
   destinationLabel: string;
+  destinationShortLabel?: string;
+  destinationIcon?: DestinationIcon;
 }
 
 export function buildWorld(spec: WorldSpec): WorldMap {
@@ -157,6 +166,13 @@ export function buildWorld(spec: WorldSpec): WorldMap {
   if (tiles.length !== zones.length || tiles[0]?.length !== zones[0]?.length) {
     throw new Error(`Tile and zone grids do not match for ${spec.id}`);
   }
+  const destination: MissionDestination = {
+    x: spec.destination.x,
+    y: spec.destination.y,
+    label: spec.destinationLabel,
+    shortLabel: spec.destinationShortLabel ?? spec.destinationLabel,
+    icon: spec.destinationIcon ?? "server",
+  };
   return {
     id: spec.id,
     columns: tiles[0]?.length ?? 0,
@@ -164,9 +180,9 @@ export function buildWorld(spec: WorldSpec): WorldMap {
     tiles,
     zones,
     start: spec.start,
-    destination: spec.destination,
+    destination,
     landmarkTiles: spec.landmarkTiles,
-    destinationLabel: spec.destinationLabel,
+    destinationLabel: destination.label,
   };
 }
 
@@ -217,14 +233,24 @@ export function stepFrom(point: GridPoint, direction: MoveDirection): GridPoint 
   }
 }
 
-export function canEnterZone(zone: number, decisionsMade: number): boolean {
+export function destinationZone(world: WorldMap): number {
+  return zoneAt(world, world.destination);
+}
+
+export function requiredDecisions(world: WorldMap): number {
+  return destinationZone(world) - 1;
+}
+
+export function canEnterZone(world: WorldMap, zone: number, decisionsMade: number): boolean {
   if (zone < 0) {
     return false;
   }
-  if (zone === 9) {
-    return decisionsMade >= PLAYTHROUGH_LENGTH;
+  const needed = requiredDecisions(world);
+  const dest = destinationZone(world);
+  if (zone === dest) {
+    return decisionsMade >= needed;
   }
-  if (zone >= 1 && zone <= PLAYTHROUGH_LENGTH) {
+  if (zone >= 1 && zone <= needed) {
     return zone <= decisionsMade + 1;
   }
   return true;
@@ -243,7 +269,7 @@ export function tryMove(
   if (isSolidTile(tileAt(world, next))) {
     return null;
   }
-  if (!canEnterZone(zoneAt(world, next), decisionsMade)) {
+  if (!canEnterZone(world, zoneAt(world, next), decisionsMade)) {
     return null;
   }
   return next;
@@ -255,7 +281,8 @@ export function encounterZoneForTile(
   decisionsMade: number,
 ): number | null {
   const zone = zoneAt(world, point);
-  if (zone >= 1 && zone <= PLAYTHROUGH_LENGTH && zone === decisionsMade + 1) {
+  const needed = requiredDecisions(world);
+  if (zone >= 1 && zone <= needed && zone === decisionsMade + 1) {
     return zone;
   }
   return null;
@@ -317,11 +344,12 @@ export function reachableStates(world: WorldMap): Set<string> {
         continue;
       }
       const zone = zoneAt(world, nextPoint);
-      if (!canEnterZone(zone, current.progress)) {
+      if (!canEnterZone(world, zone, current.progress)) {
         continue;
       }
       let progress = current.progress;
-      if (zone >= 1 && zone <= PLAYTHROUGH_LENGTH && zone === current.progress + 1) {
+      const needed = requiredDecisions(world);
+      if (zone >= 1 && zone <= needed && zone === current.progress + 1) {
         progress = current.progress + 1;
       }
       const next = { x: nextPoint.x, y: nextPoint.y, progress };
@@ -340,10 +368,11 @@ export function reachableStates(world: WorldMap): Set<string> {
 export function destinationRequiresAllDecisions(world: WorldMap): boolean {
   const states = reachableStates(world);
   const dest = world.destination;
-  if (!states.has(`${dest.x},${dest.y},${PLAYTHROUGH_LENGTH}`)) {
+  const needed = requiredDecisions(world);
+  if (!states.has(`${dest.x},${dest.y},${needed}`)) {
     return false;
   }
-  for (let progress = 0; progress < PLAYTHROUGH_LENGTH; progress += 1) {
+  for (let progress = 0; progress < needed; progress += 1) {
     if (states.has(`${dest.x},${dest.y},${progress}`)) {
       return false;
     }
@@ -352,8 +381,9 @@ export function destinationRequiresAllDecisions(world: WorldMap): boolean {
 }
 
 export function destinationReachableAfterDecisions(world: WorldMap): boolean {
+  const needed = requiredDecisions(world);
   return reachableStates(world).has(
-    `${world.destination.x},${world.destination.y},${PLAYTHROUGH_LENGTH}`,
+    `${world.destination.x},${world.destination.y},${needed}`,
   );
 }
 
@@ -373,13 +403,15 @@ export function noZoneSkipAdjacency(world: WorldMap): boolean {
         if (other < 0) {
           continue;
         }
-        if (zone <= 8 && other <= 8 && Math.abs(zone - other) > 1) {
+        const needed = requiredDecisions(world);
+        const dest = destinationZone(world);
+        if (zone <= needed && other <= needed && Math.abs(zone - other) > 1) {
           return false;
         }
-        if (zone === 9 && other < 8 && other !== 9) {
+        if (zone === dest && other < needed - 1 && other !== dest) {
           return false;
         }
-        if (other === 9 && zone < 8 && zone !== 9) {
+        if (other === dest && zone < needed - 1 && zone !== dest) {
           return false;
         }
       }

@@ -1,3 +1,4 @@
+import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { qualityLabel } from "@/lib/missions/report";
 import type { AnswerOption } from "@/lib/missions/types";
 
@@ -17,6 +18,7 @@ interface DecisionDockProps {
   onContinue?: () => void;
   onOpenReport?: () => void;
   beginLabel?: string;
+  roleChip?: string;
 }
 
 export function DecisionDock({
@@ -35,6 +37,7 @@ export function DecisionDock({
   onContinue,
   onOpenReport,
   beginLabel,
+  roleChip,
 }: DecisionDockProps) {
   return (
     <section
@@ -51,6 +54,7 @@ export function DecisionDock({
           <button type="button" className="game-primary" onClick={onBegin}>
             {beginLabel ?? "Begin"}
           </button>
+          <EducationalDisclaimer variant="short" />
         </>
       ) : null}
 
@@ -68,6 +72,7 @@ export function DecisionDock({
         <>
           <p className="game-kicker">
             Decision {decisionNumber} of {total}
+            {roleChip ? ` · ROLE · ${roleChip.toUpperCase()}` : ""}
           </p>
           <h2 className="dock-title">{title}</h2>
           <p className="dock-copy">{body}</p>

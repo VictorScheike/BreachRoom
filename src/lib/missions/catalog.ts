@@ -6,6 +6,7 @@ import {
   LOCKED_OUT_EXTRAS,
 } from "@/lib/missions/extras";
 import { INBOX_UNDER_SIEGE_QUESTIONS } from "@/lib/missions/inbox-under-siege/questions";
+import { NORTHSTAR_ZERO_HOUR_QUESTIONS, ZERO_HOUR_PHASES } from "@/lib/missions/northstar-zero-hour/questions";
 import { LOCKED_OUT_QUESTIONS } from "@/lib/missions/locked-out/questions";
 import type { MissionDefinition, MissionId, Question, RoleId, StoryPhase } from "@/lib/missions/types";
 
@@ -41,6 +42,7 @@ const PHASE_ROLES: Record<MissionId, Partial<Record<StoryPhase, readonly RoleId[
     close: ["security-architect", "devops", "developer"],
   },
   "inbox-under-siege": {},
+  "northstar-zero-hour": {},
 };
 
 function annotate(missionId: MissionId, questions: readonly Question[]): Question[] {
@@ -242,11 +244,52 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
     published: true,
     summary: "Investigate suspicious activity across email, Teams and fake login pages.",
   },
+  "northstar-zero-hour": {
+    id: "northstar-zero-hour",
+    title: "Northstar: Zero Hour",
+    subtitle: "A full-scale cyberattack exercise",
+    organisation: "Northstar Logistics",
+    tagline: "Coordinate Northstar’s response before the incident coordinates you.",
+    story:
+      "It is Monday at 06:55. Northstar Logistics is preparing for the morning delivery run when several employees report locked files and unusual login prompts. The helpdesk sees an increasing number of affected devices, warehouse systems are becoming unstable, and an endpoint-security alert suggests malicious activity is moving through the network. It is not yet clear how the attackers entered, whether data has been stolen or how far the compromise has spread. You are part of Northstar’s incident coordination team. Your job is to help the organisation contain the attack, protect evidence, keep essential operations moving and coordinate the people needed for recovery.",
+    learningAreas: ["Ransomware", "Incident coordination", "Business continuity"],
+    frameworks: ["NIST CSF 2.0", "NIST IR", "DORA"],
+    difficulty: "Intermediate",
+    environment: "Northstar Logistics campus during an escalating incident",
+    destination: "Incident Coordination Room",
+    objective: "Stabilise Northstar and reach the Incident Coordination Room",
+    estimatedMinutes: 35,
+    intendedRoles: [],
+    topics: ["Ransomware", "Malware", "Incident response", "Coordination", "Continuity", "NIST CSF 2.0", "DORA"],
+    dimensions: [
+      { id: "containment", label: "Containment" },
+      { id: "operations", label: "Operations" },
+      { id: "coordination", label: "Coordination & Trust" },
+    ],
+    scenarios: [
+      {
+        id: "zh-monday",
+        title: "Monday 06:55",
+        setup: "The picture will change as you move. Do not expect the whole attack to be visible from the first desk.",
+      },
+    ],
+    questions: NORTHSTAR_ZERO_HOUR_QUESTIONS,
+    published: true,
+    summary:
+      "A suspected malware and ransomware attack is spreading across Northstar Logistics. Coordinate containment, escalation, continuity and recovery before the incident controls the organisation.",
+    audienceMode: "general",
+    audienceLabel: "Organisation-wide",
+    requiresRoleSelection: false,
+    decisionsPerSession: 15,
+    questionPoolSize: 45,
+    sessionPhases: ZERO_HOUR_PHASES,
+  },
 };
 
 export const MISSION_LIST: MissionDefinition[] = [
   MISSIONS["inbox-under-siege"],
   MISSIONS["locked-out"],
+  MISSIONS["northstar-zero-hour"],
   MISSIONS["ai-forge"],
   MISSIONS["dependency-depths"],
 ];
@@ -257,6 +300,10 @@ export function publishedMissions(): MissionDefinition[] {
 
 export function requireMission(id: MissionId): MissionDefinition {
   return MISSIONS[id];
+}
+
+export function findMission(id: string): MissionDefinition | null {
+  return MISSION_LIST.find((mission) => mission.id === id) ?? null;
 }
 
 export function missionsForRole(roleId: RoleId): MissionDefinition[] {

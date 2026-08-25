@@ -38,29 +38,39 @@ export function RoleTrainingCard({ group, href, onFind }: RoleTrainingCardProps)
   );
 
   return (
-    <article className={`role-training-card role-training-card-${group.id}`}>
-      <span className="role-training-card__icon" aria-hidden="true">
+    <article className={`role-card role-training-card role-training-card-${group.id}`}>
+      <div className="role-card__icon role-training-card__icon" aria-hidden="true">
         <svg viewBox="0 0 16 16" width="22" height="22">
           <path d={icon} fill="currentColor" />
         </svg>
-      </span>
-      <h3 className="role-training-card__title">{group.name}</h3>
-      <p className="role-training-card__copy">{ROLE_BLURBS[group.id]}</p>
-      <p className="role-training-card__label">You will practise</p>
-      <ul className="topic-chips role-training-card__topics">
-        {group.topicHints.map((topic) => (
-          <li key={topic}>{topic}</li>
-        ))}
-      </ul>
-      {href ? (
-        <Link className="btn-primary role-training-card__action" href={href}>
-          {action}
-        </Link>
-      ) : (
-        <button type="button" className="btn-primary role-training-card__action" onClick={onFind}>
-          {action}
-        </button>
-      )}
+      </div>
+      <div className="role-card__content">
+        <h3 className="role-training-card__title">{group.name}</h3>
+        <p className="role-training-card__copy">{ROLE_BLURBS[group.id]}</p>
+        <p className="role-training-card__label">You will practise</p>
+        <div className="role-card__topics">
+          <ul className="topic-chips role-training-card__topics">
+            {group.topicHints.map((topic) => (
+              <li key={topic}>{topic}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div className="role-card__footer">
+        {href ? (
+          <Link className="btn-primary button--role role-training-card__action" href={href}>
+            {action}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="btn-primary button--role role-training-card__action"
+            onClick={onFind}
+          >
+            {action}
+          </button>
+        )}
+      </div>
     </article>
   );
 }

@@ -11,12 +11,15 @@ import { requireMission } from "@/lib/missions/catalog";
 import { buildMissionReport } from "@/lib/missions/report";
 import type { MissionId, RoleId } from "@/lib/missions/types";
 import { loadTrainingSession, rememberQuestionIds } from "@/lib/training/session";
+import { missionPerspective } from "@/lib/game/perspective";
+import { sessionIdFor, upsertProgressSession } from "@/lib/progress/store";
 
 const MISSION_IDS: readonly MissionId[] = [
   "locked-out",
   "ai-forge",
   "dependency-depths",
   "inbox-under-siege",
+  "northstar-zero-hour",
 ];
 
 const ROLE_IDS: readonly RoleId[] = [
@@ -88,8 +91,47 @@ function PlayApp() {
       state.choices,
       state.playthrough.questions,
       state.trainingConfig,
+      state.roleId,
     );
   }, [state]);
+
+  useEffect(() => {
+    if (!state.missionId || !state.playthrough) {
+      return;
+    }
+    if (state.screen === "missionSelection" || state.screen === "roleSelect") {
+      return;
+    }
+    const mission = requireMission(state.missionId);
+    const perspective = missionPerspective(mission, state.trainingConfig, state.roleId);
+    const phase = mission.sessionPhases
+      ? mission.sessionPhases[
+          Math.min(
+            mission.sessionPhases.length - 1,
+            Math.floor(state.choices.length / 3),
+          )
+        ]
+      : null;
+    upsertProgressSession({
+      id: sessionIdFor(state.missionId, state.seed),
+      missionId: state.missionId,
+      missionTitle: mission.title,
+      seed: state.seed,
+      questionIds: state.playthrough.questions.map((item) => item.id),
+      questionsCompleted: state.choices.length,
+      questionsRequired: state.playthrough.questions.length,
+      phaseLabel: phase ? phase.label : null,
+      completed: state.screen === "report" && !state.endedEarly,
+      endedEarly: state.endedEarly,
+      overall: report?.score.overall ?? null,
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+      roleGroupId: state.trainingConfig?.roleGroup ?? null,
+      roleId: state.roleId,
+      audienceMode: perspective.mode,
+      perspectiveLabel: perspective.playingAs,
+    });
+  }, [report, state]);
 
   if (state.screen === "missionSelection") {
     return (
@@ -117,6 +159,7 @@ function PlayApp() {
     return (
       <GameReport
         report={report}
+        endedEarly={state.endedEarly}
         onReplay={() => dispatch({ type: "REPLAY_MISSION" })}
         onNewScenario={() => dispatch({ type: "NEW_SCENARIO" })}
         onOtherMission={() => dispatch({ type: "CHOOSE_ANOTHER_MISSION" })}
@@ -136,6 +179,7 @@ function PlayApp() {
       onOpenReport={() => dispatch({ type: "OPEN_REPORT" })}
       onToggleMute={() => dispatch({ type: "TOGGLE_MUTE" })}
       onChooseAnother={() => dispatch({ type: "ABORT_MISSION" })}
+      onEndEarly={() => dispatch({ type: "END_EARLY" })}
     />
   );
 }

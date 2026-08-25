@@ -12,8 +12,10 @@ import type {
   MissionDefinition,
   Question,
   RecordedChoice,
+  RoleId,
 } from "@/lib/missions/types";
 import type { TrainingConfig } from "@/lib/training/config";
+import { missionPerspective } from "@/lib/game/perspective";
 import { roleGroupLabel, roleLabel, topicLabel } from "@/lib/training/labels";
 import { trainingContextLine } from "@/lib/training/briefing";
 import { classifyOption, outcomeSentence, type Verdict } from "@/lib/missions/verdicts";
@@ -62,6 +64,7 @@ export interface MissionReport {
   wentWell: readonly DecisionDebrief[];
   needsImprovement: readonly DecisionDebrief[];
   nextSteps: readonly string[];
+  perspectiveLine: string;
   training: {
     title: string;
     roleLabel: string;
@@ -109,6 +112,8 @@ function interpretDimension(
       "Workarounds and recovery choices either froze the business or skipped the controls those workarounds needed.",
     trust:
       "Communication, evidence or governance choices left people filling in the blanks.",
+    coordination:
+      "The organisation was missing a named lead, a clear owner, or a coordinated message when one was needed.",
     aiSafety:
       "Agency, data and validation choices left the model with more power than proof.",
     enablement:
@@ -195,6 +200,7 @@ export function buildMissionReport(
   choices: readonly RecordedChoice[],
   questions: readonly Question[],
   training: TrainingConfig | null = null,
+  roleId: RoleId | null = null,
 ): MissionReport {
   const score = scorePlaythrough(
     { ...mission, questions: [...questions] },
@@ -327,6 +333,7 @@ export function buildMissionReport(
       "Keep evidence until responders have a copy.",
       "Name an owner for the next hour of the incident.",
     ].slice(0, 3),
+    perspectiveLine: missionPerspective(mission, training, roleId).reportLine,
     training: training
       ? {
           title: training.title,

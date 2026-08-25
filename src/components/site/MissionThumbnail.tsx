@@ -76,6 +76,17 @@ const LAYOUTS: Record<
     playerCol: 1,
     playerRow: 4,
   },
+  "northstar-zero-hour": {
+    tiles: [
+      "tree", "rack", "core", "core", "rack", "tree", "office", "office", "path", "desk", "office", "tree",
+      "tree", "path", "path", "path", "path", "path", "path", "path", "path", "reception", "office", "tree",
+      "short-grass", "path", "office", "desk", "office", "path", "server", "server", "path", "desk", "tree", "tree",
+      "path", "path", "short-grass", "path", "path", "path", "office", "path", "path", "path", "tall-grass", "tree",
+      "path", "path", "tall-grass", "tree", "short-grass", "path", "path", "reception", "desk", "tree", "tree", "tree",
+    ],
+    playerCol: 0,
+    playerRow: 4,
+  },
 };
 
 interface MissionThumbnailProps {

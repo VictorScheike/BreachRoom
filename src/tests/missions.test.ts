@@ -6,8 +6,9 @@ import { PLAYTHROUGH_LENGTH, STORY_PHASES } from "@/lib/missions/types";
 
 describe("mission question banks", () => {
   it("gives each mission a unique question bank covering every phase of every scenario", () => {
-    expect(MISSION_LIST).toHaveLength(4);
-    for (const mission of MISSION_LIST) {
+    const classic = MISSION_LIST.filter((mission) => !mission.sessionPhases);
+    expect(classic.length).toBeGreaterThanOrEqual(4);
+    for (const mission of classic) {
       expect(mission.questions.length).toBeGreaterThanOrEqual(32);
       const ids = new Set(mission.questions.map((question) => question.id));
       expect(ids.size).toBe(mission.questions.length);
@@ -24,7 +25,7 @@ describe("mission question banks", () => {
   });
 
   it("prepares eight unique coherent questions and keeps scoring on option ids after shuffle", () => {
-    for (const mission of MISSION_LIST) {
+    for (const mission of MISSION_LIST.filter((item) => !item.sessionPhases)) {
       const play = preparePlaythrough(mission, 42);
       expect(play.questions).toHaveLength(PLAYTHROUGH_LENGTH);
       expect(new Set(play.questions.map((question) => question.id)).size).toBe(8);

@@ -28,14 +28,14 @@ export function FeaturedMissionPreview() {
         </div>
         <span className="featured-flag">Hub</span>
       </div>
-      <div className="featured-copy">
+      <div className="featured-copy featured-mission__content">
         <p className="featured-kicker">Featured mission</p>
         <h2>Inbox Under Siege</h2>
-        <p>
+        <p className="featured-mission__description">
           Investigate suspicious mail and chat across the office, then return to the Security Hub
           with your incident assessment.
         </p>
-        <Link className="btn-primary" href="/play/?mission=inbox-under-siege">
+        <Link className="btn-primary featured-mission__action" href="/play/?mission=inbox-under-siege">
           Play mission
         </Link>
       </div>

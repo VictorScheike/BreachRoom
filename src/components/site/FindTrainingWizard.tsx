@@ -11,11 +11,20 @@ import { ROLE_GROUPS, type RoleGroupId } from "@/lib/training/groups";
 import { roleGroupLabel, roleLabel, topicLabel } from "@/lib/training/labels";
 import { loadSeenQuestionIds, playUrlForConfig, saveTrainingSession } from "@/lib/training/session";
 import { BrandMark } from "@/components/site/BrandMark";
+import { WizardActions, WizardOptionCard, WizardStep } from "@/components/site/WizardControls";
 
-type WizardStep = 1 | 2 | 3 | "result";
+type WizardStepId = 1 | 2 | 3 | "result";
+
+const ROLE_MARKERS: Record<RoleGroupId, string> = {
+  "general-employees": "●",
+  "finance-hr": "■",
+  "developers-devops": "</>",
+  "it-security": "🛡",
+  "leaders-risk": "▲",
+};
 
 export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupId }) {
-  const [step, setStep] = useState<WizardStep>(initialGroup ? 2 : 1);
+  const [step, setStep] = useState<WizardStepId>(initialGroup ? 2 : 1);
   const [roleGroup, setRoleGroup] = useState<RoleGroupId | null>(initialGroup ?? null);
   const [topicId, setTopicId] = useState<string | null>(null);
   const [chipIds, setChipIds] = useState<string[]>([]);
@@ -113,55 +122,49 @@ export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupI
       ) : null}
 
       {step === 1 ? (
-        <section>
-          <h2>Who is the training for?</h2>
-          <p>Choose the group that will actually make the decisions.</p>
-          <div className="training-options">
+        <WizardStep
+          title="Who is the training for?"
+          supporting="Choose the group that will actually make the decisions."
+        >
+          <div className="wizard-options wizard-options--roles">
             {ROLE_GROUPS.map((group) => (
-              <button
+              <WizardOptionCard
                 key={group.id}
-                type="button"
-                className={roleGroup === group.id ? "training-card is-selected" : "training-card"}
-                onClick={() => setRoleGroup(group.id)}
-                aria-pressed={roleGroup === group.id}
-              >
-                <strong>{group.name}</strong>
-                <span>{group.sentence}</span>
-              </button>
+                title={group.name}
+                description={group.sentence}
+                selected={roleGroup === group.id}
+                onSelect={() => setRoleGroup(group.id)}
+                marker={ROLE_MARKERS[group.id]}
+                category="Role group"
+              />
             ))}
           </div>
-          <div className="training-nav">
-            <button
-              type="button"
-              className="home-btn-primary"
-              disabled={!roleGroup}
-              onClick={() => roleGroup && setStep(2)}
-            >
-              Continue
-            </button>
-            <button type="button" className="home-btn-secondary" onClick={reset}>
-              Start over
-            </button>
-          </div>
-        </section>
+          <WizardActions
+            step={1}
+            continueLabel="Continue"
+            continueDisabled={!roleGroup}
+            onContinue={() => roleGroup && setStep(2)}
+            onReset={reset}
+          />
+        </WizardStep>
       ) : null}
 
       {step === 2 && roleGroup ? (
-        <section>
-          <h2>What should they practise?</h2>
-          <p>These topics have enough reviewed questions for {roleGroupLabel(roleGroup)}.</p>
-          <div className="training-options">
+        <WizardStep
+          title="What should they practise?"
+          supporting={`These topics have enough reviewed questions for ${roleGroupLabel(roleGroup)}.`}
+        >
+          <div className="wizard-options">
             {visibleTopics.map((topic) => (
-              <button
+              <WizardOptionCard
                 key={topic.id}
-                type="button"
-                className={topicId === topic.id ? "training-card is-selected" : "training-card"}
-                onClick={() => setTopicId(topic.id)}
-                aria-pressed={topicId === topic.id}
-              >
-                <strong>{topic.label}</strong>
-                <span>{topic.supporting}</span>
-              </button>
+                title={topic.label}
+                description={topic.supporting}
+                selected={topicId === topic.id}
+                onSelect={() => setTopicId(topic.id)}
+                marker="▣"
+                category="Topic"
+              />
             ))}
           </div>
           {topics.length > 6 && !showAllTopics ? (
@@ -169,48 +172,44 @@ export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupI
               Show all topics
             </button>
           ) : null}
-          <div className="training-nav">
-            <button type="button" className="home-btn-secondary" onClick={() => setStep(1)}>
-              Back
-            </button>
-            <button
-              type="button"
-              className="home-btn-primary"
-              disabled={!topicId}
-              onClick={() => topicId && setStep(3)}
-            >
-              Continue
-            </button>
-            <button type="button" className="home-btn-secondary" onClick={reset}>
-              Start over
-            </button>
-          </div>
-        </section>
+          <WizardActions
+            step={2}
+            continueLabel="Continue"
+            continueDisabled={!topicId}
+            onContinue={() => topicId && setStep(3)}
+            onBack={() => setStep(1)}
+            onReset={reset}
+          />
+        </WizardStep>
       ) : null}
 
       {step === 3 ? (
-        <section>
-          <h2>What context matters?</h2>
-          <p>Optional. Select the tools or environments that should influence ranking.</p>
-          <div className="training-chips">
-            {CONTEXT_CHIPS.map((chip) => {
-              const on = chipIds.includes(chip.id);
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  className={on ? "training-chip is-selected" : "training-chip"}
-                  onClick={() =>
-                    setChipIds((current) =>
-                      on ? current.filter((item) => item !== chip.id) : [...current, chip.id],
-                    )
-                  }
-                  aria-pressed={on}
-                >
-                  {chip.label}
-                </button>
-              );
-            })}
+        <WizardStep
+          title="What context matters?"
+          supporting="Optional. Select the tools or environments that should influence ranking."
+        >
+          <div className="wizard-options">
+            {CONTEXT_CHIPS.map((chip) => (
+              <WizardOptionCard
+                key={chip.id}
+                title={chip.label}
+                description={
+                  chip.kind === "technology"
+                    ? "Include this technology when ranking reviewed questions."
+                    : "Include this operating context when ranking reviewed questions."
+                }
+                selected={chipIds.includes(chip.id)}
+                onSelect={() =>
+                  setChipIds((current) =>
+                    current.includes(chip.id)
+                      ? current.filter((item) => item !== chip.id)
+                      : [...current, chip.id],
+                  )
+                }
+                marker={chip.kind === "technology" ? "⚙" : "○"}
+                category={chip.kind === "technology" ? "Technology" : "Context"}
+              />
+            ))}
           </div>
           <p className="training-note">
             Optional notes stay on this page only. Do not enter confidential information. They are
@@ -220,21 +219,19 @@ export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupI
             Optional context (not stored)
             <textarea rows={2} maxLength={280} />
           </label>
-          <div className="training-nav">
-            <button type="button" className="home-btn-secondary" onClick={() => setStep(2)}>
-              Back
-            </button>
-            <button type="button" className="home-btn-secondary" onClick={() => setStep("result")}>
-              Skip this step
-            </button>
-            <button type="button" className="home-btn-primary" onClick={() => setStep("result")}>
-              Continue
-            </button>
-            <button type="button" className="home-btn-secondary" onClick={reset}>
-              Start over
-            </button>
-          </div>
-        </section>
+          <WizardActions
+            step={3}
+            continueLabel="Continue"
+            onContinue={() => setStep("result")}
+            onBack={() => setStep(2)}
+            onReset={reset}
+            extra={
+              <button type="button" className="btn-tertiary" onClick={() => setStep("result")}>
+                Skip this step
+              </button>
+            }
+          />
+        </WizardStep>
       ) : null}
 
       {step === "result" && result && !result.ok ? (
@@ -244,7 +241,7 @@ export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupI
           {result.broaderTopicId ? (
             <button
               type="button"
-              className="home-btn-primary"
+              className="btn-primary"
               onClick={() => {
                 setTopicId(result.broaderTopicId);
                 setStep(2);
@@ -253,9 +250,12 @@ export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupI
               Try a broader topic
             </button>
           ) : null}
-          <button type="button" className="home-btn-secondary" onClick={() => setStep(3)}>
-            Return to the previous step
-          </button>
+          <WizardActions
+            step="result"
+            continueLabel="Return to the previous step"
+            onContinue={() => setStep(3)}
+            onReset={reset}
+          />
         </section>
       ) : null}
 
@@ -304,27 +304,29 @@ export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupI
             Pressing Start opens the {requireMission(result.config.mapId).title} map with this role
             and these eight questions already selected. You will not need to choose again.
           </p>
-          <div className="training-nav">
+          <footer className="wizard-actions">
+            <div className="wizard-actions__secondary">
+              <button type="button" className="btn-tertiary" onClick={reset}>
+                Start over
+              </button>
+              <Link className="btn-secondary" href="/missions/">
+                Browse all missions
+              </Link>
+            </div>
             <Link
-              className="home-btn-primary"
+              className="btn-primary wizard-actions__continue"
               href={playUrlForConfig(result.config)}
               onClick={() => startConfig(result.config)}
             >
               Start this training
             </Link>
-            <button type="button" className="home-btn-secondary" onClick={() => setStep(1)}>
-              Change my selections
-            </button>
-            <Link className="home-btn-secondary" href="/missions/">
-              Browse all missions
-            </Link>
-          </div>
+          </footer>
           {alternative ? (
             <div className="training-alt">
               <h3>Alternative</h3>
               <p>{alternative.config.title}</p>
               <Link
-                className="home-btn-secondary"
+                className="btn-secondary"
                 href={playUrlForConfig(alternative.config)}
                 onClick={() => startConfig(alternative.config)}
               >

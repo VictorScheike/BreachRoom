@@ -2,6 +2,17 @@ import { buildWorld, type WorldMap } from "@/lib/game/world";
 import type { MissionId } from "@/lib/missions/types";
 import { blank, hline, joinLayouts, paintCell, paintRect, vline } from "@/lib/game/maps/paint";
 
+const DESTINATION_META: Record<
+  MissionId,
+  { shortLabel: string; icon: "server" | "gate" | "launch" | "hub" | "coordination" }
+> = {
+  "locked-out": { shortLabel: "Core Server Room", icon: "server" },
+  "ai-forge": { shortLabel: "Launch Gateway", icon: "launch" },
+  "dependency-depths": { shortLabel: "Trusted Build Exit", icon: "gate" },
+  "inbox-under-siege": { shortLabel: "Security Hub", icon: "hub" },
+  "northstar-zero-hour": { shortLabel: "Coordination Room", icon: "coordination" },
+};
+
 function toWorld(
   id: MissionId,
   tiles: string[][],
@@ -11,6 +22,7 @@ function toWorld(
   landmarkTiles: readonly { x: number; y: number }[],
   destinationLabel: string,
 ): WorldMap {
+  const meta = DESTINATION_META[id];
   return buildWorld({
     id,
     tilesLayout: joinLayouts(tiles),
@@ -19,6 +31,8 @@ function toWorld(
     destination,
     landmarkTiles,
     destinationLabel,
+    destinationShortLabel: meta.shortLabel,
+    destinationIcon: meta.icon,
   });
 }
 
@@ -314,16 +328,137 @@ function makeOffice(): WorldMap {
   );
 }
 
+function makeZeroHour(): WorldMap {
+  const cols = 18;
+  const rows = 12;
+  const tiles = blank(cols, rows, "T");
+  const zones = blank(cols, rows, ".");
+
+  paintRect(tiles, zones, 1, 1, 16, 10, "g", ".");
+
+  const route: { x: number; y: number }[] = [
+    { x: 9, y: 10 },
+    { x: 8, y: 10 },
+    { x: 7, y: 10 },
+    { x: 6, y: 10 },
+    { x: 5, y: 10 },
+    { x: 4, y: 10 },
+    { x: 4, y: 9 },
+    { x: 4, y: 8 },
+    { x: 5, y: 8 },
+    { x: 6, y: 8 },
+    { x: 7, y: 8 },
+    { x: 8, y: 8 },
+    { x: 9, y: 8 },
+    { x: 10, y: 8 },
+    { x: 11, y: 8 },
+    { x: 12, y: 8 },
+    { x: 13, y: 8 },
+    { x: 13, y: 7 },
+    { x: 13, y: 6 },
+    { x: 12, y: 6 },
+    { x: 11, y: 6 },
+    { x: 10, y: 6 },
+    { x: 9, y: 6 },
+    { x: 8, y: 6 },
+    { x: 7, y: 6 },
+    { x: 6, y: 6 },
+    { x: 5, y: 6 },
+    { x: 5, y: 5 },
+    { x: 5, y: 4 },
+    { x: 6, y: 4 },
+    { x: 7, y: 4 },
+    { x: 8, y: 4 },
+    { x: 9, y: 4 },
+    { x: 10, y: 4 },
+    { x: 11, y: 4 },
+    { x: 12, y: 4 },
+    { x: 13, y: 4 },
+    { x: 14, y: 4 },
+    { x: 14, y: 3 },
+    { x: 14, y: 2 },
+    { x: 13, y: 2 },
+    { x: 12, y: 2 },
+    { x: 11, y: 2 },
+    { x: 10, y: 2 },
+    { x: 9, y: 2 },
+    { x: 8, y: 2 },
+    { x: 7, y: 2 },
+    { x: 6, y: 2 },
+    { x: 5, y: 2 },
+    { x: 4, y: 2 },
+    { x: 3, y: 2 },
+    { x: 2, y: 2 },
+    { x: 2, y: 1 },
+  ];
+
+  const lastIndex = route.length - 1;
+  const innerCount = lastIndex - 1;
+  route.forEach((point, index) => {
+    let zone = 0;
+    if (index === 0) {
+      zone = 0;
+    } else if (index === lastIndex) {
+      zone = 16;
+    } else {
+      zone = Math.min(15, 1 + Math.floor(((index - 1) * 15) / innerCount));
+    }
+    let tile = "P";
+    if (index === 0) {
+      tile = "R";
+    } else if (index < 8) {
+      tile = "g";
+    } else if (index < 16) {
+      tile = "P";
+    } else if (index < 24) {
+      tile = "Y";
+    } else if (index < 32) {
+      tile = "Z";
+    } else if (index < 40) {
+      tile = "K";
+    } else if (index === lastIndex) {
+      tile = "C";
+    } else {
+      tile = "D";
+    }
+    paintCell(tiles, zones, point.x, point.y, tile, zone);
+  });
+
+  const dest = route[route.length - 1];
+  if (!dest) {
+    throw new Error("Zero Hour route is empty");
+  }
+  paintCell(tiles, zones, dest.x, dest.y, "C", 16);
+  paintRect(tiles, zones, 1, 1, 3, 1, "K", 16);
+
+  return toWorld(
+    "northstar-zero-hour",
+    tiles,
+    zones,
+    { x: 9, y: 10 },
+    dest,
+    [
+      dest,
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 3, y: 1 },
+    ],
+    "Incident Coordination Room",
+  );
+}
+
 export const FOREST_MAP = makeForest();
 export const LAVA_MAP = makeLava();
 export const CAVE_MAP = makeCave();
 export const OFFICE_MAP = makeOffice();
+export const ZERO_HOUR_MAP = makeZeroHour();
 
 const MAPS: Record<MissionId, WorldMap> = {
   "locked-out": FOREST_MAP,
   "ai-forge": LAVA_MAP,
   "dependency-depths": CAVE_MAP,
   "inbox-under-siege": OFFICE_MAP,
+  "northstar-zero-hour": ZERO_HOUR_MAP,
 };
 
 export function worldForMission(id: MissionId): WorldMap {

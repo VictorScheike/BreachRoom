@@ -5,6 +5,7 @@ import { FeaturedMissionPreview } from "@/components/site/FeaturedMissionPreview
 import { HowItWorks } from "@/components/site/HowItWorks";
 import { MissionCard } from "@/components/site/MissionCard";
 import { RoleTrainingCard } from "@/components/site/RoleTrainingCard";
+import { RoleTrainingGrid } from "@/components/site/RoleTrainingGrid";
 import { publishedMissions } from "@/lib/missions/catalog";
 import { ROLE_GROUPS } from "@/lib/training/groups";
 import "./home-page.css";
@@ -75,11 +76,11 @@ export function HomePage() {
             Choose the group that best matches your work. BreachRoom will assemble training from
             reviewed questions that fit the role, topic and context.
           </p>
-          <div className="role-training-grid">
+          <RoleTrainingGrid>
             {ROLE_GROUPS.map((group) => (
               <RoleTrainingCard key={group.id} group={group} href="/training/" />
             ))}
-          </div>
+          </RoleTrainingGrid>
         </section>
 
         <section className="home-cta">

@@ -23,6 +23,7 @@ const MISSIONS: readonly MissionId[] = [
   "ai-forge",
   "dependency-depths",
   "inbox-under-siege",
+  "northstar-zero-hour",
 ];
 
 const noop = () => undefined;
@@ -38,6 +39,7 @@ function renderGame(state: GameState): string {
       onOpenReport={noop}
       onToggleMute={noop}
       onChooseAnother={noop}
+      onEndEarly={noop}
     />,
   );
 }

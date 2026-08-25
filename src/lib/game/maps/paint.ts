@@ -26,7 +26,7 @@ export function paintCell(
   zone: number | ".",
 ): void {
   put(tiles, x, y, tile);
-  put(zones, x, y, zone === "." ? "." : String(zone));
+  put(zones, x, y, zone === "." ? "." : zone.toString(36));
 }
 
 export function paintRect(

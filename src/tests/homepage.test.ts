@@ -22,6 +22,7 @@ describe("homepage polish data", () => {
     expect(missions.map((mission) => mission.id)).toEqual([
       "inbox-under-siege",
       "locked-out",
+      "northstar-zero-hour",
       "ai-forge",
       "dependency-depths",
     ]);

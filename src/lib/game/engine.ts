@@ -10,7 +10,7 @@ import {
 import { requireMission } from "@/lib/missions/catalog";
 import { preparePlaythrough, type PreparedPlaythrough } from "@/lib/missions/playthrough";
 import { scorePlaythrough, type PlayScore } from "@/lib/missions/scoring";
-import { PLAYTHROUGH_LENGTH, type MissionId, type Question, type RecordedChoice, type RoleId } from "@/lib/missions/types";
+import { type MissionId, type Question, type RecordedChoice, type RoleId } from "@/lib/missions/types";
 import type { TrainingConfig } from "@/lib/training/config";
 import { hashSeed } from "@/lib/training/config";
 import { isMovementLocked } from "@/lib/game/player";
@@ -37,6 +37,7 @@ export interface GameState {
   lastEncounterTile: GridPoint | null;
   muted: boolean;
   trainingConfig: TrainingConfig | null;
+  endedEarly: boolean;
 }
 
 export type GameAction =
@@ -53,6 +54,7 @@ export type GameAction =
   | { type: "NEW_SCENARIO" }
   | { type: "CHOOSE_ANOTHER_MISSION" }
   | { type: "ABORT_MISSION" }
+  | { type: "END_EARLY" }
   | { type: "TOGGLE_MUTE" };
 
 export function createInitialGameState(): GameState {
@@ -68,6 +70,7 @@ export function createInitialGameState(): GameState {
     lastEncounterTile: null,
     muted: false,
     trainingConfig: null,
+    endedEarly: false,
   };
 }
 
@@ -121,12 +124,17 @@ function startMission(
     lastEncounterTile: null,
     muted,
     trainingConfig,
+    endedEarly: false,
   };
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case "SELECT_MISSION":
+    case "SELECT_MISSION": {
+      const mission = requireMission(action.missionId);
+      if (mission.requiresRoleSelection === false) {
+        return startMission(action.missionId, action.seed, null, state.muted, null);
+      }
       return {
         ...state,
         screen: "roleSelect",
@@ -138,7 +146,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         selectedOptionId: null,
         lastEncounterTile: null,
         trainingConfig: null,
+        endedEarly: false,
       };
+    }
     case "START_DIRECT":
       return startMission(action.missionId, action.seed, action.roleId, state.muted, null);
     case "START_TRAINING":
@@ -170,7 +180,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!next) {
         return state;
       }
-      if (pointsEqual(next, world.destination) && state.choices.length >= PLAYTHROUGH_LENGTH) {
+      if (pointsEqual(next, world.destination) && state.choices.length >= state.playthrough.questions.length) {
         return {
           ...state,
           position: next,
@@ -225,10 +235,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         selectedOptionId: null,
       };
     case "OPEN_REPORT":
-      if (state.screen !== "finalEncounter" || state.choices.length < PLAYTHROUGH_LENGTH) {
+      if (state.screen !== "finalEncounter" || !state.playthrough) {
         return state;
       }
-      return { ...state, screen: "report" };
+      if (state.choices.length < state.playthrough.questions.length) {
+        return state;
+      }
+      return { ...state, screen: "report", endedEarly: false };
+    case "END_EARLY":
+      if (!state.playthrough) {
+        return state;
+      }
+      return { ...state, screen: "report", endedEarly: true };
     case "REPLAY_MISSION":
       if (!state.missionId) {
         return createInitialGameState();

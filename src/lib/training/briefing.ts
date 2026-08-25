@@ -12,6 +12,8 @@ export function trainingObjective(config: TrainingConfig): string {
       return "Work the incident across the campus and reach the Core Server Room with a response you can stand behind.";
     case "ai-forge":
       return "Walk the launch path, handle the AI risks, and reach the Model Launch Gateway.";
+    case "northstar-zero-hour":
+      return "Stabilise Northstar and reach the Incident Coordination Room.";
   }
 }
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { RoleTrainingCard } from "@/components/site/RoleTrainingCard";
+import { RoleTrainingGrid } from "@/components/site/RoleTrainingGrid";
 import { FindTrainingWizard } from "@/components/site/FindTrainingWizard";
 import { ROLE_GROUPS, type RoleGroupId } from "@/lib/training/groups";
 
@@ -25,7 +26,7 @@ export function TrainingPage() {
         Choose who the training is for. Scout will then ask two short questions and assemble a
         session from reviewed BreachRoom missions.
       </p>
-      <div className="role-training-grid">
+      <RoleTrainingGrid>
         {ROLE_GROUPS.map((item) => (
           <RoleTrainingCard
             key={item.id}
@@ -36,7 +37,7 @@ export function TrainingPage() {
             }}
           />
         ))}
-      </div>
+      </RoleTrainingGrid>
     </main>
   );
 }

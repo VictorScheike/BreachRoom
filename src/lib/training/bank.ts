@@ -23,7 +23,7 @@ export interface BankQuestion extends Question {
   difficulty: DifficultyId;
 }
 
-const PHASE_MAP: Record<StoryPhase, TrainingPhase> = {
+const PHASE_MAP: Partial<Record<StoryPhase, TrainingPhase>> = {
   start: "recognise",
   assess: "assess",
   contain: "respond",
@@ -34,7 +34,7 @@ const PHASE_MAP: Record<StoryPhase, TrainingPhase> = {
   close: "reflect",
 };
 
-const DEFAULT_TOPICS: Record<MissionId, readonly string[]> = {
+const DEFAULT_TOPICS: Partial<Record<MissionId, readonly string[]>> = {
   "inbox-under-siege": ["phishing", "social-engineering", "incident-reporting"],
   "locked-out": ["ransomware", "incident-response", "operational-resilience"],
   "ai-forge": ["ai-security", "security-architecture"],
@@ -90,7 +90,7 @@ function contextsFrom(question: Question, technologies: readonly string[]): stri
 
 function topicsFor(question: Question): string[] {
   const existing = question.topicIds ?? [];
-  const defaults = DEFAULT_TOPICS[question.missionId];
+  const defaults = DEFAULT_TOPICS[question.missionId] ?? [];
   const extra: string[] = [];
   if (question.missionId === "dependency-depths") {
     const scenarios = question.scenarioIds.join(" ");
@@ -144,7 +144,7 @@ export function enrichQuestion(question: Question): BankQuestion {
     technologies,
     contexts: contextsFrom(question, technologies),
     compatibleMaps: [question.missionId],
-    trainingPhase: PHASE_MAP[question.phase],
+    trainingPhase: PHASE_MAP[question.phase] ?? "assess",
     difficulty: question.difficulty ?? (question.missionId === "ai-forge" || question.missionId === "dependency-depths"
       ? "Intermediate"
       : "Beginner"),
@@ -152,7 +152,9 @@ export function enrichQuestion(question: Question): BankQuestion {
 }
 
 export function questionBank(): BankQuestion[] {
-  return MISSION_LIST.flatMap((mission) => mission.questions.map(enrichQuestion));
+  return MISSION_LIST.filter((mission) => mission.audienceMode !== "general").flatMap((mission) =>
+    mission.questions.map(enrichQuestion),
+  );
 }
 
 export function questionsForMap(mapId: MissionId): BankQuestion[] {
