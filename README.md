@@ -83,14 +83,16 @@ Later deploys are the same command: `npm run deploy`.
 
 ### From the Cloudflare dashboard (auto-deploy on git push)
 
+Cloudflare builds whatever branch is set as **Production branch**. That branch must contain `package.json`. Right now the app is on `cursor/breachroom-simulator-103f`. `main` only has the licence file, so a build of `main` fails with `Could not read package.json`.
+
 1. Open [Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages).
-2. Choose **Import a repository** and select `VictorScheike/BreachRoom`.
-3. Use:
+2. Open the BreachRoom Worker → **Settings** → **Build**.
+3. Set **Production branch** to `cursor/breachroom-simulator-103f` (or merge the pull request into `main` first, then keep `main`).
+4. Build command: `npm run build`
+5. Deploy command: `npx wrangler deploy`
+6. Retry the deployment.
 
-   - Build command: `npm run build`
-   - Deploy command: `npx wrangler deploy`
-
-Cloudflare rebuilds and publishes on every push to the production branch.
+After the pull request is merged, switch the production branch back to `main`.
 
 You can later attach a custom domain in the Worker settings. The free plan is enough for this app: no database, no accounts, no server APIs.
 
