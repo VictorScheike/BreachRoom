@@ -1,36 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ConsequencePanel } from "@/components/game/ConsequencePanel";
-import { EncounterPanel } from "@/components/game/EncounterPanel";
-import { FinalEncounter } from "@/components/game/FinalEncounter";
+import { DecisionDock } from "@/components/game/DecisionDock";
 import { PlayerSprite } from "@/components/game/PlayerSprite";
-import { buildConsequence } from "@/lib/game/consequence";
-import { ENCOUNTER_FLAVOR } from "@/lib/game/encounters";
-import { containmentOutcome, hudFromScores } from "@/lib/game/hud";
+import {
+  currentQuestion,
+  currentScore,
+  currentWorld,
+  type GameState,
+} from "@/lib/game/engine";
+import { playTone } from "@/lib/game/sound";
 import {
   MAP_COLUMNS,
   MAP_ROWS,
-  MAP_TILES,
-  START_TILE,
-  isCoreTile,
-  isGrassTile,
-  isServerEntranceEncounter,
-  shouldTriggerGrassEncounter,
-  tileAt,
   tileKey,
-  tryMove,
-  type GridPoint,
   type MoveDirection,
-} from "@/lib/game/map";
-import { requireStage } from "@/lib/simulation/lookups";
-import { calculateScores } from "@/lib/simulation/report";
-import { calculateOverallScore } from "@/lib/simulation/scoring";
-import type {
-  DecisionOption,
-  RecordedDecision,
-  Scenario,
-} from "@/lib/simulation/types";
+} from "@/lib/game/world";
+import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
+import { requireMission } from "@/lib/missions/catalog";
+import type { AnswerOption } from "@/lib/missions/types";
 
 const DIRECTION_KEYS: Record<string, MoveDirection> = {
   ArrowUp: "up",
@@ -47,51 +35,74 @@ const DIRECTION_KEYS: Record<string, MoveDirection> = {
   D: "right",
 };
 
-type GamePhase =
-  | "briefing"
-  | "exploring"
-  | "encounter"
-  | "consequence"
-  | "final";
-
 interface GameViewProps {
-  scenario: Scenario;
-  currentStageIndex: number;
-  decisions: readonly RecordedDecision[];
+  state: GameState;
   onBegin: () => void;
-  onChoose: (optionId: string) => void;
-  onReachCore: () => void;
+  onMove: (direction: MoveDirection) => void;
+  onChoose: (optionId: string, letter: "A" | "B" | "C") => void;
+  onContinue: () => void;
+  onOpenReport: () => void;
+  onToggleMute: () => void;
+  onChooseAnother: () => void;
+}
+
+function orderedOptions(
+  questionId: string,
+  options: readonly AnswerOption[],
+  optionOrder: Record<string, readonly string[]>,
+): AnswerOption[] {
+  const order = optionOrder[questionId];
+  if (!order) {
+    return [...options];
+  }
+  return order.flatMap((id) => {
+    const option = options.find((item) => item.id === id);
+    return option ? [option] : [];
+  });
 }
 
 export function GameView({
-  scenario,
-  currentStageIndex,
-  decisions,
+  state,
   onBegin,
+  onMove,
   onChoose,
-  onReachCore,
+  onContinue,
+  onOpenReport,
+  onToggleMute,
+  onChooseAnother,
 }: GameViewProps) {
-  const [phase, setPhase] = useState<GamePhase>("briefing");
-  const [position, setPosition] = useState<GridPoint>(START_TILE);
   const [facing, setFacing] = useState<MoveDirection>("right");
   const [walking, setWalking] = useState(false);
-  const [visitedGrass, setVisitedGrass] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  const [grassSinceEncounter, setGrassSinceEncounter] = useState(0);
-  const [lastOption, setLastOption] = useState<DecisionOption | null>(null);
   const walkTimeout = useRef<number | null>(null);
+  const reducedMotion = usePrefersReducedMotion();
+  const world = currentWorld(state);
+  const mission = state.missionId ? requireMission(state.missionId) : null;
+  const question = currentQuestion(state);
+  const score = currentScore(state);
+  const movementLocked = state.screen !== "exploring";
 
-  const total = scenario.stages.length;
-  const stage = requireStage(scenario, Math.min(currentStageIndex, total - 1));
-  const flavor = ENCOUNTER_FLAVOR[Math.min(currentStageIndex, total - 1)];
-  const scores = useMemo(
-    () => calculateScores(scenario, decisions),
-    [decisions, scenario],
-  );
-  const hud = hudFromScores(scores);
-  const overall = calculateOverallScore(scores);
-  const movementLocked = phase !== "exploring";
+  const selected = useMemo(() => {
+    const last = state.choices[state.choices.length - 1];
+    if (!last || !state.playthrough) {
+      return null;
+    }
+    const asked = state.playthrough.questions.find((item) => item.id === last.questionId);
+    return asked?.options.find((item) => item.id === last.optionId) ?? null;
+  }, [state.choices, state.playthrough]);
+
+  const displayed = useMemo(() => {
+    if (!question || !state.playthrough) {
+      return [];
+    }
+    return orderedOptions(question.id, question.options, state.playthrough.optionOrder);
+  }, [question, state.playthrough]);
+
+  const glitch = score
+    ? Math.max(
+        0,
+        1 - (score.dimensions[0]?.percent ?? 50) / 100,
+      )
+    : 0.45;
 
   const move = useCallback(
     (direction: MoveDirection) => {
@@ -99,54 +110,14 @@ export function GameView({
         return;
       }
       setFacing(direction);
-      const next = tryMove(position, direction, decisions.length, total);
-      if (!next) {
-        return;
-      }
-
       setWalking(true);
       if (walkTimeout.current !== null) {
         window.clearTimeout(walkTimeout.current);
       }
       walkTimeout.current = window.setTimeout(() => setWalking(false), 140);
-      setPosition(next);
-
-      if (isCoreTile(next) && decisions.length >= total) {
-        setPhase("final");
-        return;
-      }
-
-      if (isServerEntranceEncounter(next, decisions.length, total)) {
-        setPhase("encounter");
-        return;
-      }
-
-      const kind = tileAt(next);
-      if (!isGrassTile(kind)) {
-        return;
-      }
-      const key = tileKey(next);
-      if (visitedGrass.has(key)) {
-        return;
-      }
-      const nextVisited = new Set(visitedGrass);
-      nextVisited.add(key);
-      const nextGrass = grassSinceEncounter + 1;
-      setVisitedGrass(nextVisited);
-      setGrassSinceEncounter(nextGrass);
-      if (shouldTriggerGrassEncounter(nextGrass, decisions.length, total)) {
-        setGrassSinceEncounter(0);
-        setPhase("encounter");
-      }
+      onMove(direction);
     },
-    [
-      decisions.length,
-      grassSinceEncounter,
-      movementLocked,
-      position,
-      total,
-      visitedGrass,
-    ],
+    [movementLocked, onMove],
   );
 
   useEffect(() => {
@@ -167,123 +138,188 @@ export function GameView({
     };
   }, [move, movementLocked]);
 
-  const consequence =
-    lastOption === null
-      ? null
-      : buildConsequence(lastOption, Math.max(0, decisions.length - 1));
+  if (!world || !mission || !state.playthrough) {
+    return null;
+  }
+
+  const letters: ("A" | "B" | "C")[] = ["A", "B", "C"];
+  const encounterActive =
+    state.screen === "encounter" || state.screen === "consequence";
+
+  let dock = (
+    <DecisionDock
+      mode="explore"
+      decisionNumber={state.choices.length}
+      total={8}
+      title={mission.objective}
+      body="Walk toward the destination. Checkpoints trigger the next decision automatically — you do not need to hunt tiles."
+    />
+  );
+
+  if (state.screen === "briefing") {
+    dock = (
+      <DecisionDock
+        mode="briefing"
+        decisionNumber={0}
+        total={8}
+        title={mission.title}
+        body={`${mission.story} ${state.playthrough.scenarioId ? mission.scenarios.find((item) => item.id === state.playthrough?.scenarioId)?.setup ?? "" : ""}`}
+        npcLine={mission.tagline}
+        onBegin={onBegin}
+        beginLabel="Begin incident response"
+      />
+    );
+  } else if (state.screen === "encounter" && question) {
+    dock = (
+      <DecisionDock
+        mode="encounter"
+        decisionNumber={state.choices.length + 1}
+        total={8}
+        title={question.title}
+        body={question.situation}
+        npcLine={question.npcLine}
+        options={displayed}
+        letters={letters}
+        onChoose={(optionId, letter) => {
+          playTone(state.muted || reducedMotion, 220, 80);
+          onChoose(optionId, letter);
+        }}
+      />
+    );
+  } else if (state.screen === "consequence" && selected) {
+    dock = (
+      <DecisionDock
+        mode="consequence"
+        decisionNumber={state.choices.length}
+        total={8}
+        title="What happened"
+        body={selected.consequence}
+        selected={selected}
+        scoreFlash={mission.dimensions.map((dimension) => ({
+          label: dimension.label,
+          points: selected.scores[dimension.id] ?? 0,
+        }))}
+        onContinue={() => {
+          playTone(state.muted || reducedMotion, 330, 90, "triangle");
+          onContinue();
+        }}
+      />
+    );
+  } else if (state.screen === "finalEncounter") {
+    const overall = score?.overall ?? 0;
+    dock = (
+      <DecisionDock
+        mode="final"
+        decisionNumber={8}
+        total={8}
+        title={mission.destination}
+        body={
+          overall >= 70
+            ? "The destination answers to your better decisions. The last light changes. You can enter the report."
+            : "You reached the destination. The last light is messy, but the door opens. Time to debrief."
+        }
+        onOpenReport={onOpenReport}
+      />
+    );
+  }
 
   return (
     <main id="main-content" className="game-page">
-      <div className="game-shell">
+      <div className={`game-shell game-shell-live theme-${mission.id}`}>
         <header className="game-hud">
-          <p className="game-objective">
-            Current objective: Reach the Core Server Room
-          </p>
+          <p className="game-objective">Current objective: {mission.objective}</p>
           <p className="game-progress">
-            Decisions: {decisions.length} / {total}
+            Decisions: {state.choices.length} / 8
           </p>
-          <ul className="game-status" aria-label="Incident status">
-            <li>
-              Containment
-              <span>{hud.containment}</span>
-            </li>
-            <li>
-              Operations
-              <span>{hud.operations}</span>
-            </li>
-            <li>
-              Trust
-              <span>{hud.trust}</span>
-            </li>
+          <ul className="game-status" aria-label="Mission status">
+            {(score?.dimensions ?? mission.dimensions.map((dimension) => ({
+              id: dimension.id,
+              label: dimension.label,
+              percent: 0,
+              points: 0,
+            }))).map((dimension) => (
+              <li key={dimension.id}>
+                {dimension.label}
+                <span>{dimension.percent}</span>
+              </li>
+            ))}
           </ul>
+          <div className="hud-actions">
+            <button
+              type="button"
+              className="hud-button"
+              onClick={onToggleMute}
+              aria-pressed={state.muted}
+            >
+              {state.muted ? "Sound: muted" : "Sound: on"}
+            </button>
+            <button type="button" className="hud-button" onClick={onChooseAnother}>
+              Mission select
+            </button>
+          </div>
         </header>
 
-        <div className="game-stage">
+        <div className="game-stage-column">
           <div
-            className="game-map"
+            className={`game-map ${encounterActive ? "game-map-dim" : ""} ${state.screen === "finalEncounter" ? "map-focus-landmark" : ""} world-${mission.id}`}
             role="application"
-            aria-label="Northstar Logistics map"
+            aria-label={`${mission.environment} map`}
+            style={{
+              ["--glitch" as string]: String(glitch),
+              ["--player-x" as string]: String(state.position.x),
+              ["--player-y" as string]: String(state.position.y),
+            }}
           >
-            {MAP_TILES.flatMap((row, y) =>
-              row.map((kind, x) => (
-                <div
-                  key={`${x}-${y}`}
-                  className={`rpg-tile rpg-tile-${kind}`}
-                  data-tile={kind}
-                />
-              )),
+            {world.tiles.flatMap((row, y) =>
+              row.map((kind, x) => {
+                const highlight =
+                  state.lastEncounterTile &&
+                  encounterActive &&
+                  tileKey({ x, y }) === tileKey(state.lastEncounterTile);
+                const landmark = world.landmarkTiles.some(
+                  (point) => point.x === x && point.y === y,
+                );
+                return (
+                  <div
+                    key={`${x}-${y}`}
+                    className={`rpg-tile rpg-tile-${kind} ${highlight ? "tile-highlight" : ""} ${landmark ? "tile-landmark" : ""}`}
+                    data-tile={kind}
+                    data-zone={world.zones[y]?.[x]}
+                  />
+                );
+              }),
             )}
+            {mission.id === "dependency-depths" ? (
+              <div className="torch-veil" aria-hidden="true" />
+            ) : null}
+            {mission.id === "ai-forge" ? <div className="ember-layer" aria-hidden="true" /> : null}
+            {mission.id === "locked-out" ? (
+              <div className="server-sign" aria-hidden="true">
+                CORE SERVER ROOM
+              </div>
+            ) : null}
+            {mission.id === "ai-forge" ? (
+              <div className="server-sign forge-sign" aria-hidden="true">
+                MODEL LAUNCH GATEWAY
+              </div>
+            ) : null}
+            {mission.id === "dependency-depths" ? (
+              <div className="server-sign vault-sign" aria-hidden="true">
+                TRUSTED BUILD VAULT
+              </div>
+            ) : null}
             <div
               className="player-layer"
               style={{
                 width: `${100 / MAP_COLUMNS}%`,
                 height: `${100 / MAP_ROWS}%`,
-                transform: `translate(${position.x * 100}%, ${position.y * 100}%)`,
+                transform: `translate(${state.position.x * 100}%, ${state.position.y * 100}%)`,
               }}
             >
               <PlayerSprite facing={facing} walking={walking} />
             </div>
           </div>
-
-          {phase === "briefing" ? (
-            <div className="game-panel-overlay" role="dialog" aria-modal="true">
-              <div className="game-panel">
-                <p className="game-kicker">Monday, 08:15 — Northstar Logistics</p>
-                <h1 className="game-panel-title">
-                  Reach the Core Server Room and contain the ransomware before
-                  it spreads.
-                </h1>
-                <p className="game-panel-copy">
-                  Employees are locked out and ransomware is spreading through
-                  the network. Reach the Core Server Room, handle eight
-                  critical decisions and contain the attack.
-                </p>
-                <button
-                  type="button"
-                  className="game-primary"
-                  onClick={() => {
-                    onBegin();
-                    setPhase("exploring");
-                  }}
-                >
-                  Begin incident response
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {phase === "encounter" && flavor ? (
-            <EncounterPanel
-              stage={stage}
-              flavorTitle={flavor.title}
-              flavorDescription={flavor.description}
-              decisionNumber={decisions.length + 1}
-              totalDecisions={total}
-              onChoose={(optionId) => {
-                const option = stage.options.find((item) => item.id === optionId);
-                if (!option) {
-                  return;
-                }
-                setLastOption(option);
-                onChoose(optionId);
-                setPhase("consequence");
-              }}
-            />
-          ) : null}
-
-          {phase === "consequence" && consequence ? (
-            <ConsequencePanel
-              consequence={consequence}
-              onContinue={() => setPhase("exploring")}
-            />
-          ) : null}
-
-          {phase === "final" ? (
-            <FinalEncounter
-              outcome={containmentOutcome(overall)}
-              onViewReport={onReachCore}
-            />
-          ) : null}
+          {dock}
         </div>
 
         <div className="game-pad" aria-label="Movement pad">

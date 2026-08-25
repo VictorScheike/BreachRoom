@@ -1,0 +1,203 @@
+import { worldForMission } from "@/lib/game/maps";
+import {
+  encounterZoneForTile,
+  pointsEqual,
+  tryMove,
+  type GridPoint,
+  type MoveDirection,
+  type WorldMap,
+} from "@/lib/game/world";
+import { requireMission } from "@/lib/missions/catalog";
+import { preparePlaythrough, type PreparedPlaythrough } from "@/lib/missions/playthrough";
+import { scorePlaythrough, type PlayScore } from "@/lib/missions/scoring";
+import { PLAYTHROUGH_LENGTH, type MissionId, type Question, type RecordedChoice } from "@/lib/missions/types";
+
+export type GameScreen =
+  | "missionSelection"
+  | "briefing"
+  | "exploring"
+  | "encounter"
+  | "consequence"
+  | "finalEncounter"
+  | "report";
+
+export interface GameState {
+  screen: GameScreen;
+  missionId: MissionId | null;
+  seed: number;
+  playthrough: PreparedPlaythrough | null;
+  choices: RecordedChoice[];
+  selectedOptionId: string | null;
+  position: GridPoint;
+  lastEncounterTile: GridPoint | null;
+  muted: boolean;
+}
+
+export type GameAction =
+  | { type: "SELECT_MISSION"; missionId: MissionId; seed: number }
+  | { type: "BEGIN_MISSION" }
+  | { type: "MOVE"; direction: MoveDirection }
+  | { type: "CHOOSE_OPTION"; optionId: string; displayLetter: "A" | "B" | "C" }
+  | { type: "CONTINUE_JOURNEY" }
+  | { type: "OPEN_REPORT" }
+  | { type: "REPLAY_MISSION" }
+  | { type: "NEW_SCENARIO" }
+  | { type: "CHOOSE_ANOTHER_MISSION" }
+  | { type: "TOGGLE_MUTE" };
+
+export function createInitialGameState(): GameState {
+  return {
+    screen: "missionSelection",
+    missionId: null,
+    seed: 0,
+    playthrough: null,
+    choices: [],
+    selectedOptionId: null,
+    position: { x: 1, y: 6 },
+    lastEncounterTile: null,
+    muted: false,
+  };
+}
+
+export function currentWorld(state: GameState): WorldMap | null {
+  if (!state.missionId) {
+    return null;
+  }
+  return worldForMission(state.missionId);
+}
+
+export function currentQuestion(state: GameState): Question | null {
+  if (!state.playthrough) {
+    return null;
+  }
+  return state.playthrough.questions[state.choices.length] ?? null;
+}
+
+export function currentScore(state: GameState): PlayScore | null {
+  if (!state.missionId || !state.playthrough) {
+    return null;
+  }
+  const mission = requireMission(state.missionId);
+  return scorePlaythrough(
+    { ...mission, questions: state.playthrough.questions },
+    state.choices,
+  );
+}
+
+function startMission(missionId: MissionId, seed: number): GameState {
+  const mission = requireMission(missionId);
+  const playthrough = preparePlaythrough(mission, seed);
+  const world = worldForMission(missionId);
+  return {
+    screen: "briefing",
+    missionId,
+    seed,
+    playthrough,
+    choices: [],
+    selectedOptionId: null,
+    position: world.start,
+    lastEncounterTile: null,
+    muted: false,
+  };
+}
+
+export function gameReducer(state: GameState, action: GameAction): GameState {
+  switch (action.type) {
+    case "SELECT_MISSION":
+      return { ...startMission(action.missionId, action.seed), muted: state.muted };
+    case "BEGIN_MISSION":
+      if (state.screen !== "briefing") {
+        return state;
+      }
+      return { ...state, screen: "exploring" };
+    case "MOVE": {
+      if (state.screen !== "exploring" || !state.missionId || !state.playthrough) {
+        return state;
+      }
+      const world = worldForMission(state.missionId);
+      const next = tryMove(world, state.position, action.direction, state.choices.length);
+      if (!next) {
+        return state;
+      }
+      if (pointsEqual(next, world.destination) && state.choices.length >= PLAYTHROUGH_LENGTH) {
+        return {
+          ...state,
+          position: next,
+          screen: "finalEncounter",
+        };
+      }
+      const zone = encounterZoneForTile(world, next, state.choices.length);
+      if (zone !== null) {
+        return {
+          ...state,
+          position: next,
+          lastEncounterTile: next,
+          screen: "encounter",
+          selectedOptionId: null,
+        };
+      }
+      return { ...state, position: next };
+    }
+    case "CHOOSE_OPTION": {
+      if (state.screen !== "encounter" || !state.playthrough) {
+        return state;
+      }
+      const question = currentQuestion(state);
+      if (!question) {
+        return state;
+      }
+      const exists = question.options.some((item) => item.id === action.optionId);
+      if (!exists) {
+        return state;
+      }
+      return {
+        ...state,
+        selectedOptionId: action.optionId,
+        choices: [
+          ...state.choices,
+          {
+            questionId: question.id,
+            optionId: action.optionId,
+            displayLetter: action.displayLetter,
+          },
+        ],
+        screen: "consequence",
+      };
+    }
+    case "CONTINUE_JOURNEY":
+      if (state.screen !== "consequence") {
+        return state;
+      }
+      return {
+        ...state,
+        screen: "exploring",
+        selectedOptionId: null,
+      };
+    case "OPEN_REPORT":
+      if (state.screen !== "finalEncounter" || state.choices.length < PLAYTHROUGH_LENGTH) {
+        return state;
+      }
+      return { ...state, screen: "report" };
+    case "REPLAY_MISSION":
+      if (!state.missionId) {
+        return createInitialGameState();
+      }
+      return { ...startMission(state.missionId, state.seed + 1), muted: state.muted };
+    case "NEW_SCENARIO":
+      if (!state.missionId) {
+        return createInitialGameState();
+      }
+      return {
+        ...startMission(state.missionId, (state.seed + 17) >>> 0),
+        muted: state.muted,
+      };
+    case "CHOOSE_ANOTHER_MISSION":
+      return { ...createInitialGameState(), muted: state.muted };
+    case "TOGGLE_MUTE":
+      return { ...state, muted: !state.muted };
+    default: {
+      const unhandled: never = action;
+      return unhandled;
+    }
+  }
+}

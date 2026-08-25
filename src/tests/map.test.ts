@@ -1,57 +1,55 @@
 import { describe, expect, it } from "vitest";
+import { CAVE_MAP, FOREST_MAP, LAVA_MAP, worldForMission } from "@/lib/game/maps";
 import {
-  CORE_TILE,
-  DOOR_TILE,
-  GRASS_STEPS_PER_ENCOUNTER,
-  MAP_COLUMNS,
-  MAP_ROWS,
-  START_TILE,
-  isBlockedTile,
-  isGrassTile,
-  isServerEntranceEncounter,
-  shouldTriggerGrassEncounter,
+  destinationReachableAfterDecisions,
+  destinationRequiresAllDecisions,
+  isSolidTile,
+  noZoneSkipAdjacency,
   tileAt,
   tryMove,
-} from "@/lib/game/map";
+  zoneAt,
+} from "@/lib/game/world";
+import { PLAYTHROUGH_LENGTH } from "@/lib/missions/types";
 
-describe("Northstar map", () => {
-  it("is a compact 12 by 8 field", () => {
-    expect(MAP_COLUMNS).toBe(12);
-    expect(MAP_ROWS).toBe(8);
-    expect(START_TILE).toEqual({ x: 1, y: 6 });
-    expect(tileAt(START_TILE)).toBe("reception");
-    expect(tileAt(DOOR_TILE)).toBe("door");
-    expect(tileAt(CORE_TILE)).toBe("core");
+const MAPS = [FOREST_MAP, LAVA_MAP, CAVE_MAP];
+
+describe("mission maps", () => {
+  it("uses a 12 by 8 field with a visible destination landmark", () => {
+    for (const world of MAPS) {
+      expect(world.tiles).toHaveLength(8);
+      expect(world.tiles[0]).toHaveLength(12);
+      expect(world.landmarkTiles.length).toBeGreaterThanOrEqual(6);
+      expect(tileAt(world, world.start)).toBeTruthy();
+      expect(zoneAt(world, world.destination)).toBe(9);
+    }
   });
 
-  it("blocks trees, fences and offices", () => {
-    expect(tryMove({ x: 3, y: 2 }, "right", 0, 8)).toBeNull();
-    expect(isBlockedTile("tree", 0, 8)).toBe(true);
-    expect(isBlockedTile("office", 0, 8)).toBe(true);
+  it("blocks solid tiles and the destination until eight decisions", () => {
+    expect(tryMove(FOREST_MAP, { x: 3, y: 6 }, "up", 0)).toBeNull();
+    expect(isSolidTile("tree")).toBe(true);
+    expect(tryMove(FOREST_MAP, { x: 7, y: 1 }, "right", 7)).toBeNull();
+    expect(tryMove(FOREST_MAP, { x: 7, y: 1 }, "right", 8)).toEqual({ x: 8, y: 1 });
   });
 
-  it("keeps the server door closed until seven decisions are done", () => {
-    expect(isBlockedTile("door", 6, 8)).toBe(true);
-    expect(isBlockedTile("door", 7, 8)).toBe(false);
-    expect(isBlockedTile("core", 7, 8)).toBe(true);
-    expect(isBlockedTile("core", 8, 8)).toBe(false);
+  it("keeps neighbouring walkable zones within one step", () => {
+    for (const world of MAPS) {
+      expect(noZoneSkipAdjacency(world)).toBe(true);
+    }
+  });
+});
+
+describe("checkpoint routes", () => {
+  it("requires all eight decisions on every path to the destination", () => {
+    for (const world of MAPS) {
+      expect(destinationRequiresAllDecisions(world)).toBe(true);
+      expect(destinationReachableAfterDecisions(world)).toBe(true);
+    }
   });
 
-  it("counts only unvisited grass toward encounters", () => {
-    expect(isGrassTile("short-grass")).toBe(true);
-    expect(isGrassTile("path")).toBe(false);
-    expect(shouldTriggerGrassEncounter(1, 0, 8)).toBe(false);
-    expect(
-      shouldTriggerGrassEncounter(GRASS_STEPS_PER_ENCOUNTER, 0, 8),
-    ).toBe(true);
-    expect(
-      shouldTriggerGrassEncounter(GRASS_STEPS_PER_ENCOUNTER, 7, 8),
-    ).toBe(false);
-  });
-
-  it("uses the server door for the eighth encounter", () => {
-    expect(isServerEntranceEncounter(DOOR_TILE, 7, 8)).toBe(true);
-    expect(isServerEntranceEncounter(DOOR_TILE, 6, 8)).toBe(false);
-    expect(isServerEntranceEncounter(START_TILE, 7, 8)).toBe(false);
+  it("exposes maps for all three missions", () => {
+    expect(worldForMission("locked-out").id).toBe("locked-out");
+    expect(worldForMission("ai-forge").id).toBe("ai-forge");
+    expect(worldForMission("dependency-depths").id).toBe("dependency-depths");
+    expect(PLAYTHROUGH_LENGTH).toBe(8);
   });
 });

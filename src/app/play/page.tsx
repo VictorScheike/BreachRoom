@@ -4,7 +4,7 @@ import { BreachRoomApp } from "@/components/BreachRoomApp";
 export const metadata: Metadata = {
   title: "Try the exercise | BreachRoom",
   description:
-    "Walk through a fictional Northstar ransomware incident as a compact top-down exercise.",
+    "Walk a fictional incident as an original pixel RPG: ransomware, AI security, or software supply chain.",
 };
 
 export default function PlayPage() {
