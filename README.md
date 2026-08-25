@@ -50,14 +50,49 @@ npm install
 ## Development commands
 
 ```bash
-npm run dev        # start the local Next.js development server
-npm run build      # production build
-npm run start      # serve the production build
-npm run lint       # ESLint
-npm run typecheck  # TypeScript without emitting files
+npm run dev         # start the local Next.js development server
+npm run build       # production static export to /out
+npm run preview:cf  # build and preview the Cloudflare Worker locally
+npm run deploy      # build and publish to Cloudflare Workers (free)
+npm run lint        # ESLint
+npm run typecheck   # TypeScript without emitting files
 ```
 
 Open [http://localhost:3000](http://localhost:3000) while `npm run dev` is running.
+
+## Deploy on Cloudflare (free)
+
+BreachRoom is a static site. You can host it on the Cloudflare Workers free plan the same way as a personal site on `*.workers.dev`.
+
+### From your machine
+
+1. Create a free [Cloudflare account](https://dash.cloudflare.com/sign-up).
+2. In the project folder:
+
+```bash
+npm install
+npx wrangler login
+npm run deploy
+```
+
+3. Wrangler prints a public URL, for example:
+
+`https://breachroom.<your-subdomain>.workers.dev`
+
+Later deploys are the same command: `npm run deploy`.
+
+### From the Cloudflare dashboard (auto-deploy on git push)
+
+1. Open [Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages).
+2. Choose **Import a repository** and select `VictorScheike/BreachRoom`.
+3. Use:
+
+   - Build command: `npm run build`
+   - Deploy command: `npx wrangler deploy`
+
+Cloudflare rebuilds and publishes on every push to the production branch.
+
+You can later attach a custom domain in the Worker settings. The free plan is enough for this app: no database, no accounts, no server APIs.
 
 ## Test command
 
