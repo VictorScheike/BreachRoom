@@ -208,4 +208,19 @@ describe("player stays visible during decisions", () => {
     expect(markup).toContain('data-player-y="3"');
     expect(markup.split("player-sprite").length - 1).toBe(1);
   });
+
+  it("keeps the briefing above the map and the live shell in document flow", () => {
+    let state = createInitialGameState();
+    state = gameReducer(state, {
+      type: "START_DIRECT",
+      missionId: "locked-out",
+      roleId: null,
+      seed: 4,
+    });
+    const html = renderGame(state);
+    expect(html).toContain("Mission perspective");
+    expect(html).toContain("decision-dock-briefing");
+    expect(html).toContain("Begin incident response");
+    expect(html.indexOf("decision-dock-briefing")).toBeLessThan(html.indexOf("game-map"));
+  });
 });

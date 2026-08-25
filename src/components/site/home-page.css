@@ -6,7 +6,13 @@
   --home-blue: #2563eb;
   --home-amber: #f0b429;
   color: var(--home-ink);
-  background: #f4f7fb;
+  background-color: #f4f7fb;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.16), transparent 28%),
+    linear-gradient(#07111f, #0b1a30);
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 100% min(46rem, 92vh);
 }
 
 .home-wrap {
@@ -17,12 +23,7 @@
 
 .home-hero {
   color: #e8eef8;
-  padding: 2rem 0 clamp(3.25rem, 7vw, 4.75rem);
-  background-color: #07111f;
-  background-image:
-    radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.16), transparent 28%),
-    linear-gradient(#07111f, #0b1a30);
-  border-radius: 0 0 1.2rem 1.2rem;
+  padding: 2rem 0 4.75rem;
 }
 
 .home-eyebrow {

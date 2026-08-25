@@ -288,6 +288,9 @@ export function GameView({
               </li>
             ))}
           </ul>
+        </header>
+
+        <div className="game-mission-bar">
           <MissionRoleBadge perspective={perspective} />
           <div className="hud-actions">
             <button
@@ -309,7 +312,9 @@ export function GameView({
               Mission select
             </button>
           </div>
-        </header>
+        </div>
+
+        {state.screen === "briefing" ? dock : null}
 
         <div className="game-stage-column">
           <div className="game-map-frame">
@@ -369,7 +374,7 @@ export function GameView({
               ) : null}
             </div>
           </div>
-          {dock}
+          {state.screen !== "briefing" ? dock : null}
         </div>
 
           {endConfirm ? (
