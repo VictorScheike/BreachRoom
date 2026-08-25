@@ -13,6 +13,7 @@ import { scorePlaythrough, type PlayScore } from "@/lib/missions/scoring";
 import { PLAYTHROUGH_LENGTH, type MissionId, type Question, type RecordedChoice, type RoleId } from "@/lib/missions/types";
 import type { TrainingConfig } from "@/lib/training/config";
 import { hashSeed } from "@/lib/training/config";
+import { isMovementLocked } from "@/lib/game/player";
 
 export type GameScreen =
   | "missionSelection"
@@ -161,7 +162,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       }
       return { ...state, screen: "exploring" };
     case "MOVE": {
-      if (state.screen !== "exploring" || !state.missionId || !state.playthrough) {
+      if (isMovementLocked(state.screen) || !state.missionId || !state.playthrough) {
         return state;
       }
       const world = worldForMission(state.missionId);

@@ -328,6 +328,7 @@ summary::-webkit-details-marker {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 4;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -340,10 +341,50 @@ summary::-webkit-details-marker {
   width: 72%;
   height: 72%;
   image-rendering: pixelated;
+  filter: drop-shadow(0 0 1px #07111f) drop-shadow(0 1px 0 #0b1220);
+}
+
+.player-paused.player-idle {
+  animation: player-idle 1.4s ease-in-out 4;
+}
+
+.player-decision-mark {
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  min-width: 0.9rem;
+  padding: 0 0.15rem;
+  border-radius: 0.35rem;
+  background: #0b1220;
+  color: #f0b429;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.15;
+  animation: decision-mark 0.7s ease-in-out 3;
 }
 
 .player-walk {
   transform: translateY(1px);
+}
+
+@keyframes player-idle {
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes decision-mark {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(-50%) scale(1.08);
+  }
 }
 
 .game-panel-overlay {
@@ -573,14 +614,26 @@ summary::-webkit-details-marker {
   max-height: min(46dvh, 400px);
 }
 
-.game-map-dim {
-  filter: brightness(0.72);
+.game-map-decision .rpg-tile {
+  filter: brightness(0.86);
+}
+
+.game-map-decision .tile-highlight {
+  filter: none;
+  outline: 2px solid #f0b429;
+  outline-offset: -2px;
+  z-index: 1;
 }
 
 .tile-highlight {
   outline: 2px solid #f0b429;
   outline-offset: -2px;
   z-index: 1;
+}
+
+.torch-veil,
+.ember-layer {
+  z-index: 3;
 }
 
 .decision-dock {
@@ -1246,6 +1299,8 @@ summary::-webkit-details-marker {
   .rpg-tile-tall-grass,
   .rpg-tile-short-grass,
   .mission-preview,
+  .player-paused.player-idle,
+  .player-decision-mark,
   .featured-player .player-sprite,
   .torch-veil,
   .ember-layer,

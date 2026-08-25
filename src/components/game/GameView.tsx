@@ -2,13 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DecisionDock } from "@/components/game/DecisionDock";
-import { PlayerSprite } from "@/components/game/PlayerSprite";
+import { MissionPlayer } from "@/components/game/MissionPlayer";
 import {
   currentQuestion,
   currentScore,
   currentWorld,
   type GameState,
 } from "@/lib/game/engine";
+import {
+  acceptsMovementInput,
+  hasActiveDecision,
+  hasDecisionFeedback,
+  isMissionMapVisible,
+  isMovementLocked,
+  movementFromControl,
+} from "@/lib/game/player";
 import { playTone } from "@/lib/game/sound";
 import {
   manhattan,
@@ -20,19 +28,19 @@ import { requireMission } from "@/lib/missions/catalog";
 import { trainingIntro, trainingObjective } from "@/lib/training/briefing";
 import type { AnswerOption } from "@/lib/missions/types";
 
-const DIRECTION_KEYS: Record<string, MoveDirection> = {
-  ArrowUp: "up",
-  ArrowDown: "down",
-  ArrowLeft: "left",
-  ArrowRight: "right",
-  w: "up",
-  s: "down",
-  a: "left",
-  d: "right",
-  W: "up",
-  S: "down",
-  A: "left",
-  D: "right",
+const DIRECTION_KEYS: Record<string, true> = {
+  ArrowUp: true,
+  ArrowDown: true,
+  ArrowLeft: true,
+  ArrowRight: true,
+  w: true,
+  s: true,
+  a: true,
+  d: true,
+  W: true,
+  S: true,
+  A: true,
+  D: true,
 };
 
 interface GameViewProps {
@@ -80,7 +88,8 @@ export function GameView({
   const mission = state.missionId ? requireMission(state.missionId) : null;
   const question = currentQuestion(state);
   const score = currentScore(state);
-  const movementLocked = state.screen !== "exploring";
+  const movementLocked = isMovementLocked(state.screen);
+  const showPlayer = isMissionMapVisible(state.screen);
 
   const selected = useMemo(() => {
     const last = state.choices[state.choices.length - 1];
@@ -106,8 +115,8 @@ export function GameView({
     : 0.45;
 
   const move = useCallback(
-    (direction: MoveDirection) => {
-      if (movementLocked) {
+    (direction: MoveDirection, source: "keyboard" | "touch" = "touch") => {
+      if (!acceptsMovementInput(state.screen) || !movementFromControl(state.screen, source, direction)) {
         return;
       }
       setFacing(direction);
@@ -118,13 +127,13 @@ export function GameView({
       walkTimeout.current = window.setTimeout(() => setWalking(false), 140);
       onMove(direction);
     },
-    [movementLocked, onMove],
+    [onMove, state.screen],
   );
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const direction = DIRECTION_KEYS[event.key];
-      if (!direction || movementLocked) {
+      const direction = movementFromControl(state.screen, "keyboard", event.key);
+      if (!direction || !DIRECTION_KEYS[event.key]) {
         return;
       }
       event.preventDefault();
@@ -137,7 +146,7 @@ export function GameView({
         window.clearTimeout(walkTimeout.current);
       }
     };
-  }, [move, movementLocked]);
+  }, [move, state.screen]);
 
   if (!world || !mission || !state.playthrough) {
     return null;
@@ -150,8 +159,7 @@ export function GameView({
     ? trainingIntro(state.trainingConfig)
     : `${mission.story} ${state.playthrough.scenarioId ? mission.scenarios.find((item) => item.id === state.playthrough?.scenarioId)?.setup ?? "" : ""}`;
   const letters: ("A" | "B" | "C")[] = ["A", "B", "C"];
-  const encounterActive =
-    state.screen === "encounter" || state.screen === "consequence";
+  const encounterActive = hasActiveDecision(state.screen) || hasDecisionFeedback(state.screen);
 
   let dock = (
     <DecisionDock
@@ -277,7 +285,7 @@ export function GameView({
 
         <div className="game-stage-column">
           <div
-            className={`game-map ${encounterActive ? "game-map-dim" : ""} ${state.screen === "finalEncounter" ? "map-focus-landmark" : ""} world-${mission.id}`}
+            className={`game-map ${encounterActive ? "game-map-decision" : ""} ${state.screen === "finalEncounter" ? "map-focus-landmark" : ""} world-${mission.id}`}
             role="application"
             aria-label={`${mission.environment} map`}
             style={{
@@ -334,16 +342,17 @@ export function GameView({
                 SECURITY HUB
               </div>
             ) : null}
-            <div
-              className="player-layer"
-              style={{
-                width: `${100 / world.columns}%`,
-                height: `${100 / world.rows}%`,
-                transform: `translate(${state.position.x * 100}%, ${state.position.y * 100}%)`,
-              }}
-            >
-              <PlayerSprite facing={facing} walking={walking} />
-            </div>
+            {showPlayer ? (
+              <MissionPlayer
+                position={state.position}
+                direction={facing}
+                paused={movementLocked}
+                walking={walking}
+                showDecisionIndicator={hasActiveDecision(state.screen) || hasDecisionFeedback(state.screen)}
+                columns={world.columns}
+                rows={world.rows}
+              />
+            ) : null}
           </div>
           {dock}
         </div>
@@ -363,17 +372,17 @@ export function GameView({
 
         <div className="game-pad" aria-label="Movement pad">
           <span />
-          <button type="button" onClick={() => move("up")}>
+          <button type="button" disabled={movementLocked} onClick={() => move("up", "touch")}>
             Up
           </button>
           <span />
-          <button type="button" onClick={() => move("left")}>
+          <button type="button" disabled={movementLocked} onClick={() => move("left", "touch")}>
             Left
           </button>
-          <button type="button" onClick={() => move("down")}>
+          <button type="button" disabled={movementLocked} onClick={() => move("down", "touch")}>
             Down
           </button>
-          <button type="button" onClick={() => move("right")}>
+          <button type="button" disabled={movementLocked} onClick={() => move("right", "touch")}>
             Right
           </button>
         </div>

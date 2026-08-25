@@ -1,14 +1,15 @@
 interface PlayerSpriteProps {
   facing: "up" | "down" | "left" | "right";
   walking: boolean;
+  paused?: boolean;
 }
 
-export function PlayerSprite({ facing, walking }: PlayerSpriteProps) {
-  const frame = walking ? "walk" : "idle";
+export function PlayerSprite({ facing, walking, paused = false }: PlayerSpriteProps) {
+  const frame = walking && !paused ? "walk" : "idle";
   return (
     <svg
       viewBox="0 0 16 16"
-      className={`player-sprite player-${facing} player-${frame}`}
+      className={`player-sprite player-${facing} player-${frame} ${paused ? "player-paused" : ""}`}
       aria-hidden="true"
     >
       <rect x="5" y="1" width="6" height="5" fill="#f0d5b8" />
