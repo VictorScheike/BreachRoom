@@ -21,7 +21,7 @@ export function SiteFooter() {
       className={
         onPlay
           ? "border-t border-line/80 bg-navy-950 py-8 text-muted"
-          : "border-t border-paper-line bg-paper py-10 text-paper-muted"
+          : "border-t border-site-line bg-site py-10 text-site-muted"
       }
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 text-sm leading-6 sm:px-6 lg:px-8">
@@ -33,7 +33,7 @@ export function SiteFooter() {
         <p>
           <Link
             href="https://github.com/VictorScheike/BreachRoom"
-            className={onPlay ? "text-cyan hover:underline" : "text-navy-800 underline underline-offset-4"}
+            className="text-cyan underline underline-offset-4 hover:text-cyan-strong"
           >
             Source on GitHub
           </Link>

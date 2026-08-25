@@ -39,7 +39,7 @@ export default function RootLayout({
       lang="en"
       className={`${ibmSans.variable} ${ibmMono.variable} ${sourceSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-paper font-sans text-paper-ink">
+      <body className="site-shell min-h-full bg-site font-sans text-site-ink">
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>

@@ -27,7 +27,7 @@ export function SiteHeader() {
       className={
         onPlay
           ? "border-b border-line/80 bg-navy-950/95 text-ink"
-          : "border-b border-paper-line bg-paper/95 text-paper-ink"
+          : "border-b border-site-line bg-site/95 text-site-ink"
       }
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
@@ -47,10 +47,10 @@ export function SiteHeader() {
                       active
                         ? onPlay
                           ? "text-cyan"
-                          : "text-navy-800 underline decoration-amber decoration-2 underline-offset-8"
+                          : "text-cyan underline decoration-cyan decoration-2 underline-offset-8"
                         : onPlay
                           ? "text-muted hover:text-ink"
-                          : "text-paper-muted hover:text-paper-ink"
+                          : "text-site-muted hover:text-site-ink"
                     }
                     aria-current={active ? "page" : undefined}
                   >

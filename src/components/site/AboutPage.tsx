@@ -10,19 +10,19 @@ import {
 export function AboutPage() {
   return (
     <main id="main-content" className="mx-auto w-full max-w-3xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-      <p className="text-sm font-medium tracking-[0.16em] text-navy-800 uppercase">
+      <p className="text-sm font-medium tracking-[0.16em] text-cyan uppercase">
         A one-person project
       </p>
-      <h1 className="mt-4 font-serif text-4xl font-semibold text-paper-ink sm:text-5xl">
+      <h1 className="mt-4 font-serif text-4xl font-semibold text-site-ink sm:text-5xl">
         {ABOUT_HEADLINE}
       </h1>
-      <p className="mt-6 text-lg leading-8 text-paper-muted">
+      <p className="mt-6 text-lg leading-8 text-site-muted">
         {ABOUT_INTRO}
       </p>
       {ABOUT_BODY.map((paragraph) => (
         <p
           key={paragraph.slice(0, 28)}
-          className="mt-5 text-base leading-8 text-paper-muted"
+          className="mt-5 text-base leading-8 text-site-muted"
         >
           {paragraph}
         </p>
@@ -33,7 +33,7 @@ export function AboutPage() {
           <li key={link.href}>
             <a
               href={link.href}
-              className="font-medium text-navy-800 underline underline-offset-4"
+              className="font-medium text-cyan underline underline-offset-4 hover:text-cyan-strong"
             >
               {link.label}
             </a>
@@ -41,13 +41,13 @@ export function AboutPage() {
         ))}
       </ul>
 
-      <p className="mt-12 text-sm leading-7 text-paper-muted">
+      <p className="mt-12 text-sm leading-7 text-site-muted">
         {EDUCATIONAL_DISCLAIMER}
       </p>
 
       <Link
         href="/play/"
-        className="mt-8 inline-flex items-center justify-center rounded-md bg-navy-900 px-5 py-3 text-sm font-semibold text-ink hover:bg-navy-800"
+        className="mt-8 inline-flex items-center justify-center rounded-md bg-cyan-strong px-5 py-3 text-sm font-semibold text-navy-950 hover:bg-cyan"
       >
         Try the exercise
       </Link>

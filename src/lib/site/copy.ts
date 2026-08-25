@@ -47,11 +47,11 @@ export const EXERCISE_POINTS = [
 export const ABOUT_HEADLINE = "Who we are";
 
 export const ABOUT_INTRO =
-  "There is no agency behind this and no product team. BreachRoom is built by me, Victor Scheike, because I want cybersecurity to take up more space in how we talk about digital work.";
+  "There is no agency behind this and no product team. BreachRoom is built by me, Victor Scheike, because cybersecurity still gets treated as a specialist corner instead of something every digital organisation has to be able to talk about.";
 
 export const ABOUT_BODY = [
-  "I am a product manager based in Copenhagen, studying Cand.it. Digital Innovation & Management, and I work as a Student Consultant at NTT DATA. My day-to-day sits in data, cloud and digital transformation. The part I keep coming back to is the human side of risk: how teams decide when the picture is incomplete.",
-  "I built BreachRoom as an open, educational tabletop — something you can finish in a coffee break. If it helps a few more people rehearse incident decisions, that is the point. If you want the usual vendor pitch, this is the wrong site.",
+  "I studied a Master of Science in Digital Innovation & Management (Cand.it.) in Copenhagen. I built this because I want a bigger focus on what cybersecurity actually means: not a product you buy, not a policy on a shelf, and not only the people with security in their job title.",
+  "It means noticing when something is wrong, containing it before it spreads, telling the right people, keeping evidence, and keeping the organisation moving when the picture is still incomplete. Those are human decisions under pressure. BreachRoom is a short, open tabletop for practising them. If you want the usual vendor pitch, this is the wrong site.",
 ] as const;
 
 export const ABOUT_LINKS = [

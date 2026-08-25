@@ -17,10 +17,11 @@
   --red: #e06c75;
   --green: #34d399;
   --focus: #bae6fd;
-  --paper: #f6f4ef;
-  --paper-ink: #152033;
-  --paper-muted: #5c6577;
-  --paper-line: #e3ded4;
+  --site: #101b30;
+  --site-ink: #e8eef8;
+  --site-muted: #9aa8c0;
+  --site-line: #2d4568;
+  --site-card: #16243a;
 }
 
 @theme inline {
@@ -40,10 +41,11 @@
   --color-incident: var(--red);
   --color-strength: var(--green);
   --color-focus: var(--focus);
-  --color-paper: var(--paper);
-  --color-paper-ink: var(--paper-ink);
-  --color-paper-muted: var(--paper-muted);
-  --color-paper-line: var(--paper-line);
+  --color-site: var(--site);
+  --color-site-ink: var(--site-ink);
+  --color-site-muted: var(--site-muted);
+  --color-site-line: var(--site-line);
+  --color-site-card: var(--site-card);
   --font-sans: var(--font-ibm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-ibm-mono), ui-monospace, SFMono-Regular, monospace;
   --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
@@ -51,8 +53,16 @@
 
 html,
 body {
-  background: var(--paper);
-  color: var(--paper-ink);
+  background: var(--site);
+  color: var(--site-ink);
+}
+
+.site-shell {
+  background-color: var(--site);
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 
 body {
