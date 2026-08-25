@@ -45,10 +45,10 @@ export function missionPerspective(
   if (mission.audienceMode === "general") {
     return {
       mode: "general",
-      playingAs: mission.audienceLabel ?? "Organisation-wide exercise",
+      playingAs: "Organisation-wide exercise",
       focus: "You’re making decisions as part of Northstar’s incident coordination team.",
       reportLine: "Perspective: Organisation-wide incident coordination team",
-      chipLabel: "Organisation-wide",
+      chipLabel: "Organisation-wide exercise",
     };
   }
 
@@ -69,7 +69,7 @@ export function missionPerspective(
     playingAs: "Standard mission",
     focus: "You’re considering the incident from an organisation-wide perspective.",
     reportLine: "Perspective: Organisation-wide",
-    chipLabel: "Organisation-wide",
+    chipLabel: "",
   };
 }
 

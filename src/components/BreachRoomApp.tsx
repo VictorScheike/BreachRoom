@@ -128,6 +128,7 @@ function PlayApp() {
       updatedAt: Date.now(),
       roleGroupId: state.trainingConfig?.roleGroup ?? null,
       roleId: state.roleId,
+      topics: state.trainingConfig?.topics ?? [],
       audienceMode: perspective.mode,
       perspectiveLabel: perspective.playingAs,
     });

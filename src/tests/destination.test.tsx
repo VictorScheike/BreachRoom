@@ -1,8 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { createInitialGameState, gameReducer } from "@/lib/game/engine";
+import { GameView } from "@/components/game/GameView";
 import { DestinationMarker } from "@/components/game/DestinationMarker";
 import { worldForMission } from "@/lib/game/maps";
-import { manhattan } from "@/lib/game/world";
+import { manhattan, pointsEqual } from "@/lib/game/world";
 import { publishedMissions } from "@/lib/missions/catalog";
 
 describe("destination markers", () => {
@@ -30,7 +32,36 @@ describe("destination markers", () => {
       expect(open).toContain(`data-destination-x="${world.destination.x}"`);
       expect(open).toContain("EXIT OPEN");
       expect(manhattan(world.start, world.destination)).toBeGreaterThan(0);
+      expect(html).toContain("map-destination__object");
     }
+  });
+
+  it("uses the same destination object for distance, collision and the marker", () => {
+    const world = worldForMission("dependency-depths");
+    let state = createInitialGameState();
+    state = gameReducer(state, {
+      type: "START_DIRECT",
+      missionId: "dependency-depths",
+      roleId: "developer",
+      seed: 3,
+    });
+    expect(pointsEqual(state.position, world.start)).toBe(true);
+    const html = renderToStaticMarkup(
+      <GameView
+        state={state}
+        onBegin={() => undefined}
+        onMove={() => undefined}
+        onChoose={() => undefined}
+        onContinue={() => undefined}
+        onOpenReport={() => undefined}
+        onToggleMute={() => undefined}
+        onChooseAnother={() => undefined}
+        onEndEarly={() => undefined}
+      />,
+    );
+    expect(html).toContain(`Reach ${world.destinationLabel}`);
+    expect(html).toContain(`data-destination-x="${world.destination.x}"`);
+    expect(html).toContain(`data-destination-y="${world.destination.y}"`);
   });
 
   it("keeps labels inside the map near every edge", () => {

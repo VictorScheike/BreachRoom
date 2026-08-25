@@ -50,6 +50,7 @@ export function DestinationMarker({ destination, world, unlocked }: DestinationM
       <div className={`map-destination__object map-destination__object--${destination.icon}`} aria-hidden="true">
         {ICONS[destination.icon]}
       </div>
+      <span className="map-destination__pointer" aria-hidden="true" />
       <p className="map-destination__label">
         <span>{unlocked ? "EXIT OPEN" : "EXIT LOCKED"}</span>
         <strong>{destination.shortLabel}</strong>

@@ -1068,12 +1068,74 @@ summary::-webkit-details-marker {
   text-align: left;
 }
 
+.decision-role-chip {
+  display: inline-flex;
+  margin: 0 0 0.55rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(66, 194, 255, 0.35);
+  border-radius: 999px;
+  color: var(--cyan);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.map-destination__pointer {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: #0b1220;
+  border-right: 1px solid #f0b429;
+  border-bottom: 1px solid #f0b429;
+}
+
+.map-destination--above .map-destination__pointer {
+  bottom: calc(100% - 2px);
+  transform: rotate(45deg);
+}
+
+.map-destination--below .map-destination__pointer {
+  top: calc(100% - 2px);
+  transform: rotate(225deg);
+}
+
+.map-destination--start .map-destination__pointer {
+  right: 10px;
+}
+
+.map-destination--end .map-destination__pointer {
+  left: 10px;
+}
+
+.map-destination__object--server {
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(#16324f, #0b1220);
+}
+
+.map-destination__object--gate {
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 2px #86efac;
+}
+
+.map-destination__object--launch {
+  clip-path: polygon(50% 8%, 92% 92%, 8% 92%);
+}
+
+.map-destination__object--hub {
+  border-radius: 999px;
+}
+
+.map-destination__object--coordination {
+  border-radius: 6px;
+}
+
 .mission-role {
   display: inline-flex;
   align-items: flex-start;
   gap: 12px;
   width: fit-content;
   max-width: 100%;
+  min-width: 0;
   margin-top: 16px;
   margin-bottom: 18px;
   padding: 10px 14px;
@@ -1083,7 +1145,13 @@ summary::-webkit-details-marker {
   box-sizing: border-box;
 }
 
+.mission-role__text {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .mission-role__icon {
+  flex: 0 0 auto;
   color: var(--cyan);
 }
 
@@ -1100,7 +1168,9 @@ summary::-webkit-details-marker {
   display: block;
   margin-top: 2px;
   color: var(--text-primary, #e8eef8);
-  font-size: 0.95rem;
+  font-size: 1.02rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .mission-role__focus {

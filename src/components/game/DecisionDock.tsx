@@ -72,8 +72,8 @@ export function DecisionDock({
         <>
           <p className="game-kicker">
             Decision {decisionNumber} of {total}
-            {roleChip ? ` · ROLE · ${roleChip.toUpperCase()}` : ""}
           </p>
+          {roleChip ? <p className="decision-role-chip">{roleChip}</p> : null}
           <h2 className="dock-title">{title}</h2>
           <p className="dock-copy">{body}</p>
           {npcLine ? <p className="npc-bubble">{npcLine}</p> : null}

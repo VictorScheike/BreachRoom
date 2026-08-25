@@ -21,6 +21,7 @@ export interface ProgressSession {
   updatedAt: number;
   roleGroupId: string | null;
   roleId: string | null;
+  topics: readonly string[];
   audienceMode: MissionPerspective["mode"];
   perspectiveLabel: string;
 }
@@ -79,6 +80,7 @@ function asSession(value: unknown): ProgressSession | null {
     updatedAt: typeof value.updatedAt === "number" ? value.updatedAt : Date.now(),
     roleGroupId: typeof value.roleGroupId === "string" ? value.roleGroupId : null,
     roleId: typeof value.roleId === "string" ? value.roleId : null,
+    topics: Array.isArray(value.topics) ? value.topics.filter((item): item is string => typeof item === "string") : [],
     audienceMode:
       value.audienceMode === "general" || value.audienceMode === "role" || value.audienceMode === "standard"
         ? value.audienceMode

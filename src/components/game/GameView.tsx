@@ -214,7 +214,13 @@ export function GameView({
         npcLine={question.npcLine}
         options={displayed}
         letters={letters}
-        roleChip={perspective.chipLabel}
+        roleChip={
+          perspective.mode === "role"
+            ? `ROLE · ${perspective.chipLabel.toUpperCase()}`
+            : perspective.mode === "general"
+              ? "ORGANISATION-WIDE EXERCISE"
+              : undefined
+        }
         onChoose={(optionId, letter) => {
           playTone(state.muted || reducedMotion, 220, 80);
           onChoose(optionId, letter);

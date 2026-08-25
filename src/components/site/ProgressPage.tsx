@@ -6,8 +6,10 @@ import {
   createEmptyProgressStore,
   loadProgress,
   progressSummary,
+  type ProgressSession,
   type ProgressStore,
 } from "@/lib/progress/store";
+import { topicLabel } from "@/lib/training/labels";
 import { playUrlForMission } from "@/lib/training/session";
 
 function subscribeProgress(onStoreChange: () => void): () => void {
@@ -32,7 +34,7 @@ class ProgressErrorBoundary extends Component<
     if (this.state.failed) {
       return (
         <main id="main-content" className="site-page home-wrap progress-page">
-          <p className="home-eyebrow">My progress</p>
+          <p className="home-eyebrow">MY PROGRESS</p>
           <h1>We couldn’t load your progress.</h1>
           <p className="training-lede">Your saved training data has not been deleted.</p>
           <div className="progress-empty-actions">
@@ -53,27 +55,39 @@ class ProgressErrorBoundary extends Component<
   }
 }
 
-function ProgressDashboard({ store, hydrated }: { store: ProgressStore; hydrated: boolean }) {
+function topicCounts(sessions: readonly ProgressSession[]): { id: string; label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const session of sessions) {
+    for (const topic of session.topics) {
+      counts.set(topic, (counts.get(topic) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([id, count]) => ({ id, label: topicLabel(id), count }))
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 6);
+}
+
+export function ProgressDashboard({
+  store,
+  hydrated,
+}: {
+  store: ProgressStore;
+  hydrated: boolean;
+}) {
   const summary = useMemo(() => progressSummary(store), [store]);
   const unfinished = store.sessions.find((item) => !item.completed && !item.endedEarly);
   const recent = store.sessions.slice(0, 6);
-
-  if (!hydrated) {
-    return (
-      <main id="main-content" className="site-page home-wrap progress-page">
-        <p className="home-eyebrow">My progress</p>
-        <h1>Your training progress</h1>
-        <p className="training-lede">Loading your progress…</p>
-        <div className="progress-skeleton" aria-hidden="true" />
-      </main>
-    );
-  }
+  const topics = topicCounts(store.sessions);
+  const empty = store.sessions.length === 0;
 
   return (
     <main id="main-content" className="site-page home-wrap progress-page">
-      <p className="home-eyebrow">My progress</p>
+      <p className="home-eyebrow">MY PROGRESS</p>
       <h1>Your training progress</h1>
-      {store.sessions.length === 0 ? (
+      {!hydrated ? (
+        <p className="training-lede">Loading your progress…</p>
+      ) : empty ? (
         <p className="training-lede">
           Complete a mission to start building your BreachRoom learning history.
         </p>
@@ -110,6 +124,20 @@ function ProgressDashboard({ store, hydrated }: { store: ProgressStore; hydrated
         </p>
       ) : null}
 
+      {topics.length > 0 ? (
+        <section>
+          <h2>Topic progress</h2>
+          <ul className="progress-sessions">
+            {topics.map((topic) => (
+              <li key={topic.id}>
+                <strong>{topic.label}</strong>
+                <span>{topic.count} session{topic.count === 1 ? "" : "s"}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {recent.length > 0 ? (
         <section>
           <h2>Recent training sessions</h2>
@@ -127,6 +155,11 @@ function ProgressDashboard({ store, hydrated }: { store: ProgressStore; hydrated
               </li>
             ))}
           </ul>
+          <p>
+            <Link className="btn-secondary" href="/training/">
+              Recommended next training
+            </Link>
+          </p>
         </section>
       ) : (
         <div className="progress-empty-actions">
