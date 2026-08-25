@@ -31,10 +31,79 @@ export interface ProgressStore {
   sessions: ProgressSession[];
 }
 
+export const EMPTY_PROGRESS_STORE: ProgressStore = {
+  version: PROGRESS_SCHEMA_VERSION,
+  sessions: [],
+};
+
 export function createEmptyProgressStore(): ProgressStore {
-  return {
-    version: PROGRESS_SCHEMA_VERSION,
-    sessions: [],
+  return EMPTY_PROGRESS_STORE;
+}
+
+const PROGRESS_CHANGE_EVENT = "breachroom-progress";
+
+let cachedRaw: string | null | undefined;
+let cachedStore: ProgressStore = EMPTY_PROGRESS_STORE;
+
+function notifyProgressListeners(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new Event(PROGRESS_CHANGE_EVENT));
+}
+
+export function canUseBrowserStorage(): boolean {
+  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+export function loadProgress(): ProgressStore {
+  if (!canUseBrowserStorage()) {
+    return EMPTY_PROGRESS_STORE;
+  }
+  try {
+    const raw = window.localStorage.getItem(PROGRESS_STORAGE_KEY);
+    if (raw === cachedRaw) {
+      return cachedStore;
+    }
+    cachedRaw = raw;
+    if (!raw) {
+      cachedStore = EMPTY_PROGRESS_STORE;
+      return cachedStore;
+    }
+    cachedStore = validateAndMigrateProgress(JSON.parse(raw));
+    return cachedStore;
+  } catch (error) {
+    console.error("Unable to load BreachRoom progress", error);
+    cachedRaw = null;
+    cachedStore = EMPTY_PROGRESS_STORE;
+    return cachedStore;
+  }
+}
+
+export function saveProgress(store: ProgressStore): void {
+  if (!canUseBrowserStorage()) {
+    return;
+  }
+  try {
+    const payload = JSON.stringify({ ...store, version: PROGRESS_SCHEMA_VERSION });
+    window.localStorage.setItem(PROGRESS_STORAGE_KEY, payload);
+    cachedRaw = payload;
+    cachedStore = store;
+    notifyProgressListeners();
+  } catch (error) {
+    console.error("Unable to save BreachRoom progress", error);
+  }
+}
+
+export function subscribeProgress(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(PROGRESS_CHANGE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(PROGRESS_CHANGE_EVENT, onStoreChange);
   };
 }
 
@@ -108,40 +177,6 @@ export function validateAndMigrateProgress(raw: unknown): ProgressStore {
     version: PROGRESS_SCHEMA_VERSION,
     sessions,
   };
-}
-
-export function canUseBrowserStorage(): boolean {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
-
-export function loadProgress(): ProgressStore {
-  if (!canUseBrowserStorage()) {
-    return createEmptyProgressStore();
-  }
-  try {
-    const raw = window.localStorage.getItem(PROGRESS_STORAGE_KEY);
-    if (!raw) {
-      return createEmptyProgressStore();
-    }
-    return validateAndMigrateProgress(JSON.parse(raw));
-  } catch (error) {
-    console.error("Unable to load BreachRoom progress", error);
-    return createEmptyProgressStore();
-  }
-}
-
-export function saveProgress(store: ProgressStore): void {
-  if (!canUseBrowserStorage()) {
-    return;
-  }
-  try {
-    window.localStorage.setItem(
-      PROGRESS_STORAGE_KEY,
-      JSON.stringify({ ...store, version: PROGRESS_SCHEMA_VERSION }),
-    );
-  } catch (error) {
-    console.error("Unable to save BreachRoom progress", error);
-  }
 }
 
 export function upsertProgressSession(next: ProgressSession): ProgressStore {

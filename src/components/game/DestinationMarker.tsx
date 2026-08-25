@@ -8,7 +8,7 @@ interface DestinationMarkerProps {
 
 function placementClass(destination: MissionDestination, world: WorldMap): string {
   const classes = ["map-destination"];
-  if (destination.y <= 0) {
+  if (destination.y <= 1) {
     classes.push("map-destination--below");
   } else {
     classes.push("map-destination--above");

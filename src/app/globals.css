@@ -235,20 +235,32 @@ summary::-webkit-details-marker {
   position: relative;
 }
 
+.game-map-frame {
+  width: min(100%, 720px);
+  margin-inline: auto;
+  padding: 2.75rem 0.35rem 0.85rem;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
 .game-map {
   position: relative;
   display: grid;
   grid-template-columns: repeat(var(--map-cols, 12), minmax(0, 1fr));
   grid-template-rows: repeat(var(--map-rows, 8), minmax(0, 1fr));
-  width: min(100%, 720px);
+  width: 100%;
   height: auto;
   aspect-ratio: var(--map-cols, 12) / var(--map-rows, 8);
   max-width: 100%;
   margin-inline: auto;
   box-sizing: border-box;
   image-rendering: pixelated;
-  overflow: hidden;
+  overflow: visible;
   border: 2px solid #1b3358;
+}
+
+.game-map .rpg-tile {
+  overflow: hidden;
 }
 
 @media (max-width: 700px) {
@@ -602,15 +614,20 @@ summary::-webkit-details-marker {
   flex: 1;
   min-height: 0;
   flex-direction: column;
+  overflow: visible;
+}
+
+.game-shell-live .game-map-frame {
+  flex: 1 1 auto;
+  max-height: min(52dvh, 460px);
 }
 
 .game-shell-live .game-map {
   display: grid;
-  flex: 1 1 auto;
   width: 100%;
   max-width: none;
   height: auto;
-  max-height: min(46dvh, 400px);
+  max-height: none;
 }
 
 .game-map-decision .rpg-tile {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ProgressDashboard, ProgressPage } from "@/components/site/ProgressPage";
 import {
   createEmptyProgressStore,
+  loadProgress,
   progressSummary,
   validateAndMigrateProgress,
   type ProgressSession,
@@ -41,6 +42,7 @@ describe("progress store", () => {
     expect(summary.questionsAnswered).toBe(0);
     expect(summary.overallCompletion).toBe(0);
     expect(summary.practiceScore).toBeNull();
+    expect(loadProgress()).toBe(loadProgress());
   });
 
   it("migrates old schemas and unknown mission ids without throwing", () => {
@@ -68,7 +70,7 @@ describe("progress store", () => {
     );
     expect(html).toContain("MY PROGRESS");
     expect(html).toContain("Your training progress");
-    expect(html).toContain("Complete a mission to start building your BreachRoom learning history.");
+    expect(html).toContain("No missions completed yet. Play a mission to start tracking your progress.");
     expect(html).toContain("Missions completed");
     expect(html).toContain("Not enough data");
     expect(html).toContain("Play your first mission");

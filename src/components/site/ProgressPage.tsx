@@ -1,24 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Component, type ReactNode, useMemo, useSyncExternalStore } from "react";
+import { Component, type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
-  createEmptyProgressStore,
+  EMPTY_PROGRESS_STORE,
   loadProgress,
   progressSummary,
+  subscribeProgress,
   type ProgressSession,
   type ProgressStore,
 } from "@/lib/progress/store";
 import { topicLabel } from "@/lib/training/labels";
 import { playUrlForMission } from "@/lib/training/session";
-
-function subscribeProgress(onStoreChange: () => void): () => void {
-  if (typeof window === "undefined") {
-    return () => undefined;
-  }
-  window.addEventListener("storage", onStoreChange);
-  return () => window.removeEventListener("storage", onStoreChange);
-}
 
 class ProgressErrorBoundary extends Component<
   { children: ReactNode },
@@ -89,7 +82,7 @@ export function ProgressDashboard({
         <p className="training-lede">Loading your progress…</p>
       ) : empty ? (
         <p className="training-lede">
-          Complete a mission to start building your BreachRoom learning history.
+          No missions completed yet. Play a mission to start tracking your progress.
         </p>
       ) : (
         <p className="training-lede">
@@ -180,15 +173,15 @@ export function ProgressDashboard({
 }
 
 export function ProgressPage() {
-  const snapshot = useSyncExternalStore(subscribeProgress, loadProgress, createEmptyProgressStore);
-  const hydrated = useSyncExternalStore(
-    subscribeProgress,
-    () => true,
-    () => false,
-  );
+  const snapshot = useSyncExternalStore(subscribeProgress, loadProgress, () => EMPTY_PROGRESS_STORE);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   return (
-    <div className="home-page">
+    <div className="home-page progress-shell">
       <ProgressErrorBoundary>
         <ProgressDashboard store={snapshot} hydrated={hydrated} />
       </ProgressErrorBoundary>

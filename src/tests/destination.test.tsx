@@ -6,6 +6,7 @@ import { DestinationMarker } from "@/components/game/DestinationMarker";
 import { worldForMission } from "@/lib/game/maps";
 import { manhattan, pointsEqual } from "@/lib/game/world";
 import { publishedMissions } from "@/lib/missions/catalog";
+import { MissionThumbnail } from "@/components/site/MissionThumbnail";
 
 describe("destination markers", () => {
   it("gives every published mission destination metadata that matches the exit tile", () => {
@@ -70,7 +71,7 @@ describe("destination markers", () => {
       const html = renderToStaticMarkup(
         <DestinationMarker destination={world.destination} world={world} unlocked={false} />,
       );
-      if (world.destination.y <= 0) {
+      if (world.destination.y <= 1) {
         expect(html).toContain("map-destination--below");
       } else {
         expect(html).toContain("map-destination--above");

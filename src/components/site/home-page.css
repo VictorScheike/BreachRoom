@@ -6,9 +6,13 @@
   --home-blue: #2563eb;
   --home-amber: #f0b429;
   color: var(--home-ink);
-  background:
+  background-color: #f4f7fb;
+  background-image:
     radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.16), transparent 28%),
-    linear-gradient(#07111f, #0b1a30 18%, #f4f7fb 18%);
+    linear-gradient(#07111f, #0b1a30);
+  background-repeat: no-repeat;
+  background-position: top;
+  background-size: 100% min(42rem, 88vh);
 }
 
 .home-wrap {
@@ -19,7 +23,7 @@
 
 .home-hero {
   color: #e8eef8;
-  padding: 2rem 0 3.5rem;
+  padding: 2rem 0 clamp(3.5rem, 8vw, 5.5rem);
 }
 
 .home-eyebrow {
@@ -187,6 +191,7 @@
   display: grid;
   gap: 1rem;
   margin-top: 1.5rem;
+  margin-bottom: 0;
   padding: 1rem;
   border: 1px solid #31415f;
   border-radius: 1rem;
@@ -552,7 +557,7 @@
   height: 100%;
   min-width: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   background: #fff;
   color: #102033;
   border: 1px solid #c9d6e5;
@@ -562,8 +567,11 @@
 .mission-card__media {
   width: 100%;
   aspect-ratio: 16 / 7;
-  overflow: hidden;
+  overflow: visible;
+  padding: 2.4rem 0.7rem 0.85rem;
+  box-sizing: border-box;
   background: #0b1220;
+  border-radius: 1.2rem 1.2rem 0 0;
 }
 
 .mission-thumb,
@@ -579,6 +587,63 @@
 .mission-thumb-grid {
   display: grid;
   grid-template-rows: repeat(5, minmax(0, 1fr));
+  min-height: 0;
+}
+
+.mission-thumb-hotspot {
+  position: relative;
+  z-index: 3;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.mission-thumb-mark {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: min(220px, 70vw);
+  padding: 0.18rem 0.45rem;
+  border-radius: 0.35rem;
+  background: #f0b429;
+  color: #07111f;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  transform: translateX(-50%);
+}
+
+.mission-thumb-mark__kicker {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
+.mission-thumb-hotspot--above .mission-thumb-mark {
+  bottom: calc(100% + 4px);
+}
+
+.mission-thumb-hotspot--below .mission-thumb-mark {
+  top: calc(100% + 4px);
+}
+
+.mission-thumb-hotspot--start .mission-thumb-mark {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.mission-thumb-hotspot--end .mission-thumb-mark {
+  left: 0;
+  transform: none;
 }
 
 .mission-thumb-player {
@@ -593,21 +658,6 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-}
-
-.mission-thumb-mark {
-  position: absolute;
-  right: 4%;
-  top: 8%;
-  z-index: 2;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #07111f;
-  background: #f0b429;
-  padding: 0.18rem 0.45rem;
-  border-radius: 0.35rem;
 }
 
 .mission-card__body {
@@ -674,7 +724,7 @@
 
 .how-section {
   position: relative;
-  margin: 0.5rem 0 1.6rem;
+  margin: clamp(3.5rem, 9vw, 6rem) 0 1.6rem;
   padding: 2.4rem 1.4rem 2.6rem;
   border-radius: 1.4rem;
   overflow: hidden;
@@ -1315,6 +1365,17 @@
 .progress-page {
   min-width: 0;
   max-width: 100%;
+}
+
+.home-page.progress-shell,
+.progress-shell {
+  background: #f4f7fb;
+  background-image: none;
+  color: #102033;
+}
+
+.progress-shell .progress-page {
+  color: #102033;
 }
 
 .progress-summary {

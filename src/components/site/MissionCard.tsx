@@ -13,23 +13,6 @@ function destinationLabel(mission: MissionDefinition): string {
   return mission.destination.split("—")[0]?.trim() ?? mission.destination;
 }
 
-function thumbnailMark(mission: MissionDefinition): string {
-  switch (mission.id) {
-    case "inbox-under-siege":
-      return "Hub";
-    case "locked-out":
-      return "Core";
-    case "ai-forge":
-      return "Launch";
-    case "dependency-depths":
-      return "Exit";
-    case "northstar-zero-hour":
-      return "ICR";
-    default:
-      return "Map";
-  }
-}
-
 function topicChips(mission: MissionDefinition): string[] {
   if (mission.id === "inbox-under-siege") {
     return ["Phishing", "Social engineering", "Safe reporting"];
@@ -51,7 +34,7 @@ export function MissionCard({ mission, titleAs = "h3", descriptionLines = 3 }: M
   return (
     <article className="mission-card">
       <div className="mission-card__media">
-        <MissionThumbnail missionId={mission.id} label={thumbnailMark(mission)} />
+        <MissionThumbnail missionId={mission.id} label={destinationLabel(mission)} />
       </div>
       <div className="mission-card__body">
         <div className="mission-card__content">

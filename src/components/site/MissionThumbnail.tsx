@@ -30,7 +30,7 @@ const ROWS = 5;
 
 const LAYOUTS: Record<
   MissionId,
-  { tiles: TileId[]; playerCol: number; playerRow: number }
+  { tiles: TileId[]; playerCol: number; playerRow: number; destCol: number; destRow: number }
 > = {
   "inbox-under-siege": {
     tiles: [
@@ -42,6 +42,8 @@ const LAYOUTS: Record<
     ],
     playerCol: 1,
     playerRow: 4,
+    destCol: 5,
+    destRow: 1,
   },
   "locked-out": {
     tiles: [
@@ -53,6 +55,8 @@ const LAYOUTS: Record<
     ],
     playerCol: 0,
     playerRow: 4,
+    destCol: 8,
+    destRow: 0,
   },
   "ai-forge": {
     tiles: [
@@ -64,6 +68,8 @@ const LAYOUTS: Record<
     ],
     playerCol: 1,
     playerRow: 4,
+    destCol: 8,
+    destRow: 0,
   },
   "dependency-depths": {
     tiles: [
@@ -75,6 +81,8 @@ const LAYOUTS: Record<
     ],
     playerCol: 1,
     playerRow: 4,
+    destCol: 9,
+    destRow: 0,
   },
   "northstar-zero-hour": {
     tiles: [
@@ -86,6 +94,8 @@ const LAYOUTS: Record<
     ],
     playerCol: 0,
     playerRow: 4,
+    destCol: 3,
+    destRow: 0,
   },
 };
 
@@ -96,6 +106,14 @@ interface MissionThumbnailProps {
 
 export function MissionThumbnail({ missionId, label }: MissionThumbnailProps) {
   const layout = LAYOUTS[missionId];
+  const placement = [
+    "mission-thumb-hotspot",
+    layout.destRow <= 1 ? "mission-thumb-hotspot--below" : "mission-thumb-hotspot--above",
+    layout.destCol <= 1 ? "mission-thumb-hotspot--end" : "",
+    layout.destCol >= COLS - 2 ? "mission-thumb-hotspot--start" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className={`mission-thumb mission-thumb-${missionId}`} aria-hidden="true">
@@ -106,6 +124,18 @@ export function MissionThumbnail({ missionId, label }: MissionThumbnailProps) {
         {layout.tiles.map((tile, index) => (
           <span key={`${missionId}-${index}`} className={`rpg-tile-${tile}`} />
         ))}
+        <span
+          className={placement}
+          style={{
+            gridColumn: layout.destCol + 1,
+            gridRow: layout.destRow + 1,
+          }}
+        >
+          <span className="mission-thumb-mark">
+            <span className="mission-thumb-mark__kicker">Destination</span>
+            {label}
+          </span>
+        </span>
       </div>
       <div
         className="mission-thumb-player"
@@ -118,7 +148,6 @@ export function MissionThumbnail({ missionId, label }: MissionThumbnailProps) {
       >
         <PlayerSprite facing="right" walking={false} />
       </div>
-      <span className="mission-thumb-mark">{label}</span>
     </div>
   );
 }

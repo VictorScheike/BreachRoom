@@ -312,60 +312,62 @@ export function GameView({
         </header>
 
         <div className="game-stage-column">
-          <div
-            className={`game-map ${encounterActive ? "game-map-decision" : ""} ${state.screen === "finalEncounter" ? "map-focus-landmark" : ""} world-${mission.id}`}
-            role="application"
-            aria-label={`${mission.environment} map`}
-            style={{
-              ["--glitch" as string]: String(glitch),
-              ["--player-x" as string]: String(state.position.x),
-              ["--player-y" as string]: String(state.position.y),
-              ["--map-cols" as string]: String(world.columns),
-              ["--map-rows" as string]: String(world.rows),
-              gridTemplateColumns: `repeat(${world.columns}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${world.rows}, minmax(0, 1fr))`,
-              aspectRatio: `${world.columns} / ${world.rows}`,
-            }}
-          >
-            {world.tiles.flatMap((row, y) =>
-              row.map((kind, x) => {
-                const highlight =
-                  state.lastEncounterTile &&
-                  encounterActive &&
-                  tileKey({ x, y }) === tileKey(state.lastEncounterTile);
-                const landmark = world.landmarkTiles.some(
-                  (point) => point.x === x && point.y === y,
-                );
-                return (
-                  <div
-                    key={`${x}-${y}`}
-                    className={`rpg-tile rpg-tile-${kind} ${highlight ? "tile-highlight" : ""} ${landmark ? "tile-landmark" : ""}`}
-                    data-tile={kind}
-                    data-zone={world.zones[y]?.[x]}
-                  />
-                );
-              }),
-            )}
-            {mission.id === "dependency-depths" ? (
-              <div className="torch-veil" aria-hidden="true" />
-            ) : null}
-            {mission.id === "ai-forge" ? <div className="ember-layer" aria-hidden="true" /> : null}
-            <DestinationMarker
-              destination={world.destination}
-              world={world}
-              unlocked={exitUnlocked}
-            />
-            {showPlayer ? (
-              <MissionPlayer
-                position={state.position}
-                direction={facing}
-                paused={movementLocked}
-                walking={walking}
-                showDecisionIndicator={hasActiveDecision(state.screen) || hasDecisionFeedback(state.screen)}
-                columns={world.columns}
-                rows={world.rows}
+          <div className="game-map-frame">
+            <div
+              className={`game-map ${encounterActive ? "game-map-decision" : ""} ${state.screen === "finalEncounter" ? "map-focus-landmark" : ""} world-${mission.id}`}
+              role="application"
+              aria-label={`${mission.environment} map`}
+              style={{
+                ["--glitch" as string]: String(glitch),
+                ["--player-x" as string]: String(state.position.x),
+                ["--player-y" as string]: String(state.position.y),
+                ["--map-cols" as string]: String(world.columns),
+                ["--map-rows" as string]: String(world.rows),
+                gridTemplateColumns: `repeat(${world.columns}, minmax(0, 1fr))`,
+                gridTemplateRows: `repeat(${world.rows}, minmax(0, 1fr))`,
+                aspectRatio: `${world.columns} / ${world.rows}`,
+              }}
+            >
+              {world.tiles.flatMap((row, y) =>
+                row.map((kind, x) => {
+                  const highlight =
+                    state.lastEncounterTile &&
+                    encounterActive &&
+                    tileKey({ x, y }) === tileKey(state.lastEncounterTile);
+                  const landmark = world.landmarkTiles.some(
+                    (point) => point.x === x && point.y === y,
+                  );
+                  return (
+                    <div
+                      key={`${x}-${y}`}
+                      className={`rpg-tile rpg-tile-${kind} ${highlight ? "tile-highlight" : ""} ${landmark ? "tile-landmark" : ""}`}
+                      data-tile={kind}
+                      data-zone={world.zones[y]?.[x]}
+                    />
+                  );
+                }),
+              )}
+              {mission.id === "dependency-depths" ? (
+                <div className="torch-veil" aria-hidden="true" />
+              ) : null}
+              {mission.id === "ai-forge" ? <div className="ember-layer" aria-hidden="true" /> : null}
+              <DestinationMarker
+                destination={world.destination}
+                world={world}
+                unlocked={exitUnlocked}
               />
-            ) : null}
+              {showPlayer ? (
+                <MissionPlayer
+                  position={state.position}
+                  direction={facing}
+                  paused={movementLocked}
+                  walking={walking}
+                  showDecisionIndicator={hasActiveDecision(state.screen) || hasDecisionFeedback(state.screen)}
+                  columns={world.columns}
+                  rows={world.rows}
+                />
+              ) : null}
+            </div>
           </div>
           {dock}
         </div>
