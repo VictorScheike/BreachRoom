@@ -1,8 +1,8 @@
 # BreachRoom
 
-BreachRoom is an open-source educational tabletop simulator for practising cybersecurity incident decisions. The first version walks through a single fictional ransomware scenario, records eight response choices, and produces a structured after-action report.
+BreachRoom is an open-source educational tabletop for practising cybersecurity incident decisions. The public site is a small professional webpage: why the project exists (`/`), the exercise (`/play`), and who is behind it (`/about`). The first exercise walks through a fictional ransomware scenario, records eight response choices, and produces a structured after-action report.
 
-It is designed for security, operations, communications and leadership teams who want a short, self-paced exercise without accounts, live data or attacker tooling.
+It is meant for people in security, operations, communications, product and leadership who want a short, self-paced rehearsal without accounts, live data or attacker tooling.
 
 ## What it does
 
@@ -112,9 +112,9 @@ npm run test:watch
 
 ```text
 src/
-  app/                         # Next.js App Router entry
-  components/                  # Screens and UI pieces
-    LandingPage.tsx
+  app/                         # Site pages: home, /play, /about
+  components/
+    site/                      # Marketing pages, header, footer, logo
     ScenarioBriefing.tsx
     SimulationView.tsx
     IncidentTimeline.tsx
@@ -123,6 +123,7 @@ src/
     AfterActionReport.tsx
     ScoreSummary.tsx
     DecisionReview.tsx
+  lib/site/                    # Site copy
   lib/simulation/              # Scenario data, scoring, report, reducer
     types.ts
     schemas.ts

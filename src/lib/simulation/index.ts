@@ -20,10 +20,4 @@ export {
   simulationReducer,
 } from "./reducer";
 export { isComplete, requireStage } from "./lookups";
-export {
-  EDUCATIONAL_DISCLAIMER,
-  LANDING_DESCRIPTION,
-  LANDING_HEADLINE,
-  PRACTICE_AREAS,
-  PRODUCT_NAME,
-} from "./copy";
+export { EDUCATIONAL_DISCLAIMER, PRODUCT_NAME } from "./copy";

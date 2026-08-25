@@ -2,10 +2,8 @@
 
 import { useMemo, useReducer } from "react";
 import { AfterActionReport } from "@/components/AfterActionReport";
-import { LandingPage } from "@/components/LandingPage";
 import { ScenarioBriefing } from "@/components/ScenarioBriefing";
 import { SimulationView } from "@/components/SimulationView";
-import { PRODUCT_NAME } from "@/lib/simulation/copy";
 import { requireStage } from "@/lib/simulation/lookups";
 import {
   createInitialState,
@@ -25,31 +23,20 @@ export function BreachRoomApp() {
   }, [state.decisions, state.screen]);
 
   return (
-    <div className="command-shell min-h-full">
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
+    <div className="command-shell min-h-[calc(100vh-8rem)] text-ink">
       <div className="border-b border-line/80 bg-navy-900/80">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <p className="font-semibold tracking-tight">{PRODUCT_NAME}</p>
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-2 sm:px-6 lg:px-8">
+          <p className="text-sm text-muted">Locked Out · ransomware tabletop</p>
           <p className="font-mono text-xs text-muted">
             {scenario.organisation.fictionalLabel}
           </p>
         </div>
       </div>
 
-      {state.screen === "landing" ? (
-        <LandingPage
-          estimatedDuration={scenario.estimatedDuration}
-          onStart={() => dispatch({ type: "OPEN_BRIEFING" })}
-        />
-      ) : null}
-
       {state.screen === "briefing" ? (
         <ScenarioBriefing
           scenario={scenario}
           onBegin={() => dispatch({ type: "BEGIN_INCIDENT" })}
-          onBack={() => dispatch({ type: "RETURN_HOME" })}
         />
       ) : null}
 
@@ -71,7 +58,6 @@ export function BreachRoomApp() {
           report={report}
           decisions={state.decisions}
           onRestart={() => dispatch({ type: "RESTART" })}
-          onHome={() => dispatch({ type: "RETURN_HOME" })}
         />
       ) : null}
     </div>

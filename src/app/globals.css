@@ -17,6 +17,10 @@
   --red: #e06c75;
   --green: #34d399;
   --focus: #bae6fd;
+  --paper: #f6f4ef;
+  --paper-ink: #152033;
+  --paper-muted: #5c6577;
+  --paper-line: #e3ded4;
 }
 
 @theme inline {
@@ -36,14 +40,19 @@
   --color-incident: var(--red);
   --color-strength: var(--green);
   --color-focus: var(--focus);
+  --color-paper: var(--paper);
+  --color-paper-ink: var(--paper-ink);
+  --color-paper-muted: var(--paper-muted);
+  --color-paper-line: var(--paper-line);
   --font-sans: var(--font-ibm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-ibm-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
 }
 
 html,
 body {
-  background: var(--navy-950);
-  color: var(--text);
+  background: var(--paper);
+  color: var(--paper-ink);
 }
 
 body {

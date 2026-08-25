@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { DecisionReview } from "@/components/DecisionReview";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { IncidentTimeline } from "@/components/IncidentTimeline";
@@ -11,7 +12,6 @@ interface AfterActionReportViewProps {
   report: AfterActionReport;
   decisions: readonly RecordedDecision[];
   onRestart: () => void;
-  onHome: () => void;
 }
 
 export function AfterActionReport({
@@ -19,7 +19,6 @@ export function AfterActionReport({
   report,
   decisions,
   onRestart,
-  onHome,
 }: AfterActionReportViewProps) {
   const lastStage = requireStage(scenario, scenario.stages.length - 1);
   const timelineEvents = buildTimelineEvents(
@@ -101,15 +100,14 @@ export function AfterActionReport({
           onClick={onRestart}
           className="inline-flex items-center justify-center rounded-xl bg-cyan-strong px-5 py-3 text-base font-semibold text-navy-950 hover:bg-cyan"
         >
-          Restart simulation
+          Run the exercise again
         </button>
-        <button
-          type="button"
-          onClick={onHome}
+        <Link
+          href="/"
           className="inline-flex items-center justify-center rounded-xl border border-line px-5 py-3 text-base font-medium hover:bg-navy-700"
         >
-          Return to home
-        </button>
+          Back to the site
+        </Link>
       </div>
     </main>
   );

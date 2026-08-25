@@ -85,7 +85,7 @@ export interface Scenario {
   stages: ScenarioStage[];
 }
 
-export type AppScreen = "landing" | "briefing" | "simulation" | "report";
+export type AppScreen = "briefing" | "simulation" | "report";
 
 export interface RecordedDecision {
   stageId: string;

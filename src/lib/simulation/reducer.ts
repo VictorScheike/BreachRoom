@@ -3,16 +3,14 @@ import { findOptionInStage, requireStage } from "./lookups";
 import type { SimulationState } from "./types";
 
 export type SimulationAction =
-  | { type: "OPEN_BRIEFING" }
   | { type: "BEGIN_INCIDENT" }
   | { type: "SELECT_OPTION"; optionId: string }
   | { type: "CONFIRM_DECISION" }
-  | { type: "RESTART" }
-  | { type: "RETURN_HOME" };
+  | { type: "RESTART" };
 
 export function createInitialState(): SimulationState {
   return {
-    screen: "landing",
+    screen: "briefing",
     currentStageIndex: 0,
     selectedOptionId: null,
     decisions: [],
@@ -37,11 +35,6 @@ export function simulationReducer(
   action: SimulationAction,
 ): SimulationState {
   switch (action.type) {
-    case "OPEN_BRIEFING":
-      return {
-        ...createInitialState(),
-        screen: "briefing",
-      };
     case "BEGIN_INCIDENT":
       return beginSimulation();
     case "SELECT_OPTION": {
@@ -88,11 +81,6 @@ export function simulationReducer(
       };
     }
     case "RESTART":
-      return {
-        ...createInitialState(),
-        screen: "briefing",
-      };
-    case "RETURN_HOME":
       return createInitialState();
     default: {
       const unhandled: never = action;

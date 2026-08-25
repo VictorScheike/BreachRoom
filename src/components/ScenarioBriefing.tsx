@@ -1,16 +1,15 @@
+import Link from "next/link";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import type { Scenario } from "@/lib/simulation/types";
 
 interface ScenarioBriefingProps {
   scenario: Scenario;
   onBegin: () => void;
-  onBack: () => void;
 }
 
 export function ScenarioBriefing({
   scenario,
   onBegin,
-  onBack,
 }: ScenarioBriefingProps) {
   const { organisation } = scenario;
 
@@ -79,15 +78,14 @@ export function ScenarioBriefing({
           onClick={onBegin}
           className="inline-flex items-center justify-center rounded-xl bg-cyan-strong px-5 py-3 text-base font-semibold text-navy-950 hover:bg-cyan"
         >
-          Begin incident
+          Start the exercise
         </button>
-        <button
-          type="button"
-          onClick={onBack}
+        <Link
+          href="/"
           className="inline-flex items-center justify-center rounded-xl border border-line px-5 py-3 text-base font-medium hover:bg-navy-700"
         >
-          Return to home
-        </button>
+          Back to the site
+        </Link>
       </div>
     </main>
   );

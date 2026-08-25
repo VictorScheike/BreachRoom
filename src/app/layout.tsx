@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { SiteHeader } from "@/components/site/SiteHeader";
 import "./globals.css";
 
 const ibmSans = IBM_Plex_Sans({
@@ -15,10 +17,16 @@ const ibmMono = IBM_Plex_Mono({
   weight: ["400", "500"],
 });
 
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "BreachRoom | Cybersecurity incident tabletop simulator",
+  title: "BreachRoom | Practise cybersecurity incident decisions",
   description:
-    "Practise ransomware incident response decisions in a fictional tabletop simulation and receive a structured after-action report.",
+    "An educational tabletop for the organisational side of a cyber incident — containment, communication, evidence and continuity. Built to put more focus on cybersecurity, not to sell a security product.",
 };
 
 export default function RootLayout({
@@ -29,9 +37,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${ibmSans.variable} ${ibmMono.variable} h-full antialiased`}
+      className={`${ibmSans.variable} ${ibmMono.variable} ${sourceSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-navy-950 font-sans text-ink">{children}</body>
+      <body className="min-h-full bg-paper font-sans text-paper-ink">
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }

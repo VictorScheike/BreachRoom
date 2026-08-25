@@ -1,5 +1,5 @@
-import { BreachRoomApp } from "@/components/BreachRoomApp";
+import { HomePage } from "@/components/site/HomePage";
 
 export default function Home() {
-  return <BreachRoomApp />;
+  return <HomePage />;
 }
