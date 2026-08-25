@@ -1,28 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { requireMission } from "@/lib/missions/catalog";
 import { loadSeenQuestionIds, loadTrainingSession } from "@/lib/training/session";
 import { roleGroupLabel, topicLabel } from "@/lib/training/labels";
 
-export function ProgressPage() {
-  const [seen, setSeen] = useState(0);
-  const [title, setTitle] = useState<string | null>(null);
-  const [detail, setDetail] = useState<string | null>(null);
+interface LocalProgress {
+  seen: number;
+  title: string | null;
+  detail: string | null;
+}
 
-  useEffect(() => {
-    setSeen(loadSeenQuestionIds().length);
-    const session = loadTrainingSession();
-    if (!session) {
-      return;
-    }
-    setTitle(session.title);
-    const mission = requireMission(session.mapId);
-    setDetail(
-      `${roleGroupLabel(session.roleGroup)} · ${topicLabel(session.topics[0] ?? "")} · ${mission.title}`,
-    );
-  }, []);
+const EMPTY_PROGRESS: LocalProgress = { seen: 0, title: null, detail: null };
+
+function readLocalProgress(): LocalProgress {
+  const seen = loadSeenQuestionIds().length;
+  const session = loadTrainingSession();
+  if (!session) {
+    return { seen, title: null, detail: null };
+  }
+  const mission = requireMission(session.mapId);
+  return {
+    seen,
+    title: session.title,
+    detail: `${roleGroupLabel(session.roleGroup)} · ${topicLabel(session.topics[0] ?? "")} · ${mission.title}`,
+  };
+}
+
+export function ProgressPage() {
+  const { seen, title, detail } = useSyncExternalStore(
+    () => () => undefined,
+    readLocalProgress,
+    () => EMPTY_PROGRESS,
+  );
 
   return (
     <div className="home-page">

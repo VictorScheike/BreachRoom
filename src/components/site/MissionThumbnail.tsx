@@ -16,6 +16,7 @@ type TileId =
   | "rack"
   | "lava"
   | "pipe"
+  | "rock"
   | "bridge"
   | "forge"
   | "cave"
