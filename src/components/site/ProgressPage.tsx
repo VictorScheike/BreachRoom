@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Component, type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Component, type ReactNode, useMemo, useSyncExternalStore } from "react";
 import {
   EMPTY_PROGRESS_STORE,
   loadProgress,
@@ -172,13 +172,13 @@ export function ProgressDashboard({
   );
 }
 
+function subscribeHydration(): () => void {
+  return () => undefined;
+}
+
 export function ProgressPage() {
   const snapshot = useSyncExternalStore(subscribeProgress, loadProgress, () => EMPTY_PROGRESS_STORE);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
 
   return (
     <div className="home-page progress-shell">
