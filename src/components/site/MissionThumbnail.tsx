@@ -124,19 +124,21 @@ export function MissionThumbnail({ missionId, label }: MissionThumbnailProps) {
         {layout.tiles.map((tile, index) => (
           <span key={`${missionId}-${index}`} className={`rpg-tile-${tile}`} />
         ))}
-        <span
-          className={placement}
-          style={{
-            gridColumn: layout.destCol + 1,
-            gridRow: layout.destRow + 1,
-          }}
-        >
-          <span className="mission-thumb-mark">
-            <span className="mission-thumb-mark__kicker">Destination</span>
-            {label}
-          </span>
-        </span>
       </div>
+      <span
+        className={placement}
+        style={{
+          left: `${(layout.destCol / COLS) * 100}%`,
+          top: `${(layout.destRow / ROWS) * 100}%`,
+          width: `${(1 / COLS) * 100}%`,
+          height: `${(1 / ROWS) * 100}%`,
+        }}
+      >
+        <span className="mission-thumb-mark">
+          <span className="mission-thumb-mark__kicker">Destination</span>
+          {label}
+        </span>
+      </span>
       <div
         className="mission-thumb-player"
         style={{

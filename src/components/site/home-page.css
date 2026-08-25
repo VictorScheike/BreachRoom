@@ -569,7 +569,7 @@
   width: 100%;
   aspect-ratio: 16 / 7;
   overflow: visible;
-  padding: 2.4rem 0.7rem 0.85rem;
+  padding: 2.8rem 0.85rem 1rem;
   box-sizing: border-box;
   background: #0b1220;
   border-radius: 1.2rem 1.2rem 0 0;
@@ -592,7 +592,7 @@
 }
 
 .mission-thumb-hotspot {
-  position: relative;
+  position: absolute;
   z-index: 3;
   pointer-events: none;
 }
