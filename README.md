@@ -6,8 +6,8 @@ It is meant for people in security, operations, communications, product and lead
 
 ## What it does
 
-- Presents a fictional organisation, **Northstar Logistics**, on a 20×20 grass field.
-- A stick-figure guide stops you every few steps with one Northstar decision.
+- Presents a fictional organisation, **Northstar Logistics**, as a compact pixel campus.
+- Eight incident decisions appear along the route to the Core Server Room.
 - Covers identification, containment, escalation, evidence, continuity, communication, supplier coordination, recovery and lessons learned.
 - Calculates a deterministic **BreachRoom simulation score** across five areas.
 - Shows strengths, gaps and recommended follow-up actions only after the exercise is complete.
@@ -114,8 +114,7 @@ npm run test:watch
 src/
   app/                         # Site pages: home, /play, /about
   components/
-    site/                      # Marketing pages, header, footer, logo
-    ScenarioBriefing.tsx
+    game/                      # Pixel campus exercise
     SimulationView.tsx
     IncidentTimeline.tsx
     DecisionCard.tsx
@@ -123,6 +122,7 @@ src/
     AfterActionReport.tsx
     ScoreSummary.tsx
     DecisionReview.tsx
+  lib/game/                    # Map, encounters, HUD
   lib/site/                    # Site copy
   lib/simulation/              # Scenario data, scoring, report, reducer
     types.ts

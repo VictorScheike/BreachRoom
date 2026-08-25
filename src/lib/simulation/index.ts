@@ -19,13 +19,5 @@ export {
   createInitialState,
   simulationReducer,
 } from "./reducer";
-export {
-  ENCOUNTER_EVERY,
-  GRID_SIZE,
-  START_TILE,
-  GOAL_TILE,
-  shouldTriggerEncounter,
-  tryMove,
-} from "./field";
 export { isComplete, requireStage } from "./lookups";
 export { EDUCATIONAL_DISCLAIMER, PRODUCT_NAME } from "./copy";

@@ -6,6 +6,7 @@ export type SimulationAction =
   | { type: "BEGIN_INCIDENT" }
   | { type: "SELECT_OPTION"; optionId: string }
   | { type: "CONFIRM_DECISION" }
+  | { type: "CHOOSE_OPTION"; optionId: string }
   | { type: "REACH_EXIT" }
   | { type: "RESTART" };
 
@@ -81,6 +82,14 @@ export function simulationReducer(
         decisions,
       };
     }
+    case "CHOOSE_OPTION":
+      return simulationReducer(
+        simulationReducer(state, {
+          type: "SELECT_OPTION",
+          optionId: action.optionId,
+        }),
+        { type: "CONFIRM_DECISION" },
+      );
     case "REACH_EXIT":
       if (state.decisions.length < STAGE_COUNT) {
         return state;

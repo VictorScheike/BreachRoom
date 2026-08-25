@@ -1,10 +1,8 @@
 "use client";
 
 import { useMemo, useReducer } from "react";
-import { AfterActionReport } from "@/components/AfterActionReport";
-import { FieldView } from "@/components/FieldView";
-import { ScenarioBriefing } from "@/components/ScenarioBriefing";
-import { requireStage } from "@/lib/simulation/lookups";
+import { GameReport } from "@/components/game/GameReport";
+import { GameView } from "@/components/game/GameView";
 import {
   createInitialState,
   simulationReducer,
@@ -22,36 +20,24 @@ export function BreachRoomApp() {
     return generateReport(scenario, state.decisions);
   }, [state.decisions, state.screen]);
 
+  if (state.screen === "report" && report) {
+    return (
+      <GameReport
+        scenario={scenario}
+        report={report}
+        onRestart={() => dispatch({ type: "RESTART" })}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-[calc(100vh-8rem)] bg-navy-950 text-ink">
-      {state.screen === "briefing" ? (
-        <ScenarioBriefing
-          scenario={scenario}
-          onBegin={() => dispatch({ type: "BEGIN_INCIDENT" })}
-        />
-      ) : null}
-
-      {state.screen === "simulation" ? (
-        <FieldView
-          scenario={scenario}
-          stage={requireStage(scenario, state.currentStageIndex)}
-          stageNumber={Math.min(state.currentStageIndex + 1, scenario.stages.length)}
-          selectedOptionId={state.selectedOptionId}
-          decisions={state.decisions}
-          onSelect={(optionId) => dispatch({ type: "SELECT_OPTION", optionId })}
-          onConfirm={() => dispatch({ type: "CONFIRM_DECISION" })}
-          onReachExit={() => dispatch({ type: "REACH_EXIT" })}
-        />
-      ) : null}
-
-      {state.screen === "report" && report ? (
-        <AfterActionReport
-          scenario={scenario}
-          report={report}
-          decisions={state.decisions}
-          onRestart={() => dispatch({ type: "RESTART" })}
-        />
-      ) : null}
-    </div>
+    <GameView
+      scenario={scenario}
+      currentStageIndex={state.currentStageIndex}
+      decisions={state.decisions}
+      onBegin={() => dispatch({ type: "BEGIN_INCIDENT" })}
+      onChoose={(optionId) => dispatch({ type: "CHOOSE_OPTION", optionId })}
+      onReachCore={() => dispatch({ type: "REACH_EXIT" })}
+    />
   );
 }
