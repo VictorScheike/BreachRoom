@@ -110,7 +110,7 @@ export function MissionThumbnail({ missionId, label }: MissionThumbnailProps) {
     "mission-thumb-hotspot",
     layout.destRow <= 1 ? "mission-thumb-hotspot--below" : "mission-thumb-hotspot--above",
     layout.destCol <= 1 ? "mission-thumb-hotspot--end" : "",
-    layout.destCol >= COLS - 2 ? "mission-thumb-hotspot--start" : "",
+    layout.destCol >= COLS - 4 ? "mission-thumb-hotspot--start" : "",
   ]
     .filter(Boolean)
     .join(" ");
