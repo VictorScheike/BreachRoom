@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/site/BrandMark";
 import { NAV_ITEMS, SITE_NAME } from "@/lib/site/copy";
@@ -12,8 +13,14 @@ function normalisePath(path: string): string {
   return path || "/";
 }
 
-function isActive(pathname: string, href: string): boolean {
+function isActive(pathname: string, href: string, hash: string): boolean {
   const current = normalisePath(pathname);
+  if (href === "/") {
+    return current === "/" && hash !== "#how-it-works";
+  }
+  if (href === "/#how-it-works") {
+    return current === "/" && hash === "#how-it-works";
+  }
   const target = normalisePath(href);
   if (target === "/training") {
     return current === "/training" || current === "/create-training";
@@ -23,7 +30,15 @@ function isActive(pathname: string, href: string): boolean {
 
 export function SiteHeader() {
   const pathname = usePathname() ?? "/";
+  const [hash, setHash] = useState("");
   const onPlay = normalisePath(pathname) === "/play";
+
+  useEffect(() => {
+    const update = () => setHash(window.location.hash);
+    update();
+    window.addEventListener("hashchange", update);
+    return () => window.removeEventListener("hashchange", update);
+  }, [pathname]);
 
   return (
     <header
@@ -33,15 +48,15 @@ export function SiteHeader() {
           : "site-header border-b border-site-line bg-site/95 text-site-ink"
       }
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <div className="site-header-inner">
         <Link href="/" className="inline-flex min-h-11 items-center gap-3">
           <BrandMark size={36} className="rounded-lg" />
           <span className="text-lg font-semibold tracking-tight">{SITE_NAME}</span>
         </Link>
         <nav aria-label="Primary">
-          <ul className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium">
+          <ul className="site-nav">
             {NAV_ITEMS.map((item) => {
-              const active = isActive(pathname, item.href);
+              const active = isActive(pathname, item.href, hash);
               const playCta = item.href === "/play/";
               return (
                 <li key={item.href}>
@@ -49,14 +64,10 @@ export function SiteHeader() {
                     href={item.href}
                     className={
                       playCta
-                        ? "inline-flex min-h-11 items-center rounded-md bg-amber px-3 py-2 font-semibold text-navy-950"
+                        ? "site-nav-play"
                         : active
-                          ? onPlay
-                            ? "inline-flex min-h-11 items-center text-cyan"
-                            : "inline-flex min-h-11 items-center text-cyan underline decoration-cyan decoration-2 underline-offset-8"
-                          : onPlay
-                            ? "inline-flex min-h-11 items-center text-muted hover:text-ink"
-                            : "inline-flex min-h-11 items-center text-site-muted hover:text-site-ink"
+                          ? "site-nav-link is-active"
+                          : "site-nav-link"
                     }
                     aria-current={active ? "page" : undefined}
                   >

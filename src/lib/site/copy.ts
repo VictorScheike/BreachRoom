@@ -1,8 +1,11 @@
 export const SITE_NAME = "BreachRoom";
 
 export const NAV_ITEMS = [
+  { href: "/", label: "Start" },
   { href: "/missions/", label: "Missions" },
   { href: "/training/", label: "Training by role" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/progress/", label: "My progress" },
   { href: "/about/", label: "About" },
   { href: "/play/", label: "Play free" },
 ] as const;

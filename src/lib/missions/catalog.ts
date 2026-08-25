@@ -97,6 +97,9 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
       },
     ],
     questions: annotate("locked-out", [...LOCKED_OUT_QUESTIONS, ...LOCKED_OUT_EXTRAS]),
+    published: true,
+    summary:
+      "Work a ransomware morning across the Northstar campus and reach the Core Server Room.",
   },
   "ai-forge": {
     id: "ai-forge",
@@ -136,6 +139,8 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
       },
     ],
     questions: annotate("ai-forge", [...AI_FORGE_QUESTIONS, ...AI_FORGE_EXTRAS]),
+    published: true,
+    summary: "Help the organisation launch an AI system with rails, not accidents.",
   },
   "dependency-depths": {
     id: "dependency-depths",
@@ -188,6 +193,8 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
       },
     ],
     questions: annotate("dependency-depths", [...DEPENDENCY_DEPTHS_QUESTIONS, ...DEPENDENCY_DEPTHS_EXTRAS]),
+    published: true,
+    summary: "Trace a weakness through packages, pipelines and cloud until the build can be trusted.",
   },
   "inbox-under-siege": {
     id: "inbox-under-siege",
@@ -232,15 +239,21 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
       },
     ],
     questions: INBOX_UNDER_SIEGE_QUESTIONS,
+    published: true,
+    summary: "Investigate suspicious activity across email, Teams and fake login pages.",
   },
 };
 
 export const MISSION_LIST: MissionDefinition[] = [
+  MISSIONS["inbox-under-siege"],
   MISSIONS["locked-out"],
   MISSIONS["ai-forge"],
   MISSIONS["dependency-depths"],
-  MISSIONS["inbox-under-siege"],
 ];
+
+export function publishedMissions(): MissionDefinition[] {
+  return MISSION_LIST.filter((mission) => mission.published);
+}
 
 export function requireMission(id: MissionId): MissionDefinition {
   return MISSIONS[id];

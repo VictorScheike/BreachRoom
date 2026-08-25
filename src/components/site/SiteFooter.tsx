@@ -28,6 +28,11 @@ export function SiteFooter() {
         <nav aria-label="Footer">
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             <li>
+              <Link href="/" className="text-cyan underline underline-offset-4">
+                Start
+              </Link>
+            </li>
+            <li>
               <Link href="/missions/" className="text-cyan underline underline-offset-4">
                 Missions
               </Link>
@@ -35,6 +40,16 @@ export function SiteFooter() {
             <li>
               <Link href="/training/" className="text-cyan underline underline-offset-4">
                 Training by role
+              </Link>
+            </li>
+            <li>
+              <Link href="/#how-it-works" className="text-cyan underline underline-offset-4">
+                How it works
+              </Link>
+            </li>
+            <li>
+              <Link href="/progress/" className="text-cyan underline underline-offset-4">
+                My progress
               </Link>
             </li>
             <li>

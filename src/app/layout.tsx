@@ -4,6 +4,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import "./globals.css";
+import "@/components/site/home-page.css";
 
 const ibmSans = IBM_Plex_Sans({
   variable: "--font-ibm-sans",

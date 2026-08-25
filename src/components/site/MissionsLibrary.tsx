@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { MissionCard } from "@/components/site/MissionCard";
 import { useMemo, useState } from "react";
-import { MISSION_LIST } from "@/lib/missions/catalog";
+import { publishedMissions } from "@/lib/missions/catalog";
 import type { DifficultyId } from "@/lib/missions/types";
 import { ROLE_GROUPS, type RoleGroupId } from "@/lib/training/groups";
-import { humanRoleList } from "@/lib/training/labels";
 import { TRAINING_TOPICS } from "@/lib/training/topics";
-import { playUrlForMission } from "@/lib/training/session";
 
 export function MissionsLibrary() {
   const [group, setGroup] = useState<RoleGroupId | "all">("all");
@@ -15,7 +13,7 @@ export function MissionsLibrary() {
   const [difficulty, setDifficulty] = useState<DifficultyId | "all">("all");
 
   const missions = useMemo(() => {
-    return MISSION_LIST.filter((mission) => {
+    return publishedMissions().filter((mission) => {
       const groupOk =
         group === "all" ||
         ROLE_GROUPS.find((item) => item.id === group)?.roleIds.some((role) =>
@@ -68,29 +66,9 @@ export function MissionsLibrary() {
           </select>
         </label>
       </div>
-      <div className="home-mission-grid">
+      <div className="mission-grid">
         {missions.map((mission) => (
-          <article key={mission.id} className="home-card">
-            <div className={`mission-preview mission-preview-${mission.id}`} aria-hidden="true" />
-            <h2>{mission.title}</h2>
-            <p>{mission.story}</p>
-            <p>
-              <strong>Roles:</strong> {humanRoleList(mission.intendedRoles)}
-            </p>
-            <p>
-              <strong>Topics:</strong> {mission.learningAreas.join(" · ")}
-            </p>
-            <p>
-              <strong>Difficulty:</strong> {mission.difficulty} · about {mission.estimatedMinutes}{" "}
-              minutes
-            </p>
-            <p>
-              <strong>Destination:</strong> {mission.destination}
-            </p>
-            <Link className="home-btn-primary" href={playUrlForMission(mission.id)}>
-              View mission
-            </Link>
-          </article>
+          <MissionCard key={mission.id} mission={mission} titleAs="h2" />
         ))}
         {missions.length === 0 ? <p>No missions match those filters yet.</p> : null}
       </div>

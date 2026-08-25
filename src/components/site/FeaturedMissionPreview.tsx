@@ -35,7 +35,7 @@ export function FeaturedMissionPreview() {
           Investigate suspicious mail and chat across the office, then return to the Security Hub
           with your incident assessment.
         </p>
-        <Link className="home-btn-primary" href="/play/?mission=inbox-under-siege">
+        <Link className="btn-primary" href="/play/?mission=inbox-under-siege">
           Play mission
         </Link>
       </div>

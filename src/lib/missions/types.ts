@@ -111,6 +111,8 @@ export interface MissionDefinition {
   dimensions: readonly [MissionDimension, MissionDimension, MissionDimension];
   scenarios: readonly ScenarioVariant[];
   questions: readonly Question[];
+  published: boolean;
+  summary: string;
 }
 
 export interface RecordedChoice {

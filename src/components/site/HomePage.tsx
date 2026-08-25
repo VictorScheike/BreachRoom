@@ -2,18 +2,15 @@
 
 import Link from "next/link";
 import { FeaturedMissionPreview } from "@/components/site/FeaturedMissionPreview";
-import { MISSION_LIST } from "@/lib/missions/catalog";
+import { HowItWorks } from "@/components/site/HowItWorks";
+import { MissionCard } from "@/components/site/MissionCard";
+import { RoleTrainingCard } from "@/components/site/RoleTrainingCard";
+import { publishedMissions } from "@/lib/missions/catalog";
 import { ROLE_GROUPS } from "@/lib/training/groups";
-import { publicTopicsForGroup } from "@/lib/training/coverage";
-import { playUrlForMission } from "@/lib/training/session";
 import "./home-page.css";
 
-const FEATURED_IDS = ["inbox-under-siege", "locked-out", "dependency-depths"] as const;
-
 export function HomePage() {
-  const featured = FEATURED_IDS.map(
-    (id) => MISSION_LIST.find((mission) => mission.id === id),
-  ).filter((mission): mission is NonNullable<typeof mission> => Boolean(mission));
+  const missions = publishedMissions();
 
   return (
     <div className="home-page">
@@ -26,10 +23,10 @@ export function HomePage() {
             making technology, risk and business decisions.
           </p>
           <div className="home-actions">
-            <Link className="home-btn-primary" href="/play/">
+            <Link className="btn-primary" href="/play/">
               Play free
             </Link>
-            <Link className="home-btn-secondary" href="/training/">
+            <Link className="btn-secondary btn-secondary-on-dark" href="/training/">
               Find training for my role
             </Link>
           </div>
@@ -41,68 +38,46 @@ export function HomePage() {
           <FeaturedMissionPreview />
         </section>
 
-        <section id="how-it-works" className="home-section">
-          <h2>How it works</h2>
-          <div className="home-grid-3">
-            <article>
-              <p className="home-step">1</p>
-              <h3>Choose a mission or get a recommendation</h3>
-              <p>Play a mission you already know, or answer three short questions about your role.</p>
-            </article>
-            <article>
-              <p className="home-step">2</p>
-              <h3>Enter the scenario</h3>
-              <p>Walk the map, face eight realistic decisions, and see the consequences immediately.</p>
-            </article>
-            <article>
-              <p className="home-step">3</p>
-              <h3>Read the debrief</h3>
-              <p>See what was strong, what created risk, and which guidance the session practised.</p>
-            </article>
-          </div>
-        </section>
+        <HowItWorks />
 
-        <section className="home-section">
-          <h2>Featured missions</h2>
-          <p>Short playable incidents. The full library lives on the missions page.</p>
-          <div className="home-mission-grid">
-            {featured.map((mission) => (
-              <article key={mission.id} className="home-card">
-                <div className={`mission-preview mission-preview-${mission.id}`} aria-hidden="true" />
-                <h3>{mission.title}</h3>
-                <p>{mission.tagline}</p>
-                <p>
-                  {mission.difficulty} · about {mission.estimatedMinutes} minutes
-                </p>
-                <Link className="home-btn-primary" href={playUrlForMission(mission.id)}>
-                  View mission
-                </Link>
-              </article>
+        <section className="home-section" aria-labelledby="playable-missions-heading">
+          <h2 id="playable-missions-heading">Playable missions</h2>
+          <p>
+            Choose a scenario, enter the map and see how your decisions shape the outcome.
+          </p>
+          <div className="mission-grid">
+            {missions.map((mission) => (
+              <MissionCard key={mission.id} mission={mission} />
             ))}
           </div>
           <p>
-            <Link href="/missions/">Browse all missions</Link>
+            <Link className="btn-tertiary" href="/missions/">
+              Explore the mission library
+              <span className="btn-arrow" aria-hidden="true" />
+            </Link>
           </p>
         </section>
 
-        <section className="home-section">
-          <h2>Training by role</h2>
-          <p>Start from the decisions your team actually makes. Scout then matches reviewed content.</p>
-          <div className="home-mission-grid">
+        <section className="home-section" aria-labelledby="training-by-role-heading">
+          <div className="section-intro">
+            <div>
+              <p className="home-eyebrow">TRAINING BY ROLE</p>
+              <h2 id="training-by-role-heading">
+                Security decisions are different across the organisation.
+              </h2>
+            </div>
+            <Link className="btn-tertiary" href="/training/">
+              Explore training by role
+              <span className="btn-arrow" aria-hidden="true" />
+            </Link>
+          </div>
+          <p className="section-lede">
+            Choose the group that best matches your work. BreachRoom will assemble training from
+            reviewed questions that fit the role, topic and context.
+          </p>
+          <div className="role-training-grid">
             {ROLE_GROUPS.map((group) => (
-              <article key={group.id} className="home-card">
-                <h3>{group.name}</h3>
-                <p>{group.sentence}</p>
-                <p>
-                  {publicTopicsForGroup(group.id)
-                    .slice(0, 3)
-                    .map((topic) => topic.label)
-                    .join(" · ")}
-                </p>
-                <Link className="home-btn-secondary" href="/training/">
-                  Find my training
-                </Link>
-              </article>
+              <RoleTrainingCard key={group.id} group={group} href="/training/" />
             ))}
           </div>
         </section>
@@ -110,7 +85,7 @@ export function HomePage() {
         <section className="home-cta">
           <h2>Play a free mission</h2>
           <p>No account. Eight decisions. A written debrief at the end.</p>
-          <Link className="home-btn-primary" href="/play/">
+          <Link className="btn-primary" href="/play/">
             Play free
           </Link>
         </section>
