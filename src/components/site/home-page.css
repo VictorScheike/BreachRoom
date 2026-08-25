@@ -17,12 +17,12 @@
 
 .home-hero {
   color: #e8eef8;
-  margin-inline: calc(50% - 50vw);
-  padding: 2rem calc(50vw - 50%) clamp(3.25rem, 7vw, 4.75rem);
+  padding: 2rem 0 clamp(3.25rem, 7vw, 4.75rem);
   background-color: #07111f;
   background-image:
     radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.16), transparent 28%),
     linear-gradient(#07111f, #0b1a30);
+  border-radius: 0 0 1.2rem 1.2rem;
 }
 
 .home-eyebrow {
@@ -583,6 +583,7 @@
 
 .mission-thumb {
   position: relative;
+  overflow: visible;
 }
 
 .mission-thumb-grid {
@@ -629,11 +630,13 @@
 }
 
 .mission-thumb-hotspot--above .mission-thumb-mark {
-  bottom: calc(100% + 4px);
+  top: auto;
+  bottom: calc(100% + 6px);
 }
 
 .mission-thumb-hotspot--below .mission-thumb-mark {
-  top: calc(100% + 4px);
+  bottom: auto;
+  top: calc(100% + 6px);
 }
 
 .mission-thumb-hotspot--start .mission-thumb-mark {
@@ -725,7 +728,7 @@
 
 .how-section {
   position: relative;
-  margin: clamp(2.75rem, 7vw, 4.5rem) 0 1.6rem;
+  margin: clamp(3.25rem, 8vw, 5.25rem) 0 1.6rem;
   padding: 2.4rem 1.4rem 2.6rem;
   border-radius: 1.4rem;
   overflow: hidden;
