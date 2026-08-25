@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { BreachRoomApp } from "@/components/BreachRoomApp";
 
 export const metadata: Metadata = {
-  title: "Try the exercise | BreachRoom",
-  description:
-    "Walk a fictional incident as an original pixel RPG: ransomware, AI security, or software supply chain.",
+  title: "Play free | BreachRoom",
+  description: "Play a free BreachRoom cybersecurity mission in the browser.",
 };
 
 export default function PlayPage() {

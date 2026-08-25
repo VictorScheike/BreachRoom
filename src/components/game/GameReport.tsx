@@ -10,6 +10,7 @@ import {
   type DecisionDebrief,
   type MissionReport,
 } from "@/lib/missions/report";
+import { topicLabel } from "@/lib/training/labels";
 
 type JourneyFilter = "all" | "strong" | "tradeoffs" | "improve";
 
@@ -85,6 +86,28 @@ export function GameReport({
             {report.missionTitle} · {report.scenarioTitle}
           </p>
           <h1 className="game-panel-title">{report.outcomeHeadline}</h1>
+          {report.training ? (
+            <section className="training-report-summary">
+              <h2 className="report-h2">Training session</h2>
+              <ul>
+                <li>
+                  <strong>Role:</strong> {report.training.roleLabel}
+                </li>
+                <li>
+                  <strong>Topic:</strong> {report.training.topicLabel}
+                </li>
+                <li>
+                  <strong>Context:</strong> {report.training.contextLabel}
+                </li>
+                <li>
+                  <strong>Map:</strong> {report.training.mapTitle}
+                </li>
+                <li>
+                  <strong>Questions completed:</strong> {report.training.questionCount}
+                </li>
+              </ul>
+            </section>
+          ) : null}
           <div className="report-hero-row">
             <ScoreRing value={report.score.overall} />
             <div>
@@ -233,6 +256,13 @@ export function GameReport({
                   </button>
                   {open ? (
                     <div className="journey-body">
+                      <p>
+                        <strong>Category:</strong>{" "}
+                        {(item.question.topicIds ?? [])
+                          .slice(0, 2)
+                          .map((topic) => topicLabel(topic))
+                          .join(" · ") || item.question.phase}
+                      </p>
                       <p>
                         <strong>What happened:</strong> {item.selected.consequence}
                       </p>

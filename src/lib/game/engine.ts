@@ -11,6 +11,8 @@ import { requireMission } from "@/lib/missions/catalog";
 import { preparePlaythrough, type PreparedPlaythrough } from "@/lib/missions/playthrough";
 import { scorePlaythrough, type PlayScore } from "@/lib/missions/scoring";
 import { PLAYTHROUGH_LENGTH, type MissionId, type Question, type RecordedChoice, type RoleId } from "@/lib/missions/types";
+import type { TrainingConfig } from "@/lib/training/config";
+import { hashSeed } from "@/lib/training/config";
 
 export type GameScreen =
   | "missionSelection"
@@ -33,11 +35,14 @@ export interface GameState {
   position: GridPoint;
   lastEncounterTile: GridPoint | null;
   muted: boolean;
+  trainingConfig: TrainingConfig | null;
 }
 
 export type GameAction =
   | { type: "SELECT_MISSION"; missionId: MissionId; seed: number }
   | { type: "CONFIRM_ROLE"; roleId: RoleId | null }
+  | { type: "START_DIRECT"; missionId: MissionId; roleId: RoleId | null; seed: number }
+  | { type: "START_TRAINING"; config: TrainingConfig }
   | { type: "BEGIN_MISSION" }
   | { type: "MOVE"; direction: MoveDirection }
   | { type: "CHOOSE_OPTION"; optionId: string; displayLetter: "A" | "B" | "C" }
@@ -61,6 +66,7 @@ export function createInitialGameState(): GameState {
     position: { x: 1, y: 6 },
     lastEncounterTile: null,
     muted: false,
+    trainingConfig: null,
   };
 }
 
@@ -94,9 +100,13 @@ function startMission(
   seed: number,
   roleId: RoleId | null,
   muted: boolean,
+  trainingConfig: TrainingConfig | null = null,
 ): GameState {
   const mission = requireMission(missionId);
-  const playthrough = preparePlaythrough(mission, seed, { roleId });
+  const playthrough = preparePlaythrough(mission, seed, {
+    roleId,
+    questionIds: trainingConfig?.questionIds,
+  });
   const world = worldForMission(missionId);
   return {
     screen: "briefing",
@@ -109,6 +119,7 @@ function startMission(
     position: world.start,
     lastEncounterTile: null,
     muted,
+    trainingConfig,
   };
 }
 
@@ -125,12 +136,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         choices: [],
         selectedOptionId: null,
         lastEncounterTile: null,
+        trainingConfig: null,
       };
+    case "START_DIRECT":
+      return startMission(action.missionId, action.seed, action.roleId, state.muted, null);
+    case "START_TRAINING":
+      return startMission(
+        action.config.mapId,
+        hashSeed(action.config.seed),
+        action.config.specificRole ?? null,
+        state.muted,
+        action.config,
+      );
     case "CONFIRM_ROLE":
       if (state.screen !== "roleSelect" || !state.missionId) {
         return state;
       }
-      return startMission(state.missionId, state.seed, action.roleId, state.muted);
+      return startMission(state.missionId, state.seed, action.roleId, state.muted, null);
     case "ABORT_MISSION":
       return { ...createInitialGameState(), muted: state.muted };
     case "BEGIN_MISSION":
@@ -210,13 +232,30 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.missionId) {
         return createInitialGameState();
       }
-      return { ...startMission(state.missionId, state.seed + 1, state.roleId, state.muted), muted: state.muted };
+      return {
+        ...startMission(
+          state.missionId,
+          state.seed + 1,
+          state.roleId,
+          state.muted,
+          state.trainingConfig
+            ? { ...state.trainingConfig, seed: `${state.trainingConfig.seed}-replay` }
+            : null,
+        ),
+        muted: state.muted,
+      };
     case "NEW_SCENARIO":
       if (!state.missionId) {
         return createInitialGameState();
       }
       return {
-        ...startMission(state.missionId, (state.seed + 17) >>> 0, state.roleId, state.muted),
+        ...startMission(
+          state.missionId,
+          (state.seed + 17) >>> 0,
+          state.roleId,
+          state.muted,
+          state.trainingConfig,
+        ),
         muted: state.muted,
       };
     case "CHOOSE_ANOTHER_MISSION":

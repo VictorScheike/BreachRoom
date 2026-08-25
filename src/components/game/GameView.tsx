@@ -17,6 +17,7 @@ import {
 } from "@/lib/game/world";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { requireMission } from "@/lib/missions/catalog";
+import { trainingIntro, trainingObjective } from "@/lib/training/briefing";
 import type { AnswerOption } from "@/lib/missions/types";
 
 const DIRECTION_KEYS: Record<string, MoveDirection> = {
@@ -142,6 +143,12 @@ export function GameView({
     return null;
   }
 
+  const objective = state.trainingConfig
+    ? trainingObjective(state.trainingConfig)
+    : mission.objective;
+  const briefingBody = state.trainingConfig
+    ? trainingIntro(state.trainingConfig)
+    : `${mission.story} ${state.playthrough.scenarioId ? mission.scenarios.find((item) => item.id === state.playthrough?.scenarioId)?.setup ?? "" : ""}`;
   const letters: ("A" | "B" | "C")[] = ["A", "B", "C"];
   const encounterActive =
     state.screen === "encounter" || state.screen === "consequence";
@@ -151,7 +158,7 @@ export function GameView({
       mode="explore"
       decisionNumber={state.choices.length}
       total={8}
-      title={mission.objective}
+        title={objective}
       body="Walk toward the destination. Checkpoints trigger the next decision automatically — you do not need to hunt tiles."
     />
   );
@@ -162,8 +169,8 @@ export function GameView({
         mode="briefing"
         decisionNumber={0}
         total={8}
-        title={mission.title}
-        body={`${mission.story} ${state.playthrough.scenarioId ? mission.scenarios.find((item) => item.id === state.playthrough?.scenarioId)?.setup ?? "" : ""}`}
+        title={state.trainingConfig?.title ?? mission.title}
+        body={briefingBody}
         npcLine={mission.tagline}
         onBegin={onBegin}
         beginLabel="Begin incident response"

@@ -13,6 +13,9 @@ import type {
   Question,
   RecordedChoice,
 } from "@/lib/missions/types";
+import type { TrainingConfig } from "@/lib/training/config";
+import { roleGroupLabel, roleLabel, topicLabel } from "@/lib/training/labels";
+import { trainingContextLine } from "@/lib/training/briefing";
 import { classifyOption, outcomeSentence, type Verdict } from "@/lib/missions/verdicts";
 
 export { SCORING_EXPLAINER };
@@ -59,6 +62,14 @@ export interface MissionReport {
   wentWell: readonly DecisionDebrief[];
   needsImprovement: readonly DecisionDebrief[];
   nextSteps: readonly string[];
+  training: {
+    title: string;
+    roleLabel: string;
+    topicLabel: string;
+    contextLabel: string;
+    mapTitle: string;
+    questionCount: number;
+  } | null;
 }
 
 function findOption(question: Question, optionId: string): AnswerOption {
@@ -183,6 +194,7 @@ export function buildMissionReport(
   scenarioId: string,
   choices: readonly RecordedChoice[],
   questions: readonly Question[],
+  training: TrainingConfig | null = null,
 ): MissionReport {
   const score = scorePlaythrough(
     { ...mission, questions: [...questions] },
@@ -315,6 +327,18 @@ export function buildMissionReport(
       "Keep evidence until responders have a copy.",
       "Name an owner for the next hour of the incident.",
     ].slice(0, 3),
+    training: training
+      ? {
+          title: training.title,
+          roleLabel: training.specificRole
+            ? roleLabel(training.specificRole)
+            : roleGroupLabel(training.roleGroup),
+          topicLabel: topicLabel(training.topics[0] ?? "phishing"),
+          contextLabel: trainingContextLine(training),
+          mapTitle: mission.title,
+          questionCount: questions.length,
+        }
+      : null,
   };
 }
 

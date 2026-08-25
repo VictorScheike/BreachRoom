@@ -1,62 +1,44 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { FeaturedMissionPreview } from "@/components/site/FeaturedMissionPreview";
 import { MISSION_LIST } from "@/lib/missions/catalog";
-import type { DifficultyId, RoleId } from "@/lib/missions/types";
-import { TRAINING_FORMATS } from "@/lib/training/formats";
-import { TRAINING_ROLES } from "@/lib/training/roles";
+import { ROLE_GROUPS } from "@/lib/training/groups";
+import { publicTopicsForGroup } from "@/lib/training/coverage";
+import { playUrlForMission } from "@/lib/training/session";
 import "./home-page.css";
 
-const ALL_TOPICS = [...new Set(MISSION_LIST.flatMap((mission) => mission.topics))];
+const FEATURED_IDS = ["inbox-under-siege", "locked-out", "dependency-depths"] as const;
 
 export function HomePage() {
-  const [role, setRole] = useState<RoleId | "all">("all");
-  const [topic, setTopic] = useState("all");
-  const [difficulty, setDifficulty] = useState<DifficultyId | "all">("all");
-
-  const missions = useMemo(() => {
-    return MISSION_LIST.filter((mission) => {
-      const roleOk = role === "all" || mission.intendedRoles.includes(role);
-      const topicOk = topic === "all" || mission.topics.includes(topic);
-      const difficultyOk = difficulty === "all" || mission.difficulty === difficulty;
-      return roleOk && topicOk && difficultyOk;
-    });
-  }, [role, topic, difficulty]);
+  const featured = FEATURED_IDS.map(
+    (id) => MISSION_LIST.find((mission) => mission.id === id),
+  ).filter((mission): mission is NonNullable<typeof mission> => Boolean(mission));
 
   return (
     <div className="home-page">
       <main id="main-content" className="home-wrap">
-        <section className="home-hero" id="product">
+        <section className="home-hero">
           <p className="home-eyebrow">ROLE-BASED CYBERSECURITY TRAINING</p>
           <h1>Learn security by making the decisions yourself.</h1>
           <p className="home-lede">
-            BreachRoom turns realistic cybersecurity dilemmas into playable missions for the
-            people making technology, risk and business decisions.
+            BreachRoom turns realistic cybersecurity dilemmas into playable missions for the people
+            making technology, risk and business decisions.
           </p>
-          <p className="home-position">Role-based cybersecurity training through playable decisions.</p>
           <div className="home-actions">
             <Link className="home-btn-primary" href="/play/">
-              Play a mission
+              Play free
             </Link>
-            <Link className="home-btn-secondary" href="#roles">
-              Explore training by role
-            </Link>
-            <Link className="home-btn-secondary" href="/create-training/">
-              Create your training
+            <Link className="home-btn-secondary" href="/training/">
+              Find training for my role
             </Link>
           </div>
           <ul className="home-trust">
             <li>Free to play</li>
             <li>No account required</li>
-            <li>Scenario-based learning</li>
+            <li>Reviewed questions, not generated answers</li>
           </ul>
-          <div className="home-preview" aria-hidden="true">
-            <div className="home-browser">
-              <span>Inbox Under Siege · Security Hub</span>
-              <div className="mission-preview mission-preview-inbox-under-siege home-map-preview" />
-            </div>
-          </div>
+          <FeaturedMissionPreview />
         </section>
 
         <section id="how-it-works" className="home-section">
@@ -64,196 +46,73 @@ export function HomePage() {
           <div className="home-grid-3">
             <article>
               <p className="home-step">1</p>
-              <h3>Choose your role or mission</h3>
-              <p>Select training based on the decisions you face at work.</p>
+              <h3>Choose a mission or get a recommendation</h3>
+              <p>Play a mission you already know, or answer three short questions about your role.</p>
             </article>
             <article>
               <p className="home-step">2</p>
               <h3>Enter the scenario</h3>
-              <p>Explore the map, respond to realistic problems and experience the consequences.</p>
+              <p>Walk the map, face eight realistic decisions, and see the consequences immediately.</p>
             </article>
             <article>
               <p className="home-step">3</p>
-              <h3>Understand your decisions</h3>
-              <p>Receive a clear debrief showing what worked, what created risk and what to do differently.</p>
+              <h3>Read the debrief</h3>
+              <p>See what was strong, what created risk, and which guidance the session practised.</p>
             </article>
           </div>
         </section>
 
-        <section id="missions" className="home-section">
-          <h2>Mission library</h2>
-          <p>
-            Browse playable missions. Filters use the same mission metadata that the rest of the
-            platform reads.
-          </p>
-          <div className="home-filters">
-            <label>
-              Role
-              <select value={role} onChange={(event) => setRole(event.target.value as RoleId | "all")}>
-                <option value="all">All roles</option>
-                {TRAINING_ROLES.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Topic
-              <select value={topic} onChange={(event) => setTopic(event.target.value)}>
-                <option value="all">All topics</option>
-                {ALL_TOPICS.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Difficulty
-              <select
-                value={difficulty}
-                onChange={(event) => setDifficulty(event.target.value as DifficultyId | "all")}
-              >
-                <option value="all">All</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-              </select>
-            </label>
-          </div>
+        <section className="home-section">
+          <h2>Featured missions</h2>
+          <p>Short playable incidents. The full library lives on the missions page.</p>
           <div className="home-mission-grid">
-            {missions.map((mission) => (
+            {featured.map((mission) => (
               <article key={mission.id} className="home-card">
-                <div className={`mission-preview mission-preview-${mission.id}`} />
+                <div className={`mission-preview mission-preview-${mission.id}`} aria-hidden="true" />
                 <h3>{mission.title}</h3>
-                <p>{mission.story}</p>
+                <p>{mission.tagline}</p>
                 <p>
-                  <strong>Intended roles:</strong> {mission.intendedRoles.join(", ")}
+                  {mission.difficulty} · about {mission.estimatedMinutes} minutes
                 </p>
-                <p>
-                  <strong>Topics:</strong> {mission.topics.join(" · ")}
-                </p>
-                <p>
-                  <strong>Difficulty:</strong> {mission.difficulty} · ~{mission.estimatedMinutes} min
-                </p>
-                <p>
-                  <strong>Frameworks:</strong> {mission.frameworks.join(" · ")}
-                </p>
-                <Link className="home-btn-primary" href="/play/">
-                  Play free
+                <Link className="home-btn-primary" href={playUrlForMission(mission.id)}>
+                  View mission
                 </Link>
               </article>
             ))}
-            {missions.length === 0 ? <p>No missions match those filters yet.</p> : null}
           </div>
+          <p>
+            <Link href="/missions/">Browse all missions</Link>
+          </p>
         </section>
 
-        <section id="roles" className="home-section">
+        <section className="home-section">
           <h2>Training by role</h2>
+          <p>Start from the decisions your team actually makes. Scout then matches reviewed content.</p>
           <div className="home-mission-grid">
-            {TRAINING_ROLES.map((item) => (
-              <article key={item.id} className="home-card">
-                <h3>{item.name}</h3>
-                <p>{item.description}</p>
+            {ROLE_GROUPS.map((group) => (
+              <article key={group.id} className="home-card">
+                <h3>{group.name}</h3>
+                <p>{group.sentence}</p>
                 <p>
-                  <strong>Topics:</strong> {item.topicIds.join(" · ")}
+                  {publicTopicsForGroup(group.id)
+                    .slice(0, 3)
+                    .map((topic) => topic.label)
+                    .join(" · ")}
                 </p>
-                <p>
-                  <strong>Available missions:</strong>{" "}
-                  {item.missionIds.length > 0
-                    ? item.missionIds
-                        .map((id) => MISSION_LIST.find((mission) => mission.id === id)?.title)
-                        .join(" · ")
-                    : item.fallbackNote}
-                </p>
-                <Link className="home-btn-secondary" href="/create-training/">
-                  Explore training
+                <Link className="home-btn-secondary" href="/training/">
+                  Find my training
                 </Link>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="approach" className="home-section">
-          <h2>More than right or wrong.</h2>
-          <p>
-            Security decisions involve technology, business needs, people and risk. BreachRoom
-            shows not only which response was strongest, but what each decision changed and why.
-          </p>
-          <p className="home-flow">Situation → Decision → Consequence → Debrief</p>
-          <p>
-            Scenarios draw on recognised guidance such as NIST, DORA and OWASP. BreachRoom is an
-            educational experience, not a compliance certification.
-          </p>
-        </section>
-
-        <section id="formats" className="home-section">
-          <h2>Built for more than one type of training.</h2>
-          <p>
-            BreachRoom is designed to grow into a broader library of games, quizzes and structured
-            learning paths.
-          </p>
-          <div className="home-grid-3">
-            {TRAINING_FORMATS.map((format) => (
-              <article key={format.id} className="home-card">
-                <h3>{format.title}</h3>
-                <p>
-                  {format.status === "available" ? "Available" : "Not in the library yet"}
-                </p>
-                <p>{format.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="context" className="home-section">
-          <h2>Your role. Your tools. Your security decisions.</h2>
-          <p>
-            Tell Scout who the training is for, what your organisation works with and which risks
-            matter. BreachRoom will recommend a relevant mission or build a structured training
-            outline from its cybersecurity curriculum.
-          </p>
-          <p>From phishing and password security to AI, cloud and secure software development.</p>
-          <p>Tell Scout what your team works with, and it will help shape the right training.</p>
-          <Link className="home-btn-primary" href="/create-training/">
-            Create your training
-          </Link>
-        </section>
-
-        <section id="organisations" className="home-section">
-          <h2>Training that reflects the decisions people actually make.</h2>
-          <ul>
-            <li>Training organised by role</li>
-            <li>Different scenarios for different teams</li>
-            <li>Practical rather than purely theoretical learning</li>
-            <li>Repeatable randomised missions</li>
-            <li>Clear individual debriefs</li>
-            <li>
-              A content structure capable of supporting additional company-specific scenarios
-            </li>
-          </ul>
-          <Link className="home-btn-secondary" href="#missions">
-            Explore the missions
-          </Link>
-        </section>
-
-        <section className="home-cta" id="play">
-          <h2>Step into the breach.</h2>
-          <p>Choose a role, enter a mission and see how your decisions change the outcome.</p>
+        <section className="home-cta">
+          <h2>Play a free mission</h2>
+          <p>No account. Eight decisions. A written debrief at the end.</p>
           <Link className="home-btn-primary" href="/play/">
             Play free
           </Link>
-          <p>No account required.</p>
-        </section>
-
-        <section id="about" className="home-section">
-          <h2>About</h2>
-          <p>
-            BreachRoom is an educational tabletop built by Victor Scheike. It exists to put more
-            focus on what cybersecurity actually means in decisions, not as a product you buy or a
-            certificate you hang on a wall.
-          </p>
-          <Link href="/about/">Read more</Link>
         </section>
       </main>
     </div>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireMission } from "@/lib/missions/catalog";
 import type { MissionId, RoleId } from "@/lib/missions/types";
 import { PLAY_ROLES } from "@/lib/training/roles";
@@ -5,56 +6,49 @@ import { PLAY_ROLES } from "@/lib/training/roles";
 interface RoleSelectProps {
   missionId: MissionId;
   onConfirm: (roleId: RoleId | null) => void;
-  onBack: () => void;
 }
 
-export function RoleSelect({ missionId, onConfirm, onBack }: RoleSelectProps) {
+export function RoleSelect({ missionId, onConfirm }: RoleSelectProps) {
   const mission = requireMission(missionId);
-  const preferred = PLAY_ROLES.filter((role) => mission.intendedRoles.includes(role.id));
-  const others = PLAY_ROLES.filter((role) => !mission.intendedRoles.includes(role.id));
+  const roles = PLAY_ROLES.filter((role) => mission.intendedRoles.includes(role.id)).slice(0, 5);
 
   return (
     <main id="main-content" className="game-page">
       <div className="game-shell mission-select">
-        <p className="game-kicker">{mission.title}</p>
-        <h1 className="game-panel-title">Choose a role</h1>
-        <p className="game-panel-copy">
-          The mission will prefer scenarios and questions that match the decisions this role
-          actually faces. You can still play without a specific role.
+        <p>
+          <Link href="/missions/" className="back-link">
+            Back to missions
+          </Link>
         </p>
-        <div className="mission-grid">
-          {preferred.map((role) => (
-            <article key={role.id} className="mission-card">
+        <p className="game-kicker">{mission.title}</p>
+        <h1 className="game-panel-title">Choose a relevant role</h1>
+        <p className="game-panel-copy">
+          These are the roles this mission is built for. Select a card to play as that role.
+        </p>
+        <div className="role-grid">
+          {roles.map((role) => (
+            <button
+              key={role.id}
+              type="button"
+              className="role-card"
+              onClick={() => onConfirm(role.id)}
+            >
               <h2 className="mission-card-title">{role.label}</h2>
               <p className="game-panel-copy">A primary audience for this mission.</p>
-              <button type="button" className="game-primary" onClick={() => onConfirm(role.id)}>
-                Play as {role.label}
-              </button>
-            </article>
-          ))}
-          {others.map((role) => (
-            <article key={role.id} className="mission-card">
-              <h2 className="mission-card-title">{role.label}</h2>
-              <p className="game-panel-copy">
-                Compatible questions will be used where they exist; otherwise the mission stays
-                coherent using the selected scenario pack.
-              </p>
-              <button type="button" className="hud-button" onClick={() => onConfirm(role.id)}>
-                Play as {role.label}
-              </button>
-            </article>
+              <span className="role-card-cta">Play as {role.label}</span>
+            </button>
           ))}
         </div>
-        <p className="mission-meta">
-          <button type="button" className="hud-button" onClick={() => onConfirm(null)}>
-            Play without a specific role
+        <section className="role-standard">
+          <h2>Not sure which role to choose?</h2>
+          <p className="game-panel-copy">
+            Play the standard version of the mission. Questions still follow the story, without a
+            specific job title.
+          </p>
+          <button type="button" className="game-primary" onClick={() => onConfirm(null)}>
+            Play the standard mission
           </button>
-        </p>
-        <p>
-          <button type="button" className="hud-button" onClick={onBack}>
-            Back to missions
-          </button>
-        </p>
+        </section>
       </div>
     </main>
   );

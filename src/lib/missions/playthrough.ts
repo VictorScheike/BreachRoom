@@ -17,6 +17,7 @@ export interface PreparedPlaythrough {
 export interface PlaythroughOptions {
   roleId?: RoleId | null;
   avoidScenarioId?: string | null;
+  questionIds?: readonly string[];
 }
 
 function scenarioFitsRole(
@@ -48,6 +49,19 @@ function pickQuestion(
   throw new Error("No question available for this phase");
 }
 
+function orderedQuestions(
+  mission: MissionDefinition,
+  questionIds: readonly string[],
+): Question[] {
+  return questionIds.map((id) => {
+    const question = mission.questions.find((item) => item.id === id);
+    if (!question) {
+      throw new Error(`Unknown question ${id} for ${mission.id}`);
+    }
+    return question;
+  });
+}
+
 export function preparePlaythrough(
   mission: MissionDefinition,
   seed: number,
@@ -55,6 +69,30 @@ export function preparePlaythrough(
 ): PreparedPlaythrough {
   const random = createSeededRandom(seed);
   const roleId = options.roleId ?? null;
+
+  if (options.questionIds && options.questionIds.length > 0) {
+    const questions = orderedQuestions(mission, options.questionIds);
+    if (questions.length !== PLAYTHROUGH_LENGTH) {
+      throw new Error("Playthrough must contain eight questions");
+    }
+    const ids = new Set(questions.map((question) => question.id));
+    if (ids.size !== PLAYTHROUGH_LENGTH) {
+      throw new Error("Playthrough questions must be unique");
+    }
+    const optionOrder: Record<string, readonly string[]> = {};
+    for (const question of questions) {
+      optionOrder[question.id] = shuffleInPlace(
+        question.options.map((option) => option.id),
+        random,
+      );
+    }
+    return {
+      scenarioId: questions[0]?.scenarioIds[0] ?? mission.scenarios[0]!.id,
+      questions,
+      optionOrder,
+      roleId,
+    };
+  }
 
   const scenarioPool = mission.scenarios.filter((scenario) => {
     if (options.avoidScenarioId && scenario.id === options.avoidScenarioId && mission.scenarios.length > 1) {

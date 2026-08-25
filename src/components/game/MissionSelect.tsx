@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MISSION_LIST } from "@/lib/missions/catalog";
 import type { MissionId } from "@/lib/missions/types";
 
@@ -12,8 +13,13 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
         <p className="game-kicker">Try the exercise</p>
         <h1 className="game-panel-title">Choose a mission</h1>
         <p className="game-panel-copy">
-          Four playable missions. Same movement, eight decisions, no scrolling
-          question popup. You can return here after any mission.
+          Four playable maps. After you pick one, you choose a relevant role or the standard
+          version. You can also browse the full library first.
+        </p>
+        <p>
+          <Link className="back-link" href="/missions/">
+            Browse all missions
+          </Link>
         </p>
         <div className="mission-grid">
           {MISSION_LIST.map((mission) => (

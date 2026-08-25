@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { EDUCATIONAL_DISCLAIMER } from "@/lib/simulation/copy";
 import {
   ABOUT_BODY,
   ABOUT_HEADLINE,
@@ -41,15 +40,11 @@ export function AboutPage() {
         ))}
       </ul>
 
-      <p className="mt-12 text-sm leading-7 text-site-muted">
-        {EDUCATIONAL_DISCLAIMER}
-      </p>
-
       <Link
         href="/play/"
-        className="mt-8 inline-flex items-center justify-center rounded-md bg-cyan-strong px-5 py-3 text-sm font-semibold text-navy-950 hover:bg-cyan"
+        className="mt-8 inline-flex min-h-11 items-center justify-center rounded-md bg-cyan-strong px-5 py-3 text-sm font-semibold text-navy-950 hover:bg-cyan"
       >
-        Try the exercise
+        Play free
       </Link>
     </main>
   );

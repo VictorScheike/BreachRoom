@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "Answer three short questions and BreachRoom will recommend an available mission for your role.",
 };
 
-export default function CreateTrainingRedirectPage() {
+export default function Page() {
   return (
     <div className="home-page">
       <TrainingPage />

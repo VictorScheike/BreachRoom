@@ -15,6 +15,9 @@ function normalisePath(path: string): string {
 function isActive(pathname: string, href: string): boolean {
   const current = normalisePath(pathname);
   const target = normalisePath(href);
+  if (target === "/training") {
+    return current === "/training" || current === "/create-training";
+  }
   return current === target;
 }
 
@@ -26,31 +29,34 @@ export function SiteHeader() {
     <header
       className={
         onPlay
-          ? "border-b border-line/80 bg-navy-950/95 text-ink"
-          : "border-b border-site-line bg-site/95 text-site-ink"
+          ? "site-header border-b border-line/80 bg-navy-950/95 text-ink"
+          : "site-header border-b border-site-line bg-site/95 text-site-ink"
       }
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <Link href="/" className="inline-flex items-center gap-3">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <Link href="/" className="inline-flex min-h-11 items-center gap-3">
           <BrandMark size={36} className="rounded-lg" />
           <span className="text-lg font-semibold tracking-tight">{SITE_NAME}</span>
         </Link>
-        <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
+        <nav aria-label="Primary">
+          <ul className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href);
+              const playCta = item.href === "/play/";
               return (
                 <li key={item.href}>
                   <Link
                     href={item.href}
                     className={
-                      active
-                        ? onPlay
-                          ? "text-cyan"
-                          : "text-cyan underline decoration-cyan decoration-2 underline-offset-8"
-                        : onPlay
-                          ? "text-muted hover:text-ink"
-                          : "text-site-muted hover:text-site-ink"
+                      playCta
+                        ? "inline-flex min-h-11 items-center rounded-md bg-amber px-3 py-2 font-semibold text-navy-950"
+                        : active
+                          ? onPlay
+                            ? "inline-flex min-h-11 items-center text-cyan"
+                            : "inline-flex min-h-11 items-center text-cyan underline decoration-cyan decoration-2 underline-offset-8"
+                          : onPlay
+                            ? "inline-flex min-h-11 items-center text-muted hover:text-ink"
+                            : "inline-flex min-h-11 items-center text-site-muted hover:text-site-ink"
                     }
                     aria-current={active ? "page" : undefined}
                   >
@@ -60,12 +66,6 @@ export function SiteHeader() {
               );
             })}
           </ul>
-          <Link
-            href="/play/"
-            className="inline-flex rounded-md bg-amber px-3 py-2 text-sm font-semibold text-navy-950"
-          >
-            Play free
-          </Link>
         </nav>
       </div>
     </header>

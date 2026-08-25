@@ -1,11 +1,10 @@
 export const SITE_NAME = "BreachRoom";
 
 export const NAV_ITEMS = [
-  { href: "/#product", label: "Product" },
-  { href: "/#missions", label: "Missions" },
-  { href: "/#roles", label: "Training by role" },
-  { href: "/#how-it-works", label: "How it works" },
+  { href: "/missions/", label: "Missions" },
+  { href: "/training/", label: "Training by role" },
   { href: "/about/", label: "About" },
+  { href: "/play/", label: "Play free" },
 ] as const;
 
 export const HOME_EYEBROW = "An open educational project";
@@ -58,7 +57,7 @@ export const ABOUT_BODY = [
 
 export const ABOUT_LINKS = [
   {
-    href: "https://victorscheikecom.victorscheike.workers.dev/",
+    href: "https://victorscheike.com/",
     label: "victorscheike.com",
   },
   {

@@ -25,19 +25,38 @@ export function SiteFooter() {
       }
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 text-sm leading-6 sm:px-6 lg:px-8">
+        <nav aria-label="Footer">
+          <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            <li>
+              <Link href="/missions/" className="text-cyan underline underline-offset-4">
+                Missions
+              </Link>
+            </li>
+            <li>
+              <Link href="/training/" className="text-cyan underline underline-offset-4">
+                Training by role
+              </Link>
+            </li>
+            <li>
+              <Link href="/about/" className="text-cyan underline underline-offset-4">
+                About
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="https://github.com/VictorScheike/BreachRoom"
+                className="text-cyan underline underline-offset-4"
+              >
+                GitHub
+              </Link>
+            </li>
+          </ul>
+        </nav>
         <p>
-          {SITE_NAME} is an educational tabletop. The organisation and incident
-          in the exercise are fictional.
+          {SITE_NAME} is an educational tabletop. The organisation and incident in the exercise are
+          fictional.
         </p>
         <p>{EDUCATIONAL_DISCLAIMER}</p>
-        <p>
-          <Link
-            href="https://github.com/VictorScheike/BreachRoom"
-            className="text-cyan underline underline-offset-4 hover:text-cyan-strong"
-          >
-            Source on GitHub
-          </Link>
-        </p>
       </div>
     </footer>
   );
