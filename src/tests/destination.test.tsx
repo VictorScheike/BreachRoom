@@ -84,4 +84,14 @@ describe("destination markers", () => {
       }
     }
   });
+
+  it("places thumbnail destination labels below hotspots on the top row", () => {
+    const html = renderToStaticMarkup(
+      <MissionThumbnail missionId="locked-out" label="Core Server Room" />,
+    );
+    expect(html).toContain("Core Server Room");
+    expect(html).toContain("Destination");
+    expect(html).toContain("mission-thumb-hotspot--below");
+    expect(html).not.toContain("mission-thumb-hotspot--above");
+  });
 });
