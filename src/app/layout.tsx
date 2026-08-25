@@ -24,9 +24,9 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "BreachRoom | Practise cybersecurity incident decisions",
+  title: "BreachRoom | Role-based cybersecurity training through playable decisions",
   description:
-    "An educational tabletop for the organisational side of a cyber incident — containment, communication, evidence and continuity. Built to put more focus on cybersecurity, not to sell a security product.",
+    "Learn security by making the decisions yourself. Free to play. No account required.",
 };
 
 export default function RootLayout({

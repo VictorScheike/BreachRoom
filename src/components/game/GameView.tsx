@@ -11,8 +11,7 @@ import {
 } from "@/lib/game/engine";
 import { playTone } from "@/lib/game/sound";
 import {
-  MAP_COLUMNS,
-  MAP_ROWS,
+  manhattan,
   tileKey,
   type MoveDirection,
 } from "@/lib/game/world";
@@ -72,6 +71,7 @@ export function GameView({
   onChooseAnother,
 }: GameViewProps) {
   const [facing, setFacing] = useState<MoveDirection>("right");
+  const [endConfirm, setEndConfirm] = useState(false);
   const [walking, setWalking] = useState(false);
   const walkTimeout = useRef<number | null>(null);
   const reducedMotion = usePrefersReducedMotion();
@@ -227,7 +227,9 @@ export function GameView({
     <main id="main-content" className="game-page">
       <div className={`game-shell game-shell-live theme-${mission.id}`}>
         <header className="game-hud">
-          <p className="game-objective">Current objective: {mission.objective}</p>
+          <p className="game-objective">
+            Objective: Reach {world.destinationLabel} · {manhattan(state.position, world.destination)} tiles
+          </p>
           <p className="game-progress">
             Decisions: {state.choices.length} / 8
           </p>
@@ -253,6 +255,13 @@ export function GameView({
             >
               {state.muted ? "Sound: muted" : "Sound: on"}
             </button>
+            <button
+              type="button"
+              className="hud-button"
+              onClick={() => setEndConfirm(true)}
+            >
+              End mission
+            </button>
             <button type="button" className="hud-button" onClick={onChooseAnother}>
               Mission select
             </button>
@@ -268,6 +277,11 @@ export function GameView({
               ["--glitch" as string]: String(glitch),
               ["--player-x" as string]: String(state.position.x),
               ["--player-y" as string]: String(state.position.y),
+              ["--map-cols" as string]: String(world.columns),
+              ["--map-rows" as string]: String(world.rows),
+              gridTemplateColumns: `repeat(${world.columns}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${world.rows}, minmax(0, 1fr))`,
+              aspectRatio: `${world.columns} / ${world.rows}`,
             }}
           >
             {world.tiles.flatMap((row, y) =>
@@ -305,14 +319,19 @@ export function GameView({
             ) : null}
             {mission.id === "dependency-depths" ? (
               <div className="server-sign vault-sign" aria-hidden="true">
-                TRUSTED BUILD VAULT
+                TRUSTED BUILD EXIT
+              </div>
+            ) : null}
+            {mission.id === "inbox-under-siege" ? (
+              <div className="server-sign" aria-hidden="true">
+                SECURITY HUB
               </div>
             ) : null}
             <div
               className="player-layer"
               style={{
-                width: `${100 / MAP_COLUMNS}%`,
-                height: `${100 / MAP_ROWS}%`,
+                width: `${100 / world.columns}%`,
+                height: `${100 / world.rows}%`,
                 transform: `translate(${state.position.x * 100}%, ${state.position.y * 100}%)`,
               }}
             >
@@ -321,6 +340,19 @@ export function GameView({
           </div>
           {dock}
         </div>
+
+          {endConfirm ? (
+            <div className="end-mission-modal" role="dialog" aria-labelledby="end-mission-title">
+              <h2 id="end-mission-title">End this mission?</h2>
+              <p>Progress will be discarded. No report is created for an unfinished run.</p>
+              <button type="button" className="game-primary" onClick={onChooseAnother}>
+                Discard and leave
+              </button>
+              <button type="button" className="hud-button" onClick={() => setEndConfirm(false)}>
+                Keep playing
+              </button>
+            </div>
+          ) : null}
 
         <div className="game-pad" aria-label="Movement pad">
           <span />

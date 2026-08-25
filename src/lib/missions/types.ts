@@ -2,7 +2,29 @@ export const PLAYTHROUGH_LENGTH = 8;
 export const POINTS_PER_ANSWER_MAX = 3;
 export const DIMENSION_MAX_POINTS = PLAYTHROUGH_LENGTH * POINTS_PER_ANSWER_MAX;
 
-export type MissionId = "locked-out" | "ai-forge" | "dependency-depths";
+export type MissionId =
+  | "locked-out"
+  | "ai-forge"
+  | "dependency-depths"
+  | "inbox-under-siege";
+
+export type RoleId =
+  | "employee"
+  | "finance"
+  | "hr"
+  | "business-leader"
+  | "developer"
+  | "devops"
+  | "it-support"
+  | "incident-responder"
+  | "security-architect"
+  | "risk-governance";
+
+export type DifficultyId = "Beginner" | "Intermediate";
+
+export type FormatId = "mission" | "quiz" | "learning-path";
+
+export type AvailabilityStatus = "available" | "planned";
 
 export type StoryPhase =
   | "start"
@@ -58,6 +80,12 @@ export interface Question {
   npcLine: string;
   frameworks: readonly string[];
   options: readonly [AnswerOption, AnswerOption, AnswerOption];
+  roleIds?: readonly RoleId[];
+  departmentIds?: readonly string[];
+  topicIds?: readonly string[];
+  toolIds?: readonly string[];
+  learningObjectiveIds?: readonly string[];
+  difficulty?: DifficultyId;
 }
 
 export interface ScenarioVariant {
@@ -73,10 +101,13 @@ export interface MissionDefinition {
   story: string;
   learningAreas: readonly string[];
   frameworks: readonly string[];
-  difficulty: "Beginner" | "Intermediate";
+  difficulty: DifficultyId;
   environment: string;
   destination: string;
   objective: string;
+  estimatedMinutes: number;
+  intendedRoles: readonly RoleId[];
+  topics: readonly string[];
   dimensions: readonly [MissionDimension, MissionDimension, MissionDimension];
   scenarios: readonly ScenarioVariant[];
   questions: readonly Question[];

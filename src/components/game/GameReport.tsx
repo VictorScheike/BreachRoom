@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
+import { mailtoForReport } from "@/lib/missions/email-report";
 import {
   qualityLabel,
   SCORING_EXPLAINER,
@@ -46,12 +47,12 @@ function matchesFilter(item: DecisionDebrief, filter: JourneyFilter): boolean {
     return true;
   }
   if (filter === "strong") {
-    return item.quality === "strong";
+    return item.verdict.id === "correct";
   }
   if (filter === "tradeoffs") {
-    return item.quality === "defensible";
+    return item.verdict.id === "partly-correct";
   }
-  return item.quality === "weak" || item.quality === "high-risk";
+  return item.verdict.id === "incorrect";
 }
 
 export function GameReport({
@@ -87,8 +88,8 @@ export function GameReport({
           <div className="report-hero-row">
             <ScoreRing value={report.score.overall} />
             <div>
-              <p className="report-level">{report.score.level}</p>
-              <p className="game-panel-copy">{report.summary}</p>
+              <p className="report-level">{report.outcomeLabel}</p>
+              <p className="game-panel-copy">{report.outcomeSentence}</p>
             </div>
           </div>
           <div
@@ -104,7 +105,7 @@ export function GameReport({
               <article key={dimension.id} className="dimension-card">
                 <h3>{dimension.label}</h3>
                 <p className="dimension-score">
-                  {dimension.percent}/100 · {dimension.points}/24 points
+                  {dimension.percent}/100 · {dimension.points} of 24 points
                 </p>
                 <div className="bar" aria-hidden="true">
                   <span style={{ width: `${dimension.percent}%` }} />
@@ -128,52 +129,45 @@ export function GameReport({
         </section>
 
         <section>
-          <h2 className="report-h2">Your response at a glance</h2>
+          <h2 className="report-h2">Decision summary</h2>
           <div className="glance-grid">
-            <article>
-              <h3>Strongest decisions</h3>
-              <ul>
-                {report.strongest.length === 0 ? <li>None this run.</li> : null}
-                {report.strongest.map((item) => (
-                  <li key={item.question.id}>
-                    <span className="quality-tag quality-strong" aria-hidden="true">
-                      ★
-                    </span>{" "}
-                    Strong — {item.question.title}
-                  </li>
-                ))}
-              </ul>
+            <article className="verdict-correct">
+              <h3>✓ Correct: {report.verdictCounts.correct}</h3>
+              <p>This was the recommended response.</p>
             </article>
-            <article>
-              <h3>Decisions with trade-offs</h3>
-              <ul>
-                {report.tradeoffs.length === 0 ? <li>None this run.</li> : null}
-                {report.tradeoffs.map((item) => (
-                  <li key={item.question.id}>
-                    <span className="quality-tag quality-trade" aria-hidden="true">
-                      ~
-                    </span>{" "}
-                    {qualityLabel(item.quality)} — {item.question.title}
-                  </li>
-                ))}
-              </ul>
+            <article className="verdict-partly-correct">
+              <h3>! Partly correct: {report.verdictCounts.partlyCorrect}</h3>
+              <p>This helped, but important safeguards or actions were missing.</p>
             </article>
-            <article>
-              <h3>Highest-risk decisions</h3>
-              <ul>
-                {report.highestRisk.length === 0 ? <li>None this run.</li> : null}
-                {report.highestRisk.map((item) => (
-                  <li key={item.question.id}>
-                    <span className="quality-tag quality-risk" aria-hidden="true">
-                      !
-                    </span>{" "}
-                    High risk — {item.question.title}
-                  </li>
-                ))}
-              </ul>
+            <article className="verdict-incorrect">
+              <h3>× Incorrect: {report.verdictCounts.incorrect}</h3>
+              <p>This increased the risk or failed to respond adequately.</p>
             </article>
           </div>
-          <p className="lesson-callout">{report.lesson}</p>
+        </section>
+
+        <section>
+          <h2 className="report-h2">What went well</h2>
+          <ul>
+            {report.wentWell.length === 0 ? <li>No fully recommended responses this time.</li> : null}
+            {report.wentWell.map((item) => (
+              <li key={item.question.id} className="verdict-correct">
+                ✓ {item.question.title} — {item.selected.title}
+              </li>
+            ))}
+          </ul>
+          <h2 className="report-h2">What needs improvement</h2>
+          <ul>
+            {report.needsImprovement.length === 0 ? (
+              <li>Keep repeating the recommended responses.</li>
+            ) : null}
+            {report.needsImprovement.map((item) => (
+              <li key={item.question.id} className={`verdict-${item.verdict.id}`}>
+                {item.verdict.icon === "warning" ? "!" : "×"} {item.question.title} — try{" "}
+                {item.recommended.title}
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section>
@@ -227,13 +221,12 @@ export function GameReport({
                       {item.index}. {item.question.title}
                     </span>
                     <span>
-                      {item.displayLetter} · {item.selected.title} ·{" "}
-                      {qualityLabel(item.quality)}
+                      {item.displayLetter} · {item.selected.title} · {item.verdict.label}
                     </span>
                     <span className="impact-pips" aria-label="Score impact">
                       {item.dimensionDeltas.map((delta) => (
                         <span key={delta.id}>
-                          {delta.label.slice(0, 3)} {delta.points}
+                          {delta.label} {delta.points} of 3
                         </span>
                       ))}
                     </span>
@@ -293,6 +286,9 @@ export function GameReport({
         </section>
 
         <div className="report-actions">
+          <a className="game-primary" href={mailtoForReport(report)}>
+            Email this report
+          </a>
           <button type="button" className="game-primary" onClick={onReplay}>
             Replay this mission
           </button>

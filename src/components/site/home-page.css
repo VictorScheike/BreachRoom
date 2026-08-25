@@ -1,0 +1,180 @@
+.home-page {
+  --home-bg: #07111f;
+  --home-panel: #f4f7fb;
+  --home-ink: #102033;
+  --home-accent: #22d3ee;
+  --home-blue: #2563eb;
+  --home-amber: #f0b429;
+  color: var(--home-ink);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(34, 211, 238, 0.16), transparent 28%),
+    linear-gradient(#07111f, #0b1a30 18%, #f4f7fb 18%);
+}
+
+.home-wrap {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 4rem;
+}
+
+.home-hero {
+  color: #e8eef8;
+  padding: 2rem 0 3.5rem;
+}
+
+.home-eyebrow {
+  letter-spacing: 0.18em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--home-accent);
+}
+
+.home-hero h1 {
+  max-width: 16ch;
+  margin: 0.8rem 0;
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  line-height: 1.05;
+  font-weight: 700;
+}
+
+.home-lede,
+.home-position {
+  max-width: 42rem;
+  line-height: 1.6;
+  color: #c5d0e0;
+}
+
+.home-actions,
+.home-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.4rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-trust li {
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.home-btn-primary,
+.home-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.7rem;
+  padding: 0.8rem 1.1rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-btn-primary {
+  background: var(--home-amber);
+  color: #111827;
+}
+
+.home-btn-secondary {
+  border: 1px solid rgba(232, 238, 248, 0.4);
+  color: #e8eef8;
+}
+
+.home-section .home-btn-secondary {
+  color: #102033;
+  border-color: #9aa8c0;
+}
+
+.home-browser {
+  max-width: 28rem;
+  border: 1px solid #31415f;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: #0b1220;
+}
+
+.home-browser span {
+  display: block;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.75rem;
+  color: #9aa8c0;
+}
+
+.home-map-preview {
+  height: 9rem;
+  margin: 0;
+  border-radius: 0;
+}
+
+.home-section {
+  background: var(--home-panel);
+  color: var(--home-ink);
+  border-radius: 1.2rem;
+  padding: 1.6rem 1.4rem;
+  margin: 1.2rem 0;
+}
+
+.home-section h2,
+.home-cta h2 {
+  margin-top: 0;
+  font-size: 1.8rem;
+}
+
+.home-grid-3,
+.home-mission-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.home-card {
+  background: #fff;
+  border: 1px solid #d5dee8;
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.home-step {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.home-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.home-filters label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.home-flow {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.home-cta {
+  background: #0b1a30;
+  color: #e8eef8;
+  border-radius: 1.2rem;
+  padding: 2rem 1.4rem;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .home-hero h1 {
+    max-width: none;
+  }
+}

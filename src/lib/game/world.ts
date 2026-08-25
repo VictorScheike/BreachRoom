@@ -1,9 +1,6 @@
 import { PLAYTHROUGH_LENGTH } from "@/lib/missions/types";
 import type { MissionId } from "@/lib/missions/types";
 
-export const MAP_COLUMNS = 12;
-export const MAP_ROWS = 8;
-
 export interface GridPoint {
   x: number;
   y: number;
@@ -36,7 +33,9 @@ export type TileKind =
   | "crate"
   | "portal"
   | "vault"
-  | "glow";
+  | "glow"
+  | "hub"
+  | "desk";
 
 const TILE_CHARS: Record<string, TileKind> = {
   T: "tree",
@@ -64,15 +63,20 @@ const TILE_CHARS: Record<string, TileKind> = {
   H: "portal",
   V: "vault",
   W: "glow",
+  J: "hub",
+  Z: "desk",
 };
 
 export interface WorldMap {
   id: MissionId;
+  columns: number;
+  rows: number;
   tiles: TileKind[][];
   zones: number[][];
   start: GridPoint;
   destination: GridPoint;
   landmarkTiles: readonly GridPoint[];
+  destinationLabel: string;
 }
 
 export function pointsEqual(a: GridPoint, b: GridPoint): boolean {
@@ -83,21 +87,26 @@ export function tileKey(point: GridPoint): string {
   return `${point.x},${point.y}`;
 }
 
-export function isInsideMap(point: GridPoint): boolean {
+export function mapSize(world: WorldMap): { columns: number; rows: number } {
+  return { columns: world.columns, rows: world.rows };
+}
+
+export function isInsideMap(world: WorldMap, point: GridPoint): boolean {
   return (
     point.x >= 0 &&
     point.y >= 0 &&
-    point.x < MAP_COLUMNS &&
-    point.y < MAP_ROWS
+    point.x < world.columns &&
+    point.y < world.rows
   );
 }
 
 export function parseTiles(layout: readonly string[]): TileKind[][] {
-  if (layout.length !== MAP_ROWS) {
-    throw new Error("Map layout row count is invalid");
+  const columns = layout[0]?.length;
+  if (!columns) {
+    throw new Error("Map layout is empty");
   }
   return layout.map((row, y) => {
-    if (row.length !== MAP_COLUMNS) {
+    if (row.length !== columns) {
       throw new Error(`Map layout row ${y} is invalid`);
     }
     return [...row].map((char) => {
@@ -111,11 +120,12 @@ export function parseTiles(layout: readonly string[]): TileKind[][] {
 }
 
 export function parseZones(layout: readonly string[]): number[][] {
-  if (layout.length !== MAP_ROWS) {
-    throw new Error("Zone layout row count is invalid");
+  const columns = layout[0]?.length;
+  if (!columns) {
+    throw new Error("Zone layout is empty");
   }
   return layout.map((row, y) => {
-    if (row.length !== MAP_COLUMNS) {
+    if (row.length !== columns) {
       throw new Error(`Zone layout row ${y} is invalid`);
     }
     return [...row].map((char) => {
@@ -131,9 +141,37 @@ export function parseZones(layout: readonly string[]): number[][] {
   });
 }
 
+export interface WorldSpec {
+  id: MissionId;
+  start: GridPoint;
+  destination: GridPoint;
+  tilesLayout: readonly string[];
+  zonesLayout: readonly string[];
+  landmarkTiles: readonly GridPoint[];
+  destinationLabel: string;
+}
+
+export function buildWorld(spec: WorldSpec): WorldMap {
+  const tiles = parseTiles(spec.tilesLayout);
+  const zones = parseZones(spec.zonesLayout);
+  if (tiles.length !== zones.length || tiles[0]?.length !== zones[0]?.length) {
+    throw new Error(`Tile and zone grids do not match for ${spec.id}`);
+  }
+  return {
+    id: spec.id,
+    columns: tiles[0]?.length ?? 0,
+    rows: tiles.length,
+    tiles,
+    zones,
+    start: spec.start,
+    destination: spec.destination,
+    landmarkTiles: spec.landmarkTiles,
+    destinationLabel: spec.destinationLabel,
+  };
+}
+
 export function zoneAt(world: WorldMap, point: GridPoint): number {
-  const row = world.zones[point.y];
-  const zone = row?.[point.x];
+  const zone = world.zones[point.y]?.[point.x];
   if (zone === undefined) {
     throw new Error(`No zone at ${point.x},${point.y}`);
   }
@@ -141,8 +179,7 @@ export function zoneAt(world: WorldMap, point: GridPoint): number {
 }
 
 export function tileAt(world: WorldMap, point: GridPoint): TileKind {
-  const row = world.tiles[point.y];
-  const kind = row?.[point.x];
+  const kind = world.tiles[point.y]?.[point.x];
   if (!kind) {
     throw new Error(`No tile at ${point.x},${point.y}`);
   }
@@ -200,7 +237,7 @@ export function tryMove(
   decisionsMade: number,
 ): GridPoint | null {
   const next = stepFrom(from, direction);
-  if (!isInsideMap(next)) {
+  if (!isInsideMap(world, next)) {
     return null;
   }
   if (isSolidTile(tileAt(world, next))) {
@@ -222,6 +259,25 @@ export function encounterZoneForTile(
     return zone;
   }
   return null;
+}
+
+export function manhattan(a: GridPoint, b: GridPoint): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+export function bearingTo(
+  from: GridPoint,
+  to: GridPoint,
+): MoveDirection | "here" {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (dx === 0 && dy === 0) {
+    return "here";
+  }
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx > 0 ? "right" : "left";
+  }
+  return dy > 0 ? "down" : "up";
 }
 
 const DIRECTIONS: GridPoint[] = [
@@ -257,7 +313,7 @@ export function reachableStates(world: WorldMap): Set<string> {
     }
     for (const step of DIRECTIONS) {
       const nextPoint = { x: current.x + step.x, y: current.y + step.y };
-      if (!isInsideMap(nextPoint) || isSolidTile(tileAt(world, nextPoint))) {
+      if (!isInsideMap(world, nextPoint) || isSolidTile(tileAt(world, nextPoint))) {
         continue;
       }
       const zone = zoneAt(world, nextPoint);
@@ -302,15 +358,15 @@ export function destinationReachableAfterDecisions(world: WorldMap): boolean {
 }
 
 export function noZoneSkipAdjacency(world: WorldMap): boolean {
-  for (let y = 0; y < MAP_ROWS; y += 1) {
-    for (let x = 0; x < MAP_COLUMNS; x += 1) {
+  for (let y = 0; y < world.rows; y += 1) {
+    for (let x = 0; x < world.columns; x += 1) {
       const zone = zoneAt(world, { x, y });
       if (zone < 0 || isSolidTile(tileAt(world, { x, y }))) {
         continue;
       }
       for (const step of DIRECTIONS) {
         const next = { x: x + step.x, y: y + step.y };
-        if (!isInsideMap(next) || isSolidTile(tileAt(world, next))) {
+        if (!isInsideMap(world, next) || isSolidTile(tileAt(world, next))) {
           continue;
         }
         const other = zoneAt(world, next);

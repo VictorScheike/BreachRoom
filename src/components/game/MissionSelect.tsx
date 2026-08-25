@@ -12,8 +12,8 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
         <p className="game-kicker">Try the exercise</p>
         <h1 className="game-panel-title">Choose a mission</h1>
         <p className="game-panel-copy">
-          Three original pixel-RPG incidents. Same movement, eight decisions, no
-          scrolling question popup. You can return here after any mission.
+          Four playable missions. Same movement, eight decisions, no scrolling
+          question popup. You can return here after any mission.
         </p>
         <div className="mission-grid">
           {MISSION_LIST.map((mission) => (

@@ -35,7 +35,7 @@ export function SiteHeader() {
           <BrandMark size={36} className="rounded-lg" />
           <span className="text-lg font-semibold tracking-tight">{SITE_NAME}</span>
         </Link>
-        <nav aria-label="Primary">
+        <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href);
@@ -60,6 +60,12 @@ export function SiteHeader() {
               );
             })}
           </ul>
+          <Link
+            href="/play/"
+            className="inline-flex rounded-md bg-amber px-3 py-2 text-sm font-semibold text-navy-950"
+          >
+            Play free
+          </Link>
         </nav>
       </div>
     </header>

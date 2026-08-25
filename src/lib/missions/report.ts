@@ -13,6 +13,7 @@ import type {
   Question,
   RecordedChoice,
 } from "@/lib/missions/types";
+import { classifyOption, outcomeSentence, type Verdict } from "@/lib/missions/verdicts";
 
 export { SCORING_EXPLAINER };
 
@@ -22,6 +23,7 @@ export interface DecisionDebrief {
   selected: AnswerOption;
   displayLetter: "A" | "B" | "C";
   quality: AnswerQuality;
+  verdict: Verdict;
   recommended: AnswerOption;
   dimensionDeltas: readonly { id: string; label: string; points: number }[];
 }
@@ -51,6 +53,12 @@ export interface MissionReport {
   alternativeHeadline: string;
   alternativeChanges: readonly AlternativeChange[];
   destinationState: "strong" | "mixed" | "weak";
+  outcomeLabel: string;
+  outcomeSentence: string;
+  verdictCounts: { correct: number; partlyCorrect: number; incorrect: number };
+  wentWell: readonly DecisionDebrief[];
+  needsImprovement: readonly DecisionDebrief[];
+  nextSteps: readonly string[];
 }
 
 function findOption(question: Question, optionId: string): AnswerOption {
@@ -102,6 +110,12 @@ function interpretDimension(
       "You either halted delivery entirely or kept the train moving through holes.",
     visibility:
       "Logs, inventories and monitoring were the first things sacrificed.",
+    threatRecognition:
+      "Too many lures were treated as ordinary work.",
+    safeResponse:
+      "Clicks, approvals or payments moved faster than checks.",
+    reporting:
+      "The official report never became the record others could act on.",
   };
   const detail = flavour[dimension.id] ?? "This track collected too many high-risk moves.";
   return `${dimension.label}: ${dimension.percent}/100 — ${detail}`;
@@ -135,6 +149,18 @@ function headlineFor(
       return "Launch happened, but safety and customer trust were uneven.";
     }
     return "The forge ran hot: agency first, safeguards later.";
+  }
+  if (mission.id === "inbox-under-siege") {
+    if (score.overall >= 85) {
+      return "The campaign was recognised, contained and reported.";
+    }
+    if (score.overall >= 70) {
+      return "Most lures were handled, with a few gaps still open.";
+    }
+    if (score.overall >= 50) {
+      return "Some traps were spotted, but reporting and response were uneven.";
+    }
+    return "Too many messages were trusted. The campaign kept moving.";
   }
   if (score.overall >= 85) {
     return "The compromised path was closed and the vault still lets honest builds through.";
@@ -175,6 +201,7 @@ export function buildMissionReport(
       selected,
       displayLetter: choice.displayLetter,
       quality: selected.quality,
+      verdict: classifyOption(selected),
       recommended,
       dimensionDeltas: mission.dimensions.map((dimension) => ({
         id: dimension.id,
@@ -220,6 +247,39 @@ export function buildMissionReport(
       instead: item.recommended.title,
     }));
 
+  const wentWell = journey.filter((item) => item.verdict.id === "correct").slice(0, 3);
+  const needsImprovement = journey
+    .filter((item) => item.verdict.id !== "correct")
+    .sort(
+      (left, right) =>
+        optionPoints(left.selected.scores) - optionPoints(right.selected.scores),
+    )
+    .slice(0, 3);
+  const nextSteps = needsImprovement.map((item) => item.recommended.recommendedAction);
+  while (nextSteps.length < 3 && wentWell.length > 0) {
+    const extra = journey.find(
+      (item) =>
+        !nextSteps.includes(item.recommended.recommendedAction) &&
+        item.verdict.id !== "correct",
+    );
+    if (!extra) {
+      break;
+    }
+    nextSteps.push(extra.recommended.recommendedAction);
+  }
+  const uniqueSteps = [...new Set(nextSteps)].slice(0, 3);
+  if (uniqueSteps.length === 0) {
+    uniqueSteps.push("Keep using the official report path when something feels off.");
+    uniqueSteps.push("Verify unusual requests on a channel you already trust.");
+    uniqueSteps.push("Write down what you would repeat next time.");
+  }
+
+  const verdictCounts = {
+    correct: journey.filter((item) => item.verdict.id === "correct").length,
+    partlyCorrect: journey.filter((item) => item.verdict.id === "partly-correct").length,
+    incorrect: journey.filter((item) => item.verdict.id === "incorrect").length,
+  };
+
   const destinationState =
     score.overall >= 70 ? "strong" : score.overall >= 50 ? "mixed" : "weak";
 
@@ -244,6 +304,17 @@ export function buildMissionReport(
         : "A stronger response would change a few high-leverage moves — not rewrite the whole day.",
     alternativeChanges,
     destinationState,
+    outcomeLabel: score.level,
+    outcomeSentence: outcomeSentence(score),
+    verdictCounts,
+    wentWell,
+    needsImprovement,
+    nextSteps: uniqueSteps.length === 3 ? uniqueSteps : [
+      ...uniqueSteps,
+      "Verify unusual requests on a channel you already trust.",
+      "Keep evidence until responders have a copy.",
+      "Name an owner for the next hour of the incident.",
+    ].slice(0, 3),
   };
 }
 

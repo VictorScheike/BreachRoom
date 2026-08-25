@@ -5,11 +5,12 @@ import { scorePlaythrough } from "@/lib/missions/scoring";
 import { PLAYTHROUGH_LENGTH, STORY_PHASES } from "@/lib/missions/types";
 
 describe("mission question banks", () => {
-  it("gives each mission exactly 30 questions covering every phase of every scenario", () => {
+  it("gives each mission a unique question bank covering every phase of every scenario", () => {
+    expect(MISSION_LIST).toHaveLength(4);
     for (const mission of MISSION_LIST) {
-      expect(mission.questions).toHaveLength(30);
+      expect(mission.questions.length).toBeGreaterThanOrEqual(32);
       const ids = new Set(mission.questions.map((question) => question.id));
-      expect(ids.size).toBe(30);
+      expect(ids.size).toBe(mission.questions.length);
       for (const scenario of mission.scenarios) {
         for (const phase of STORY_PHASES) {
           const pool = mission.questions.filter(

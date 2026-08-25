@@ -10,10 +10,11 @@ import {
 import { requireMission } from "@/lib/missions/catalog";
 import { preparePlaythrough, type PreparedPlaythrough } from "@/lib/missions/playthrough";
 import { scorePlaythrough, type PlayScore } from "@/lib/missions/scoring";
-import { PLAYTHROUGH_LENGTH, type MissionId, type Question, type RecordedChoice } from "@/lib/missions/types";
+import { PLAYTHROUGH_LENGTH, type MissionId, type Question, type RecordedChoice, type RoleId } from "@/lib/missions/types";
 
 export type GameScreen =
   | "missionSelection"
+  | "roleSelect"
   | "briefing"
   | "exploring"
   | "encounter"
@@ -25,6 +26,7 @@ export interface GameState {
   screen: GameScreen;
   missionId: MissionId | null;
   seed: number;
+  roleId: RoleId | null;
   playthrough: PreparedPlaythrough | null;
   choices: RecordedChoice[];
   selectedOptionId: string | null;
@@ -35,6 +37,7 @@ export interface GameState {
 
 export type GameAction =
   | { type: "SELECT_MISSION"; missionId: MissionId; seed: number }
+  | { type: "CONFIRM_ROLE"; roleId: RoleId | null }
   | { type: "BEGIN_MISSION" }
   | { type: "MOVE"; direction: MoveDirection }
   | { type: "CHOOSE_OPTION"; optionId: string; displayLetter: "A" | "B" | "C" }
@@ -43,6 +46,7 @@ export type GameAction =
   | { type: "REPLAY_MISSION" }
   | { type: "NEW_SCENARIO" }
   | { type: "CHOOSE_ANOTHER_MISSION" }
+  | { type: "ABORT_MISSION" }
   | { type: "TOGGLE_MUTE" };
 
 export function createInitialGameState(): GameState {
@@ -50,6 +54,7 @@ export function createInitialGameState(): GameState {
     screen: "missionSelection",
     missionId: null,
     seed: 0,
+    roleId: null,
     playthrough: null,
     choices: [],
     selectedOptionId: null,
@@ -84,27 +89,50 @@ export function currentScore(state: GameState): PlayScore | null {
   );
 }
 
-function startMission(missionId: MissionId, seed: number): GameState {
+function startMission(
+  missionId: MissionId,
+  seed: number,
+  roleId: RoleId | null,
+  muted: boolean,
+): GameState {
   const mission = requireMission(missionId);
-  const playthrough = preparePlaythrough(mission, seed);
+  const playthrough = preparePlaythrough(mission, seed, { roleId });
   const world = worldForMission(missionId);
   return {
     screen: "briefing",
     missionId,
     seed,
+    roleId,
     playthrough,
     choices: [],
     selectedOptionId: null,
     position: world.start,
     lastEncounterTile: null,
-    muted: false,
+    muted,
   };
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "SELECT_MISSION":
-      return { ...startMission(action.missionId, action.seed), muted: state.muted };
+      return {
+        ...state,
+        screen: "roleSelect",
+        missionId: action.missionId,
+        seed: action.seed,
+        roleId: null,
+        playthrough: null,
+        choices: [],
+        selectedOptionId: null,
+        lastEncounterTile: null,
+      };
+    case "CONFIRM_ROLE":
+      if (state.screen !== "roleSelect" || !state.missionId) {
+        return state;
+      }
+      return startMission(state.missionId, state.seed, action.roleId, state.muted);
+    case "ABORT_MISSION":
+      return { ...createInitialGameState(), muted: state.muted };
     case "BEGIN_MISSION":
       if (state.screen !== "briefing") {
         return state;
@@ -182,13 +210,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.missionId) {
         return createInitialGameState();
       }
-      return { ...startMission(state.missionId, state.seed + 1), muted: state.muted };
+      return { ...startMission(state.missionId, state.seed + 1, state.roleId, state.muted), muted: state.muted };
     case "NEW_SCENARIO":
       if (!state.missionId) {
         return createInitialGameState();
       }
       return {
-        ...startMission(state.missionId, (state.seed + 17) >>> 0),
+        ...startMission(state.missionId, (state.seed + 17) >>> 0, state.roleId, state.muted),
         muted: state.muted,
       };
     case "CHOOSE_ANOTHER_MISSION":

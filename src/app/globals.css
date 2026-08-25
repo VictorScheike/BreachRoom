@@ -238,10 +238,11 @@ summary::-webkit-details-marker {
 .game-map {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(12, 52px);
-  grid-template-rows: repeat(8, 52px);
-  width: 624px;
-  height: 416px;
+  grid-template-columns: repeat(var(--map-cols, 12), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--map-rows, 8), minmax(0, 1fr));
+  width: min(100%, 720px);
+  height: auto;
+  aspect-ratio: var(--map-cols, 12) / var(--map-rows, 8);
   max-width: 100%;
   margin-inline: auto;
   box-sizing: border-box;
@@ -252,11 +253,8 @@ summary::-webkit-details-marker {
 
 @media (max-width: 700px) {
   .game-map {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: repeat(8, minmax(0, 1fr));
     width: 100%;
     height: auto;
-    aspect-ratio: 624 / 416;
   }
 }
 
@@ -572,8 +570,6 @@ summary::-webkit-details-marker {
   max-width: none;
   height: auto;
   max-height: min(46dvh, 400px);
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: repeat(8, minmax(0, 1fr));
 }
 
 .game-map-dim {
@@ -588,9 +584,9 @@ summary::-webkit-details-marker {
 
 .decision-dock {
   box-sizing: border-box;
-  flex: 0 0 15.5rem;
+  flex: 0 0 auto;
   margin-top: 0.6rem;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--cyan-strong);
   border-radius: 0.8rem;
   background: #101c30;
@@ -733,6 +729,47 @@ summary::-webkit-details-marker {
   animation: torch-flicker 1.2s steps(2) infinite;
 }
 
+.mission-preview-inbox-under-siege {
+  background:
+    radial-gradient(circle at 50% 50%, #38bdf8 0 8%, transparent 9%),
+    repeating-linear-gradient(90deg, #1e3a5f 0 10px, #0f172a 10px 20px);
+}
+
+.end-mission-modal {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--amber);
+  border-radius: 0.8rem;
+  background: #121a2b;
+}
+
+.verdict-correct,
+.verdict-partly-correct,
+.verdict-incorrect {
+  border-left: 6px solid;
+  padding: 0.65rem 0.8rem;
+  margin: 0.5rem 0;
+  border-radius: 0.4rem;
+}
+
+.verdict-correct {
+  border-color: #15803d;
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.verdict-partly-correct {
+  border-color: #b45309;
+  background: #fef9c3;
+  color: #78350f;
+}
+
+.verdict-incorrect {
+  border-color: #b91c1c;
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
 .mission-meta {
   margin: 0.35rem 0 0;
   color: var(--muted);
@@ -806,6 +843,18 @@ summary::-webkit-details-marker {
   box-shadow: inset 0 0 8px #f0b429;
 }
 
+.rpg-tile-hub {
+  background:
+    repeating-linear-gradient(90deg, #1e3a5f 0 8px, #16324f 8px 16px),
+    #1b3358;
+  box-shadow: inset 0 0 0 2px #38bdf8;
+}
+
+.rpg-tile-desk {
+  background: #cbd5e1;
+  box-shadow: inset 0 -4px 0 #64748b;
+}
+
 .rpg-tile-tall-grass,
 .rpg-tile-short-grass {
   animation: grass-sway 3s ease-in-out infinite;
@@ -838,8 +887,8 @@ summary::-webkit-details-marker {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
-    circle at calc((var(--player-x) + 0.5) * 100% / 12)
-      calc((var(--player-y) + 0.5) * 100% / 8),
+    circle at calc((var(--player-x) + 0.5) * 100% / var(--map-cols, 12))
+      calc((var(--player-y) + 0.5) * 100% / var(--map-rows, 8)),
     transparent 0 16%,
     rgba(5, 8, 14, 0.28) 34%,
     rgba(5, 8, 14, 0.55) 72%
@@ -998,7 +1047,7 @@ summary::-webkit-details-marker {
 
 .destination-weak {
   background: linear-gradient(90deg, #4c0519, #e11d48);
-  animation: core-pulse 0.8s ease-in-out infinite;
+  animation: core-pulse 1s ease-in-out 3;
 }
 
 .quality-tag {

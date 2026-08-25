@@ -45,6 +45,17 @@ export function question(
   npcLine: string,
   frameworks: readonly string[],
   options: readonly [AnswerOption, AnswerOption, AnswerOption],
+  tags?: Partial<
+    Pick<
+      Question,
+      | "roleIds"
+      | "departmentIds"
+      | "topicIds"
+      | "toolIds"
+      | "learningObjectiveIds"
+      | "difficulty"
+    >
+  >,
 ): Question {
   return {
     id,
@@ -56,6 +67,7 @@ export function question(
     npcLine,
     frameworks,
     options,
+    ...tags,
   };
 }
 
