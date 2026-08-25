@@ -6,6 +6,7 @@ export type SimulationAction =
   | { type: "BEGIN_INCIDENT" }
   | { type: "SELECT_OPTION"; optionId: string }
   | { type: "CONFIRM_DECISION" }
+  | { type: "REACH_EXIT" }
   | { type: "RESTART" };
 
 export function createInitialState(): SimulationState {
@@ -66,7 +67,7 @@ export function simulationReducer(
 
       if (decisions.length >= STAGE_COUNT) {
         return {
-          screen: "report",
+          screen: "simulation",
           currentStageIndex: state.currentStageIndex,
           selectedOptionId: null,
           decisions,
@@ -80,6 +81,15 @@ export function simulationReducer(
         decisions,
       };
     }
+    case "REACH_EXIT":
+      if (state.decisions.length < STAGE_COUNT) {
+        return state;
+      }
+      return {
+        ...state,
+        screen: "report",
+        selectedOptionId: null,
+      };
     case "RESTART":
       return createInitialState();
     default: {

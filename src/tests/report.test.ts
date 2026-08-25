@@ -31,6 +31,11 @@ function playThrough(optionIndexes: number[]) {
   return state;
 }
 
+function finishRoute(optionIndexes: number[]) {
+  const state = playThrough(optionIndexes);
+  return simulationReducer(state, { type: "REACH_EXIT" });
+}
+
 describe("report generation", () => {
   it("does not generate a report before the simulation is complete", () => {
     const state = playThrough([0, 0, 0]);
@@ -40,10 +45,13 @@ describe("report generation", () => {
     );
   });
 
-  it("completes after all eight decisions and builds a report", () => {
-    const state = playThrough([0, 0, 0, 0, 0, 0, 0, 0]);
+  it("completes after all eight decisions and reaching the far side", () => {
+    const walking = playThrough([0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(walking.screen).toBe("simulation");
+    expect(walking.decisions).toHaveLength(8);
+
+    const state = finishRoute([0, 0, 0, 0, 0, 0, 0, 0]);
     expect(state.screen).toBe("report");
-    expect(state.decisions).toHaveLength(8);
 
     const report = generateReport(scenario, state.decisions);
     expect(report.scoreCaption).toBe("BreachRoom simulation score");
@@ -75,7 +83,7 @@ describe("report generation", () => {
   });
 
   it("includes selected-option strengths, gaps and follow-up in the report", () => {
-    const state = playThrough([0, 0, 0, 0, 0, 0, 0, 0]);
+    const state = finishRoute([0, 0, 0, 0, 0, 0, 0, 0]);
     const report = generateReport(scenario, state.decisions);
     const firstOption = requireStage(scenario, 0).options[0];
     if (!firstOption) {
@@ -97,7 +105,7 @@ describe("report generation", () => {
   });
 
   it("produces a lower, still constructive result for a weaker path", () => {
-    const state = playThrough([1, 2, 2, 1, 2, 1, 1, 1]);
+    const state = finishRoute([1, 2, 2, 1, 2, 1, 1, 1]);
     const report = generateReport(scenario, state.decisions);
     expect(report.overallScore).toBeLessThan(50);
     expect(report.resultLabel).toMatch(/Developing response|Major readiness gaps/);

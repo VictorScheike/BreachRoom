@@ -179,6 +179,45 @@ summary::-webkit-details-marker {
   }
 }
 
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  width: min(100%, 40rem);
+  margin-inline: auto;
+  aspect-ratio: 1;
+}
+
+.field-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.field-tile-a {
+  background: #2f6d3d;
+}
+
+.field-tile-b {
+  background: #3b7f4a;
+}
+
+.field-tile-start {
+  box-shadow: inset 0 0 0 2px #38bdf8;
+}
+
+.field-tile-goal {
+  box-shadow: inset 0 0 0 2px #f0b429;
+}
+
+.field-pad {
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--navy-800);
+  padding: 0.65rem 0.5rem;
+  font-size: 0.85rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .timeline-item,
   .incident-enter,

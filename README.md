@@ -6,8 +6,8 @@ It is meant for people in security, operations, communications, product and lead
 
 ## What it does
 
-- Presents a fictional organisation, **Northstar Logistics**, and a developing ransomware incident.
-- Asks the user to make one decision at each of eight chronological stages.
+- Presents a fictional organisation, **Northstar Logistics**, on a 20×20 grass field.
+- A stick-figure guide stops you every few steps with one Northstar decision.
 - Covers identification, containment, escalation, evidence, continuity, communication, supplier coordination, recovery and lessons learned.
 - Calculates a deterministic **BreachRoom simulation score** across five areas.
 - Shows strengths, gaps and recommended follow-up actions only after the exercise is complete.

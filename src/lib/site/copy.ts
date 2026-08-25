@@ -35,8 +35,8 @@ export const EXERCISE_POINTS = [
     body: "Locked Out is a ransomware scenario at Northstar Logistics. The company is invented. The kinds of pressure are not.",
   },
   {
-    title: "Eight decisions",
-    body: "Containment, escalation, evidence, continuity, communication, suppliers, recovery and what you write down afterwards.",
+    title: "Walk the field",
+    body: "You move a stick figure across a 20×20 grass grid. Every few steps a guide stops you with one Northstar decision.",
   },
   {
     title: "A debrief, not a badge",
