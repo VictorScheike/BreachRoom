@@ -75,11 +75,17 @@ npx wrangler login
 npm run deploy
 ```
 
-3. Wrangler prints a public URL, for example:
+3. Wrangler prints the public URLs, for example:
+
+`https://breachroom.victorscheike.com`
+
+and the Workers preview:
 
 `https://breachroom.<your-subdomain>.workers.dev`
 
-Later deploys are the same command: `npm run deploy`.
+The production hostname is the custom domain. Later deploys are the same command: `npm run deploy`.
+
+The Worker config attaches `breachroom.victorscheike.com` as a Custom Domain (`routes` with `custom_domain: true` in `wrangler.jsonc`). That only works if `victorscheike.com` is a zone in the same Cloudflare account. Cloudflare then creates the DNS record and certificate.
 
 ### From the Cloudflare dashboard (auto-deploy on git push)
 
@@ -94,7 +100,7 @@ Cloudflare builds whatever branch is set as **Production branch**. That branch m
 
 After the pull request is merged, switch the production branch back to `main`.
 
-You can later attach a custom domain in the Worker settings. The free plan is enough for this app: no database, no accounts, no server APIs.
+You can later add more hostnames the same way. The free plan is enough for this app: no database, no accounts, no server APIs.
 
 ## Test command
 
