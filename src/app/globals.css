@@ -274,6 +274,8 @@ summary::-webkit-details-marker {
 }
 
 .rpg-tile {
+  position: relative;
+  z-index: 0;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
@@ -281,6 +283,103 @@ summary::-webkit-details-marker {
   min-height: 0;
   border: 0;
   padding: 0;
+}
+
+.rpg-tile--walkable {
+  z-index: 1;
+  filter: brightness(1.22) contrast(1.08) saturate(1.05);
+  box-shadow:
+    inset 0 0 0 1px rgba(186, 230, 253, 0.55),
+    inset 0 0 10px rgba(125, 211, 252, 0.18);
+}
+
+.rpg-tile--walkable.rpg-tile-path,
+.rpg-tile--walkable.rpg-tile-short-grass,
+.rpg-tile--walkable.rpg-tile-bridge,
+.rpg-tile--walkable.rpg-tile-rail,
+.rpg-tile--walkable.rpg-tile-reception,
+.rpg-tile--walkable.rpg-tile-hub,
+.rpg-tile--walkable.rpg-tile-desk,
+.rpg-tile--walkable.rpg-tile-cave,
+.rpg-tile--walkable.rpg-tile-glow {
+  background-image:
+    linear-gradient(90deg, rgba(248, 250, 252, 0.08) 0 2px, transparent 2px),
+    linear-gradient(rgba(15, 23, 42, 0.12) 0 1px, transparent 1px);
+  background-size: 7px 7px, 100% 6px;
+}
+
+.rpg-tile--blocked {
+  z-index: 0;
+  filter: brightness(0.34) saturate(0.42);
+  box-shadow: inset 0 0 16px rgba(2, 6, 12, 0.78);
+  pointer-events: auto;
+}
+
+.rpg-tile--checkpoint::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 28%;
+  height: 28%;
+  max-width: 10px;
+  max-height: 10px;
+  border: 1px solid #f8fafc;
+  border-radius: 2px;
+  background: #f0b429;
+  box-shadow: 0 0 6px rgba(240, 180, 41, 0.7);
+  pointer-events: none;
+}
+
+.rpg-tile--objective {
+  box-shadow:
+    inset 0 0 0 2px #f0b429,
+    0 0 10px rgba(240, 180, 41, 0.35);
+}
+
+.rpg-tile--hint::before {
+  content: "";
+  position: absolute;
+  inset: 28%;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: 0 0 8px #22d3ee;
+  opacity: 0;
+  pointer-events: none;
+  animation: route-hint 2.2s ease-out 1;
+  animation-delay: calc(var(--hint-i, 0) * 140ms);
+}
+
+.rpg-tile--bump {
+  animation: tile-bump 0.32s ease;
+  box-shadow: inset 0 0 0 2px #fb7185, inset 0 0 12px rgba(225, 29, 72, 0.45);
+}
+
+@keyframes route-hint {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  35% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes tile-bump {
+  0% {
+    filter: brightness(0.7);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+  100% {
+    filter: none;
+  }
 }
 
 .rpg-tile-short-grass {
@@ -355,7 +454,10 @@ summary::-webkit-details-marker {
   width: 72%;
   height: 72%;
   image-rendering: pixelated;
-  filter: drop-shadow(0 0 1px #07111f) drop-shadow(0 1px 0 #0b1220);
+  filter:
+    drop-shadow(0 0 1px #f8fafc)
+    drop-shadow(0 0 4px #22d3ee)
+    drop-shadow(0 2px 0 #07111f);
 }
 
 .player-paused.player-idle {
@@ -503,7 +605,7 @@ summary::-webkit-details-marker {
 }
 
 .game-pad {
-  display: none;
+  display: grid;
   grid-template-columns: repeat(3, 4.2rem);
   gap: 0.4rem;
   justify-content: center;
@@ -518,9 +620,9 @@ summary::-webkit-details-marker {
   font-size: 0.8rem;
 }
 
-@media (max-width: 700px) {
+@media (min-width: 901px) {
   .game-pad {
-    display: grid;
+    display: none;
   }
 }
 
@@ -680,6 +782,57 @@ summary::-webkit-details-marker {
 .decision-dock-briefing {
   margin-top: 0;
   margin-bottom: 0.85rem;
+}
+
+.map-move-hint {
+  margin: 0.55rem 0 0.35rem;
+  color: #bae6fd;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.85rem;
+  margin: 0.35rem 0 0.15rem;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.map-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.map-legend-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+.map-legend-swatch-walkable {
+  background: #c4a574;
+  box-shadow: inset 0 0 0 1px #7dd3fc;
+}
+
+.map-legend-swatch-blocked {
+  background: #1a2333;
+  box-shadow: inset 0 0 0 1px #070b14;
+}
+
+.map-legend-swatch-player {
+  background: #1e4d7b;
+  box-shadow: 0 0 4px #22d3ee;
+}
+
+.map-legend-swatch-objective {
+  background: #f0b429;
 }
 
 .dock-title {
@@ -1012,8 +1165,8 @@ summary::-webkit-details-marker {
   animation: grass-sway 3s ease-in-out infinite;
 }
 
-.world-locked-out .rpg-tile-rack {
-  filter: saturate(calc(1.2 - var(--glitch, 0.4))) hue-rotate(calc(var(--glitch, 0.4) * -40deg));
+.world-locked-out .rpg-tile-rack.rpg-tile--blocked {
+  filter: brightness(0.34) saturate(0.42);
 }
 
 .world-locked-out .rpg-tile-core,
@@ -1597,6 +1750,10 @@ summary::-webkit-details-marker {
   .torch-veil,
   .ember-layer,
   .map-focus-landmark,
+  .rpg-tile--hint::before,
+  .rpg-tile--bump {
+    animation: none !important;
+  }
   .destination-weak,
   .score-flash li {
     animation: none;

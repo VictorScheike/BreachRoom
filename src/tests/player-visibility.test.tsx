@@ -220,6 +220,8 @@ describe("player stays visible during decisions", () => {
     const html = renderGame(state);
     expect(html).toContain("Mission perspective");
     expect(html).toContain("decision-dock-briefing");
+    expect(html).toContain("Walkable area");
+    expect(html).toContain("Use the arrow keys or WASD to move along the highlighted paths.");
     expect(html).toContain("Begin incident response");
     expect(html.indexOf("decision-dock-briefing")).toBeLessThan(html.indexOf("game-map"));
   });

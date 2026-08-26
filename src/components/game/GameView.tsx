@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DecisionDock } from "@/components/game/DecisionDock";
 import { DestinationMarker } from "@/components/game/DestinationMarker";
 import { MissionPlayer } from "@/components/game/MissionPlayer";
+import { MapLegend } from "@/components/game/MapLegend";
 import { MissionRoleBadge } from "@/components/game/MissionRoleBadge";
 import {
   currentQuestion,
@@ -22,9 +23,17 @@ import {
 import { playTone } from "@/lib/game/sound";
 import {
   manhattan,
+  stepFrom,
   tileKey,
+  tryMove,
   type MoveDirection,
 } from "@/lib/game/world";
+import {
+  adjacentMove,
+  initialRouteHint,
+  isCheckpointTile,
+  isGeometryWalkable,
+} from "@/lib/game/walkability";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { requireMission } from "@/lib/missions/catalog";
 import { perspectiveFromState } from "@/lib/game/perspective";
@@ -87,7 +96,11 @@ export function GameView({
   const [facing, setFacing] = useState<MoveDirection>("right");
   const [endConfirm, setEndConfirm] = useState(false);
   const [walking, setWalking] = useState(false);
+  const [bumpKey, setBumpKey] = useState<string | null>(null);
+  const [showMoveHint, setShowMoveHint] = useState(true);
+  const [showRouteHint, setShowRouteHint] = useState(true);
   const walkTimeout = useRef<number | null>(null);
+  const bumpTimeout = useRef<number | null>(null);
   const reducedMotion = usePrefersReducedMotion();
   const world = currentWorld(state);
   const mission = state.missionId ? requireMission(state.missionId) : null;
@@ -119,12 +132,38 @@ export function GameView({
       )
     : 0.45;
 
+  const hintTiles = useMemo(() => (world ? initialRouteHint(world) : []), [world]);
+  const hintIndex = useMemo(() => {
+    const lookup = new Map<string, number>();
+    hintTiles.forEach((point, index) => {
+      lookup.set(tileKey(point), index);
+    });
+    return lookup;
+  }, [hintTiles]);
+
   const move = useCallback(
     (direction: MoveDirection, source: "keyboard" | "touch" = "touch") => {
       if (!acceptsMovementInput(state.screen) || !movementFromControl(state.screen, source, direction)) {
         return;
       }
       setFacing(direction);
+      if (!world) {
+        onMove(direction);
+        return;
+      }
+      const next = tryMove(world, state.position, direction, state.choices.length);
+      if (!next) {
+        const blocked = stepFrom(state.position, direction);
+        setBumpKey(tileKey(blocked));
+        if (bumpTimeout.current !== null) {
+          window.clearTimeout(bumpTimeout.current);
+        }
+        bumpTimeout.current = window.setTimeout(() => setBumpKey(null), 320);
+        playTone(state.muted || reducedMotion, 110, 90);
+        return;
+      }
+      setShowMoveHint(false);
+      setShowRouteHint(false);
       setWalking(true);
       if (walkTimeout.current !== null) {
         window.clearTimeout(walkTimeout.current);
@@ -132,7 +171,7 @@ export function GameView({
       walkTimeout.current = window.setTimeout(() => setWalking(false), 140);
       onMove(direction);
     },
-    [onMove, state.screen],
+    [onMove, reducedMotion, state.choices.length, state.muted, state.position, state.screen, world],
   );
 
   useEffect(() => {
@@ -150,8 +189,19 @@ export function GameView({
       if (walkTimeout.current !== null) {
         window.clearTimeout(walkTimeout.current);
       }
+      if (bumpTimeout.current !== null) {
+        window.clearTimeout(bumpTimeout.current);
+      }
     };
   }, [move, state.screen]);
+
+  useEffect(() => {
+    if (state.screen !== "exploring" || reducedMotion) {
+      return undefined;
+    }
+    const timeout = window.setTimeout(() => setShowRouteHint(false), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [reducedMotion, state.missionId, state.screen]);
 
   if (!world || !mission || !state.playthrough) {
     return null;
@@ -335,19 +385,55 @@ export function GameView({
             >
               {world.tiles.flatMap((row, y) =>
                 row.map((kind, x) => {
+                  const point = { x, y };
+                  const key = tileKey(point);
+                  const walkable = isGeometryWalkable(world, point);
                   const highlight =
                     state.lastEncounterTile &&
                     encounterActive &&
-                    tileKey({ x, y }) === tileKey(state.lastEncounterTile);
+                    key === tileKey(state.lastEncounterTile);
                   const landmark = world.landmarkTiles.some(
-                    (point) => point.x === x && point.y === y,
+                    (tile) => tile.x === x && tile.y === y,
                   );
+                  const hintStep = hintIndex.get(key);
+                  const objectiveTile =
+                    world.destination.x === x && world.destination.y === y;
                   return (
                     <div
-                      key={`${x}-${y}`}
-                      className={`rpg-tile rpg-tile-${kind} ${highlight ? "tile-highlight" : ""} ${landmark ? "tile-landmark" : ""}`}
+                      key={key}
+                      className={[
+                        "rpg-tile",
+                        `rpg-tile-${kind}`,
+                        walkable ? "rpg-tile--walkable" : "rpg-tile--blocked",
+                        highlight ? "tile-highlight" : "",
+                        landmark ? "tile-landmark" : "",
+                        isCheckpointTile(world, point) ? "rpg-tile--checkpoint" : "",
+                        objectiveTile ? "rpg-tile--objective" : "",
+                        showRouteHint && hintStep !== undefined ? "rpg-tile--hint" : "",
+                        bumpKey === key ? "rpg-tile--bump" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       data-tile={kind}
                       data-zone={world.zones[y]?.[x]}
+                      data-walkable={walkable ? "true" : "false"}
+                      style={
+                        hintStep !== undefined
+                          ? { ["--hint-i" as string]: String(hintStep) }
+                          : undefined
+                      }
+                      onClick={() => {
+                        const direction = adjacentMove(state.position, point);
+                        if (direction) {
+                          move(direction);
+                        } else if (!walkable) {
+                          setBumpKey(key);
+                          if (bumpTimeout.current !== null) {
+                            window.clearTimeout(bumpTimeout.current);
+                          }
+                          bumpTimeout.current = window.setTimeout(() => setBumpKey(null), 320);
+                        }
+                      }}
                     />
                   );
                 }),
@@ -374,6 +460,12 @@ export function GameView({
               ) : null}
             </div>
           </div>
+          {showMoveHint ? (
+            <p className="map-move-hint">
+              Use the arrow keys or WASD to move along the highlighted paths.
+            </p>
+          ) : null}
+          <MapLegend />
           {state.screen !== "briefing" ? dock : null}
         </div>
 
