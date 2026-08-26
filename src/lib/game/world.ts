@@ -1,3 +1,9 @@
+import {
+  isWalkableTile,
+  tileFromChar,
+  VOID_TILE,
+  type MapTile,
+} from "@/lib/game/tiles";
 import type { MissionId } from "@/lib/missions/types";
 
 export interface GridPoint {
@@ -6,65 +12,6 @@ export interface GridPoint {
 }
 
 export type MoveDirection = "up" | "down" | "left" | "right";
-
-export type TileKind =
-  | "tree"
-  | "bush"
-  | "fence"
-  | "office"
-  | "server"
-  | "short-grass"
-  | "tall-grass"
-  | "path"
-  | "reception"
-  | "door"
-  | "core"
-  | "rack"
-  | "beacon"
-  | "lava"
-  | "rock"
-  | "bridge"
-  | "crystal"
-  | "pipe"
-  | "forge"
-  | "cave"
-  | "rail"
-  | "crate"
-  | "portal"
-  | "vault"
-  | "glow"
-  | "hub"
-  | "desk";
-
-const TILE_CHARS: Record<string, TileKind> = {
-  T: "tree",
-  B: "bush",
-  F: "fence",
-  O: "office",
-  S: "server",
-  g: "short-grass",
-  G: "tall-grass",
-  P: "path",
-  R: "reception",
-  D: "door",
-  C: "core",
-  K: "rack",
-  Y: "beacon",
-  L: "lava",
-  Q: "rock",
-  M: "bridge",
-  X: "crystal",
-  I: "pipe",
-  E: "forge",
-  A: "cave",
-  U: "rail",
-  N: "crate",
-  H: "portal",
-  V: "vault",
-  W: "glow",
-  J: "hub",
-  Z: "desk",
-};
 
 export type DestinationIcon = "server" | "gate" | "launch" | "hub" | "coordination";
 
@@ -78,13 +25,20 @@ export interface WorldMap {
   id: MissionId;
   columns: number;
   rows: number;
-  tiles: TileKind[][];
-  zones: number[][];
+  tiles: MapTile[][];
   start: GridPoint;
   destination: MissionDestination;
+  checkpoints: GridPoint[];
   landmarkTiles: readonly GridPoint[];
   destinationLabel: string;
 }
+
+export const CARDINAL_STEPS: readonly GridPoint[] = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+];
 
 export function pointsEqual(a: GridPoint, b: GridPoint): boolean {
   return a.x === b.x && a.y === b.y;
@@ -107,113 +61,15 @@ export function isInsideMap(world: WorldMap, point: GridPoint): boolean {
   );
 }
 
-export function parseTiles(layout: readonly string[]): TileKind[][] {
-  const columns = layout[0]?.length;
-  if (!columns) {
-    throw new Error("Map layout is empty");
+export function tileAt(world: WorldMap, point: GridPoint): MapTile {
+  if (!isInsideMap(world, point)) {
+    return VOID_TILE;
   }
-  return layout.map((row, y) => {
-    if (row.length !== columns) {
-      throw new Error(`Map layout row ${y} is invalid`);
-    }
-    return [...row].map((char) => {
-      const kind = TILE_CHARS[char];
-      if (!kind) {
-        throw new Error(`Unknown map tile "${char}"`);
-      }
-      return kind;
-    });
-  });
+  return world.tiles[point.y]?.[point.x] ?? VOID_TILE;
 }
 
-export function parseZones(layout: readonly string[]): number[][] {
-  const columns = layout[0]?.length;
-  if (!columns) {
-    throw new Error("Zone layout is empty");
-  }
-  return layout.map((row, y) => {
-    if (row.length !== columns) {
-      throw new Error(`Zone layout row ${y} is invalid`);
-    }
-    return [...row].map((char) => {
-      if (char === ".") {
-        return -1;
-      }
-      const zone = Number.parseInt(char, 36);
-      if (Number.isNaN(zone)) {
-        throw new Error(`Unknown zone "${char}"`);
-      }
-      return zone;
-    });
-  });
-}
-
-export interface WorldSpec {
-  id: MissionId;
-  start: GridPoint;
-  destination: GridPoint;
-  tilesLayout: readonly string[];
-  zonesLayout: readonly string[];
-  landmarkTiles: readonly GridPoint[];
-  destinationLabel: string;
-  destinationShortLabel?: string;
-  destinationIcon?: DestinationIcon;
-}
-
-export function buildWorld(spec: WorldSpec): WorldMap {
-  const tiles = parseTiles(spec.tilesLayout);
-  const zones = parseZones(spec.zonesLayout);
-  if (tiles.length !== zones.length || tiles[0]?.length !== zones[0]?.length) {
-    throw new Error(`Tile and zone grids do not match for ${spec.id}`);
-  }
-  const destination: MissionDestination = {
-    x: spec.destination.x,
-    y: spec.destination.y,
-    label: spec.destinationLabel,
-    shortLabel: spec.destinationShortLabel ?? spec.destinationLabel,
-    icon: spec.destinationIcon ?? "server",
-  };
-  return {
-    id: spec.id,
-    columns: tiles[0]?.length ?? 0,
-    rows: tiles.length,
-    tiles,
-    zones,
-    start: spec.start,
-    destination,
-    landmarkTiles: spec.landmarkTiles,
-    destinationLabel: destination.label,
-  };
-}
-
-export function zoneAt(world: WorldMap, point: GridPoint): number {
-  const zone = world.zones[point.y]?.[point.x];
-  if (zone === undefined) {
-    throw new Error(`No zone at ${point.x},${point.y}`);
-  }
-  return zone;
-}
-
-export function tileAt(world: WorldMap, point: GridPoint): TileKind {
-  const kind = world.tiles[point.y]?.[point.x];
-  if (!kind) {
-    throw new Error(`No tile at ${point.x},${point.y}`);
-  }
-  return kind;
-}
-
-export function isSolidTile(kind: TileKind): boolean {
-  return (
-    kind === "tree" ||
-    kind === "bush" ||
-    kind === "fence" ||
-    kind === "office" ||
-    kind === "server" ||
-    kind === "lava" ||
-    kind === "rock" ||
-    kind === "pipe" ||
-    kind === "crate"
-  );
+export function isTileWalkable(world: WorldMap, point: GridPoint): boolean {
+  return isInsideMap(world, point) && isWalkableTile(tileAt(world, point));
 }
 
 export function stepFrom(point: GridPoint, direction: MoveDirection): GridPoint {
@@ -233,57 +89,44 @@ export function stepFrom(point: GridPoint, direction: MoveDirection): GridPoint 
   }
 }
 
-export function destinationZone(world: WorldMap): number {
-  return zoneAt(world, world.destination);
-}
-
-export function requiredDecisions(world: WorldMap): number {
-  return destinationZone(world) - 1;
-}
-
-export function canEnterZone(world: WorldMap, zone: number, decisionsMade: number): boolean {
-  if (zone < 0) {
-    return false;
-  }
-  const needed = requiredDecisions(world);
-  const dest = destinationZone(world);
-  if (zone === dest) {
-    return decisionsMade >= needed;
-  }
-  if (zone >= 1 && zone <= needed) {
-    return zone <= decisionsMade + 1;
-  }
-  return true;
-}
-
 export function tryMove(
   world: WorldMap,
   from: GridPoint,
   direction: MoveDirection,
-  decisionsMade: number,
 ): GridPoint | null {
   const next = stepFrom(from, direction);
   if (!isInsideMap(world, next)) {
     return null;
   }
-  if (isSolidTile(tileAt(world, next))) {
-    return null;
-  }
-  if (!canEnterZone(world, zoneAt(world, next), decisionsMade)) {
+  if (tileAt(world, next).walkable !== true) {
     return null;
   }
   return next;
 }
 
-export function encounterZoneForTile(
+export function requiredDecisions(world: WorldMap): number {
+  return world.checkpoints.length;
+}
+
+export function checkpointAt(world: WorldMap, point: GridPoint): number | null {
+  const tile = tileAt(world, point);
+  if (tile.canTriggerQuestion !== true || tile.checkpointOrder === undefined) {
+    return null;
+  }
+  return tile.checkpointOrder;
+}
+
+export function encounterForTile(
   world: WorldMap,
   point: GridPoint,
   decisionsMade: number,
 ): number | null {
-  const zone = zoneAt(world, point);
-  const needed = requiredDecisions(world);
-  if (zone >= 1 && zone <= needed && zone === decisionsMade + 1) {
-    return zone;
+  const order = checkpointAt(world, point);
+  if (order === null) {
+    return null;
+  }
+  if (order === decisionsMade + 1) {
+    return order;
   }
   return null;
 }
@@ -307,115 +150,117 @@ export function bearingTo(
   return dy > 0 ? "down" : "up";
 }
 
-const DIRECTIONS: GridPoint[] = [
-  { x: 1, y: 0 },
-  { x: -1, y: 0 },
-  { x: 0, y: 1 },
-  { x: 0, y: -1 },
-];
-
-interface RouteState {
-  x: number;
-  y: number;
-  progress: number;
+export interface WorldSpec {
+  id: MissionId;
+  layout: readonly string[];
+  destinationLabel: string;
+  destinationShortLabel?: string;
+  destinationIcon?: DestinationIcon;
 }
 
-function stateKey(state: RouteState): string {
-  return `${state.x},${state.y},${state.progress}`;
+function findPoints(tiles: MapTile[][], match: (tile: MapTile) => boolean): GridPoint[] {
+  const points: GridPoint[] = [];
+  for (let y = 0; y < tiles.length; y += 1) {
+    const row = tiles[y];
+    if (!row) {
+      continue;
+    }
+    for (let x = 0; x < row.length; x += 1) {
+      const tile = row[x];
+      if (tile && match(tile)) {
+        points.push({ x, y });
+      }
+    }
+  }
+  return points;
 }
 
-export function reachableStates(world: WorldMap): Set<string> {
-  const start: RouteState = {
-    x: world.start.x,
-    y: world.start.y,
-    progress: 0,
+export function parseLayout(layout: readonly string[], mapId: string): MapTile[][] {
+  const columns = layout[0]?.length;
+  if (!columns) {
+    throw new Error(`Map layout is empty for ${mapId}`);
+  }
+  return layout.map((row, y) => {
+    if (row.length !== columns) {
+      throw new Error(`Map layout row ${y} on ${mapId} is ${row.length} wide, expected ${columns}`);
+    }
+    return [...row].map((char, x) => tileFromChar(char, x, y, mapId));
+  });
+}
+
+export function buildWorld(spec: WorldSpec): WorldMap {
+  const tiles = parseLayout(spec.layout, spec.id);
+  const columns = tiles[0]?.length ?? 0;
+  const rows = tiles.length;
+  const starts = findPoints(tiles, (tile) => tile.isStart);
+  if (starts.length !== 1) {
+    throw new Error(`${spec.id} must have exactly one start tile, found ${starts.length}`);
+  }
+  const exits = findPoints(tiles, (tile) => tile.isExit);
+  if (exits.length !== 1) {
+    throw new Error(`${spec.id} must have exactly one exit tile, found ${exits.length}`);
+  }
+  const start = starts[0];
+  const exit = exits[0];
+  if (!start || !exit) {
+    throw new Error(`${spec.id} is missing start or exit`);
+  }
+
+  const checkpointPoints = findPoints(tiles, (tile) => tile.canTriggerQuestion);
+  const checkpoints = [...checkpointPoints].sort((a, b) => {
+    const left = tiles[a.y]?.[a.x]?.checkpointOrder ?? 0;
+    const right = tiles[b.y]?.[b.x]?.checkpointOrder ?? 0;
+    return left - right;
+  });
+
+  const destination: MissionDestination = {
+    x: exit.x,
+    y: exit.y,
+    label: spec.destinationLabel,
+    shortLabel: spec.destinationShortLabel ?? spec.destinationLabel,
+    icon: spec.destinationIcon ?? "server",
   };
-  const seen = new Set<string>([stateKey(start)]);
-  const queue = [start];
 
+  return {
+    id: spec.id,
+    columns,
+    rows,
+    tiles,
+    start,
+    destination,
+    checkpoints,
+    landmarkTiles: [exit],
+    destinationLabel: destination.label,
+  };
+}
+
+export function floodWalkable(world: WorldMap, origin: GridPoint): Set<string> {
+  const seen = new Set<string>();
+  if (!isTileWalkable(world, origin)) {
+    return seen;
+  }
+  const queue = [origin];
+  seen.add(tileKey(origin));
   while (queue.length > 0) {
     const current = queue.shift();
     if (!current) {
       break;
     }
-    for (const step of DIRECTIONS) {
-      const nextPoint = { x: current.x + step.x, y: current.y + step.y };
-      if (!isInsideMap(world, nextPoint) || isSolidTile(tileAt(world, nextPoint))) {
-        continue;
-      }
-      const zone = zoneAt(world, nextPoint);
-      if (!canEnterZone(world, zone, current.progress)) {
-        continue;
-      }
-      let progress = current.progress;
-      const needed = requiredDecisions(world);
-      if (zone >= 1 && zone <= needed && zone === current.progress + 1) {
-        progress = current.progress + 1;
-      }
-      const next = { x: nextPoint.x, y: nextPoint.y, progress };
-      const key = stateKey(next);
-      if (seen.has(key)) {
+    for (const step of CARDINAL_STEPS) {
+      const next = { x: current.x + step.x, y: current.y + step.y };
+      const key = tileKey(next);
+      if (seen.has(key) || !isTileWalkable(world, next)) {
         continue;
       }
       seen.add(key);
       queue.push(next);
     }
   }
-
   return seen;
 }
 
-export function destinationRequiresAllDecisions(world: WorldMap): boolean {
-  const states = reachableStates(world);
-  const dest = world.destination;
-  const needed = requiredDecisions(world);
-  if (!states.has(`${dest.x},${dest.y},${needed}`)) {
-    return false;
-  }
-  for (let progress = 0; progress < needed; progress += 1) {
-    if (states.has(`${dest.x},${dest.y},${progress}`)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function destinationReachableAfterDecisions(world: WorldMap): boolean {
-  const needed = requiredDecisions(world);
-  return reachableStates(world).has(
-    `${world.destination.x},${world.destination.y},${needed}`,
-  );
-}
-
-export function noZoneSkipAdjacency(world: WorldMap): boolean {
-  for (let y = 0; y < world.rows; y += 1) {
-    for (let x = 0; x < world.columns; x += 1) {
-      const zone = zoneAt(world, { x, y });
-      if (zone < 0 || isSolidTile(tileAt(world, { x, y }))) {
-        continue;
-      }
-      for (const step of DIRECTIONS) {
-        const next = { x: x + step.x, y: y + step.y };
-        if (!isInsideMap(world, next) || isSolidTile(tileAt(world, next))) {
-          continue;
-        }
-        const other = zoneAt(world, next);
-        if (other < 0) {
-          continue;
-        }
-        const needed = requiredDecisions(world);
-        const dest = destinationZone(world);
-        if (zone <= needed && other <= needed && Math.abs(zone - other) > 1) {
-          return false;
-        }
-        if (zone === dest && other < needed - 1 && other !== dest) {
-          return false;
-        }
-        if (other === dest && zone < needed - 1 && zone !== dest) {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
+  const reached = floodWalkable(world, world.start);
+  return world.checkpoints.every((point) => reached.has(tileKey(point)))
+    && reached.has(tileKey(world.destination));
 }

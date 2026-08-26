@@ -34,7 +34,7 @@ export function hasDecisionFeedback(screen: string): boolean {
 }
 
 export function isMovementLocked(screen: string): boolean {
-  return hasActiveDecision(screen) || hasDecisionFeedback(screen) || screen !== "exploring";
+  return hasActiveDecision(screen) || screen !== "exploring";
 }
 
 export function acceptsMovementInput(screen: string): boolean {

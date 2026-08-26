@@ -52,7 +52,7 @@ function walkToEncounter(start: ReturnType<typeof createInitialGameState>) {
         queue.push(next);
       }
     }
-    if (seen.size > 800) {
+    if (seen.size > 2500) {
       break;
     }
   }

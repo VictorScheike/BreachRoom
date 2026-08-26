@@ -5,15 +5,16 @@ import {
   initialRouteHint,
   isGeometryWalkable,
   isSpawnAccessible,
-  walkabilityIssues,
 } from "@/lib/game/walkability";
 import { tryMove } from "@/lib/game/world";
+import { validateWorld } from "@/lib/game/validateMap";
+import { playthroughLength } from "@/lib/missions/types";
 
 describe("map walkability", () => {
   it("lets the player reach every required destination from spawn", () => {
     for (const mission of publishedMissions()) {
       const world = worldForMission(mission.id);
-      expect(walkabilityIssues(world), mission.id).toEqual([]);
+      expect(validateWorld(world, playthroughLength(mission)).issues).toEqual([]);
       expect(isSpawnAccessible(world)).toBe(true);
       expect(isGeometryWalkable(world, world.start)).toBe(true);
       expect(isGeometryWalkable(world, world.destination)).toBe(true);
@@ -27,10 +28,10 @@ describe("map walkability", () => {
       let cursor = world.start;
       for (const step of hint) {
         const options = [
-          tryMove(world, cursor, "up", 0),
-          tryMove(world, cursor, "down", 0),
-          tryMove(world, cursor, "left", 0),
-          tryMove(world, cursor, "right", 0),
+          tryMove(world, cursor, "up"),
+          tryMove(world, cursor, "down"),
+          tryMove(world, cursor, "left"),
+          tryMove(world, cursor, "right"),
         ].filter(Boolean);
         expect(options.some((point) => point && point.x === step.x && point.y === step.y)).toBe(true);
         cursor = step;

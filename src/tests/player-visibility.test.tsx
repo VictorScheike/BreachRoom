@@ -82,7 +82,7 @@ function walkToEncounter(start: GameState): GameState {
         queue.push(next);
       }
     }
-    if (seen.size > 500) {
+    if (seen.size > 2500) {
       break;
     }
   }
@@ -130,23 +130,69 @@ describe("player stays visible during decisions", () => {
     expect(after).toEqual(encounter);
   });
 
-  it("keeps the player visible during consequence feedback", () => {
+  it("keeps the player visible during answer feedback", () => {
     const encounter = walkToEncounter(beginExploring("dependency-depths"));
-    const consequence = answerFirstOption(encounter);
-    expect(consequence.screen).toBe("consequence");
-    expect(consequence.position).toEqual(encounter.position);
-    const html = renderGame(consequence);
-    expect(playerMatches(html)).toHaveLength(1);
-    expect(html).toContain('data-paused="true"');
-    expect(movementFromControl(consequence.screen, "keyboard", "w")).toBeNull();
-  });
-
-  it("unlocks movement only after continue", () => {
-    const encounter = walkToEncounter(beginExploring("locked-out"));
-    const consequence = answerFirstOption(encounter);
-    const exploring = gameReducer(consequence, { type: "CONTINUE_JOURNEY" });
+    const exploring = answerFirstOption(encounter);
     expect(exploring.screen).toBe("exploring");
     expect(exploring.position).toEqual(encounter.position);
+    const html = renderGame(exploring);
+    expect(playerMatches(html)).toHaveLength(1);
+    expect(html).toContain("decision-toast");
+    expect(html).not.toContain("Continue journey");
+    expect(movementFromControl(exploring.screen, "keyboard", "w")).toBe("up");
+  });
+
+  it("shows the destination dock after the last checkpoint without Continue journey", () => {
+    let state = beginExploring("ai-forge", 21);
+    const total = state.playthrough?.questions.length ?? 0;
+    for (let index = 0; index < total; index += 1) {
+      state = walkToEncounter(state);
+      state = answerFirstOption(state);
+      expect(state.screen).toBe("exploring");
+    }
+    const dirs: MoveDirection[] = ["right", "up", "down", "left"];
+    const seen = new Set<string>();
+    const queue = [state];
+    let arrived = state;
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current) {
+        break;
+      }
+      if (current.screen === "finalEncounter") {
+        arrived = current;
+        break;
+      }
+      const key = `${current.position.x},${current.position.y}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      for (const direction of dirs) {
+        const next = gameReducer(current, { type: "MOVE", direction });
+        if (
+          next.screen !== current.screen ||
+          next.position.x !== current.position.x ||
+          next.position.y !== current.position.y
+        ) {
+          queue.push(next);
+        }
+      }
+    }
+    expect(arrived.screen).toBe("finalEncounter");
+    const html = renderGame(arrived);
+    expect(html).toContain("View after-action report");
+    expect(html).not.toContain("Continue journey");
+    expect(html).toContain('data-checkpoint="1"');
+    expect(html).toContain("rpg-tile--checkpoint-done");
+  });
+
+  it("unlocks movement immediately after an answer", () => {
+    const encounter = walkToEncounter(beginExploring("locked-out"));
+    const exploring = answerFirstOption(encounter);
+    expect(exploring.screen).toBe("exploring");
+    expect(exploring.position).toEqual(encounter.position);
+    expect(exploring.lastFeedback?.consequence).toBeTruthy();
     expect(acceptsMovementInput(exploring.screen)).toBe(true);
     expect(movementFromControl(exploring.screen, "keyboard", "ArrowLeft")).toBe("left");
     expect(movementFromControl(exploring.screen, "touch", "down")).toBe("down");
@@ -165,7 +211,7 @@ describe("player stays visible during decisions", () => {
       expect(playerMatches(html)).toHaveLength(1);
       state = answerFirstOption(state);
       expect(playerMatches(renderGame(state))).toHaveLength(1);
-      state = gameReducer(state, { type: "CONTINUE_JOURNEY" });
+      expect(state.screen).toBe("exploring");
     }
   });
 
@@ -192,8 +238,6 @@ describe("player stays visible during decisions", () => {
     expect(movementFromControl("exploring", "touch", "up")).toBe("up");
     expect(movementFromControl("encounter", "keyboard", "ArrowUp")).toBeNull();
     expect(movementFromControl("encounter", "touch", "up")).toBeNull();
-    expect(movementFromControl("consequence", "keyboard", "s")).toBeNull();
-    expect(movementFromControl("consequence", "touch", "down")).toBeNull();
     const markup = renderToStaticMarkup(
       <MissionPlayer
         position={{ x: 2, y: 3 }}
@@ -220,8 +264,8 @@ describe("player stays visible during decisions", () => {
     const html = renderGame(state);
     expect(html).toContain("Mission perspective");
     expect(html).toContain("decision-dock-briefing");
-    expect(html).toContain("Walkable area");
-    expect(html).toContain("Use the arrow keys or WASD to move along the highlighted paths.");
+    expect(html).toContain("Question checkpoint");
+    expect(html).toContain("Use the arrow keys, WASD, or tap a neighbouring tile to walk the path.");
     expect(html).toContain("Begin incident response");
     expect(html.indexOf("decision-dock-briefing")).toBeLessThan(html.indexOf("game-map"));
   });

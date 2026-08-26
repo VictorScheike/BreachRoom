@@ -2,28 +2,23 @@ import { PlayerSprite } from "@/components/game/PlayerSprite";
 import type { MissionId } from "@/lib/missions/types";
 
 type TileId =
-  | "hub"
-  | "desk"
-  | "office"
-  | "reception"
-  | "server"
-  | "door"
-  | "short-grass"
-  | "tall-grass"
-  | "path"
   | "tree"
-  | "core"
-  | "rack"
+  | "path"
+  | "clearing"
+  | "wood-bridge"
   | "lava"
-  | "pipe"
   | "rock"
-  | "bridge"
-  | "forge"
-  | "cave"
-  | "rail"
-  | "glow"
-  | "portal"
-  | "crate";
+  | "stone-floor"
+  | "stone-bridge"
+  | "wall"
+  | "chasm"
+  | "cave-floor"
+  | "cave-bridge"
+  | "corridor"
+  | "desk"
+  | "server-rack"
+  | "exit"
+  | "start";
 
 const COLS = 12;
 const ROWS = 5;
@@ -34,63 +29,63 @@ const LAYOUTS: Record<
 > = {
   "inbox-under-siege": {
     tiles: [
-      "office", "desk", "office", "hub", "hub", "hub", "hub", "desk", "office", "server", "office", "desk",
-      "desk", "office", "office", "hub", "hub", "hub", "hub", "office", "desk", "office", "reception", "office",
-      "office", "office", "door", "hub", "hub", "hub", "hub", "door", "office", "desk", "office", "office",
-      "path", "path", "path", "hub", "hub", "hub", "hub", "office", "office", "server", "desk", "office",
-      "path", "path", "path", "reception", "hub", "hub", "hub", "desk", "office", "office", "office", "desk",
-    ],
-    playerCol: 1,
-    playerRow: 4,
-    destCol: 5,
-    destRow: 1,
-  },
-  "locked-out": {
-    tiles: [
-      "tree", "tall-grass", "short-grass", "path", "office", "office", "rack", "core", "core", "rack", "tree", "tree",
-      "tree", "short-grass", "path", "path", "path", "door", "office", "rack", "core", "tree", "tall-grass", "tree",
-      "short-grass", "path", "path", "short-grass", "tall-grass", "path", "path", "office", "rack", "short-grass", "tree", "tree",
-      "path", "path", "short-grass", "tree", "tree", "short-grass", "path", "path", "path", "tall-grass", "tree", "tree",
-      "path", "path", "short-grass", "tall-grass", "tree", "short-grass", "short-grass", "path", "tree", "tree", "tall-grass", "tree",
+      "wall", "desk", "wall", "corridor", "corridor", "exit", "corridor", "desk", "wall", "server-rack", "wall", "desk",
+      "desk", "wall", "wall", "corridor", "corridor", "corridor", "corridor", "wall", "desk", "wall", "corridor", "wall",
+      "wall", "wall", "corridor", "corridor", "corridor", "corridor", "corridor", "corridor", "wall", "desk", "wall", "wall",
+      "corridor", "corridor", "corridor", "wall", "wall", "wall", "wall", "wall", "wall", "server-rack", "desk", "wall",
+      "start", "corridor", "corridor", "corridor", "corridor", "corridor", "desk", "desk", "wall", "wall", "wall", "desk",
     ],
     playerCol: 0,
     playerRow: 4,
-    destCol: 8,
+    destCol: 5,
+    destRow: 0,
+  },
+  "locked-out": {
+    tiles: [
+      "tree", "tree", "clearing", "path", "path", "exit", "path", "tree", "tree", "tree", "tree", "tree",
+      "tree", "clearing", "path", "path", "path", "wood-bridge", "path", "tree", "tree", "tree", "tree", "tree",
+      "clearing", "path", "path", "tree", "tree", "path", "path", "tree", "tree", "clearing", "tree", "tree",
+      "path", "path", "clearing", "tree", "tree", "clearing", "path", "path", "path", "tree", "tree", "tree",
+      "start", "path", "clearing", "tree", "tree", "clearing", "clearing", "path", "tree", "tree", "tree", "tree",
+    ],
+    playerCol: 0,
+    playerRow: 4,
+    destCol: 5,
     destRow: 0,
   },
   "ai-forge": {
     tiles: [
-      "lava", "lava", "pipe", "rock", "lava", "bridge", "pipe", "forge", "forge", "pipe", "lava", "lava",
-      "lava", "pipe", "pipe", "bridge", "bridge", "bridge", "pipe", "pipe", "forge", "lava", "lava", "pipe",
-      "rock", "lava", "pipe", "lava", "bridge", "pipe", "pipe", "lava", "pipe", "pipe", "lava", "lava",
-      "lava", "bridge", "bridge", "bridge", "pipe", "lava", "lava", "pipe", "rock", "lava", "pipe", "lava",
-      "lava", "bridge", "lava", "lava", "pipe", "pipe", "lava", "lava", "lava", "pipe", "lava", "lava",
+      "lava", "lava", "rock", "stone-floor", "stone-floor", "exit", "stone-floor", "rock", "lava", "lava", "lava", "lava",
+      "lava", "rock", "stone-floor", "stone-bridge", "stone-bridge", "stone-bridge", "stone-floor", "lava", "lava", "lava", "lava", "rock",
+      "rock", "lava", "stone-floor", "lava", "stone-bridge", "lava", "stone-floor", "lava", "rock", "lava", "lava", "lava",
+      "lava", "stone-bridge", "stone-bridge", "stone-bridge", "lava", "lava", "lava", "rock", "lava", "lava", "rock", "lava",
+      "lava", "start", "stone-floor", "lava", "lava", "rock", "lava", "lava", "lava", "rock", "lava", "lava",
     ],
     playerCol: 1,
     playerRow: 4,
-    destCol: 8,
+    destCol: 5,
     destRow: 0,
   },
   "dependency-depths": {
     tiles: [
-      "cave", "cave", "glow", "rail", "cave", "crate", "cave", "rail", "portal", "portal", "cave", "cave",
-      "cave", "rail", "rail", "rail", "cave", "glow", "rail", "rail", "portal", "cave", "crate", "cave",
-      "cave", "cave", "rail", "cave", "cave", "rail", "rail", "cave", "glow", "cave", "cave", "cave",
-      "glow", "rail", "rail", "rail", "crate", "cave", "rail", "rail", "rail", "cave", "cave", "cave",
-      "cave", "rail", "cave", "glow", "cave", "cave", "cave", "rail", "cave", "cave", "crate", "cave",
+      "wall", "wall", "chasm", "cave-floor", "cave-floor", "exit", "cave-floor", "chasm", "wall", "wall", "chasm", "wall",
+      "wall", "cave-floor", "cave-bridge", "cave-bridge", "cave-floor", "chasm", "cave-bridge", "cave-floor", "wall", "chasm", "wall", "wall",
+      "wall", "wall", "cave-floor", "chasm", "chasm", "cave-floor", "cave-floor", "wall", "chasm", "wall", "wall", "wall",
+      "chasm", "cave-bridge", "cave-bridge", "cave-bridge", "wall", "chasm", "cave-floor", "cave-floor", "cave-floor", "wall", "wall", "wall",
+      "wall", "start", "cave-floor", "chasm", "wall", "wall", "wall", "cave-floor", "wall", "wall", "wall", "wall",
     ],
     playerCol: 1,
     playerRow: 4,
-    destCol: 9,
+    destCol: 5,
     destRow: 0,
   },
   "northstar-zero-hour": {
     tiles: [
-      "tree", "rack", "core", "core", "rack", "tree", "office", "office", "path", "desk", "office", "tree",
-      "tree", "path", "path", "path", "path", "path", "path", "path", "path", "reception", "office", "tree",
-      "short-grass", "path", "office", "desk", "office", "path", "server", "server", "path", "desk", "tree", "tree",
-      "path", "path", "short-grass", "path", "path", "path", "office", "path", "path", "path", "tall-grass", "tree",
-      "path", "path", "tall-grass", "tree", "short-grass", "path", "path", "reception", "desk", "tree", "tree", "tree",
+      "tree", "wall", "corridor", "exit", "server-rack", "tree", "wall", "wall", "path", "desk", "wall", "tree",
+      "tree", "path", "path", "path", "path", "path", "path", "path", "path", "corridor", "wall", "tree",
+      "clearing", "path", "wall", "desk", "wall", "path", "server-rack", "server-rack", "path", "desk", "tree", "tree",
+      "path", "path", "clearing", "path", "path", "path", "wall", "path", "path", "path", "tree", "tree",
+      "start", "path", "tree", "tree", "clearing", "path", "path", "clearing", "desk", "tree", "tree", "tree",
     ],
     playerCol: 0,
     playerRow: 4,

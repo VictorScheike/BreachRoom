@@ -1,6 +1,6 @@
 import { worldForMission } from "@/lib/game/maps";
 import {
-  encounterZoneForTile,
+  encounterForTile,
   pointsEqual,
   tryMove,
   type GridPoint,
@@ -10,7 +10,13 @@ import {
 import { requireMission } from "@/lib/missions/catalog";
 import { preparePlaythrough, type PreparedPlaythrough } from "@/lib/missions/playthrough";
 import { scorePlaythrough, type PlayScore } from "@/lib/missions/scoring";
-import { type MissionId, type Question, type RecordedChoice, type RoleId } from "@/lib/missions/types";
+import {
+  type AnswerQuality,
+  type MissionId,
+  type Question,
+  type RecordedChoice,
+  type RoleId,
+} from "@/lib/missions/types";
 import type { TrainingConfig } from "@/lib/training/config";
 import { hashSeed } from "@/lib/training/config";
 import { isMovementLocked } from "@/lib/game/player";
@@ -35,6 +41,11 @@ export interface GameState {
   selectedOptionId: string | null;
   position: GridPoint;
   lastEncounterTile: GridPoint | null;
+  lastFeedback: {
+    title: string;
+    consequence: string;
+    quality: AnswerQuality;
+  } | null;
   muted: boolean;
   trainingConfig: TrainingConfig | null;
   endedEarly: boolean;
@@ -68,6 +79,7 @@ export function createInitialGameState(): GameState {
     selectedOptionId: null,
     position: { x: 1, y: 6 },
     lastEncounterTile: null,
+    lastFeedback: null,
     muted: false,
     trainingConfig: null,
     endedEarly: false,
@@ -122,6 +134,7 @@ function startMission(
     selectedOptionId: null,
     position: world.start,
     lastEncounterTile: null,
+    lastFeedback: null,
     muted,
     trainingConfig,
     endedEarly: false,
@@ -145,6 +158,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         choices: [],
         selectedOptionId: null,
         lastEncounterTile: null,
+        lastFeedback: null,
         trainingConfig: null,
         endedEarly: false,
       };
@@ -176,7 +190,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
       const world = worldForMission(state.missionId);
-      const next = tryMove(world, state.position, action.direction, state.choices.length);
+      const next = tryMove(world, state.position, action.direction);
       if (!next) {
         return state;
       }
@@ -187,8 +201,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           screen: "finalEncounter",
         };
       }
-      const zone = encounterZoneForTile(world, next, state.choices.length);
-      if (zone !== null) {
+      const checkpoint = encounterForTile(world, next, state.choices.length);
+      if (checkpoint !== null) {
         return {
           ...state,
           position: next,
@@ -207,8 +221,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!question) {
         return state;
       }
-      const exists = question.options.some((item) => item.id === action.optionId);
-      if (!exists) {
+      const chosen = question.options.find((item) => item.id === action.optionId);
+      if (!chosen) {
         return state;
       }
       return {
@@ -222,11 +236,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             displayLetter: action.displayLetter,
           },
         ],
-        screen: "consequence",
+        lastFeedback: {
+          title: chosen.title,
+          consequence: chosen.consequence,
+          quality: chosen.quality,
+        },
+        screen: "exploring",
       };
     }
     case "CONTINUE_JOURNEY":
-      if (state.screen !== "consequence") {
+      if (state.screen !== "consequence" && state.screen !== "exploring") {
         return state;
       }
       return {

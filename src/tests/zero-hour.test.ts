@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { gameReducer, createInitialGameState } from "@/lib/game/engine";
 import { ZERO_HOUR_MAP } from "@/lib/game/maps";
-import {
-  destinationReachableAfterDecisions,
-  destinationRequiresAllDecisions,
-  noZoneSkipAdjacency,
-  requiredDecisions,
-  zoneAt,
-} from "@/lib/game/world";
+import { destinationReachableAfterDecisions, tileAt } from "@/lib/game/world";
 import { requireMission } from "@/lib/missions/catalog";
 import { NORTHSTAR_ZERO_HOUR_QUESTIONS, ZERO_HOUR_PHASES } from "@/lib/missions/northstar-zero-hour/questions";
 import { preparePlaythrough } from "@/lib/missions/playthrough";
@@ -84,11 +78,9 @@ describe("Northstar: Zero Hour", () => {
     expect(report.score.overall).toBeGreaterThanOrEqual(80);
   });
 
-  it("keeps the Incident Coordination Room locked until 15 decisions", () => {
-    expect(requiredDecisions(ZERO_HOUR_MAP)).toBe(15);
-    expect(zoneAt(ZERO_HOUR_MAP, ZERO_HOUR_MAP.destination)).toBe(16);
-    expect(noZoneSkipAdjacency(ZERO_HOUR_MAP)).toBe(true);
-    expect(destinationRequiresAllDecisions(ZERO_HOUR_MAP)).toBe(true);
+  it("keeps fifteen checkpoints on the route to the Incident Coordination Room", () => {
+    expect(ZERO_HOUR_MAP.checkpoints).toHaveLength(15);
+    expect(tileAt(ZERO_HOUR_MAP, ZERO_HOUR_MAP.destination).isExit).toBe(true);
     expect(destinationReachableAfterDecisions(ZERO_HOUR_MAP)).toBe(true);
   });
 

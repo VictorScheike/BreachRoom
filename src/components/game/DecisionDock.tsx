@@ -34,7 +34,6 @@ export function DecisionDock({
   scoreFlash,
   onBegin,
   onChoose,
-  onContinue,
   onOpenReport,
   beginLabel,
   roleChip,
@@ -123,9 +122,6 @@ export function DecisionDock({
           {selected.npcReaction ? (
             <p className="npc-bubble">{selected.npcReaction}</p>
           ) : null}
-          <button type="button" className="game-primary" onClick={onContinue}>
-            Continue journey
-          </button>
         </>
       ) : null}
 

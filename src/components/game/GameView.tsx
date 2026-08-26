@@ -15,7 +15,6 @@ import {
 import {
   acceptsMovementInput,
   hasActiveDecision,
-  hasDecisionFeedback,
   isMissionMapVisible,
   isMovementLocked,
   movementFromControl,
@@ -32,7 +31,7 @@ import {
   adjacentMove,
   initialRouteHint,
   isCheckpointTile,
-  isGeometryWalkable,
+  isCompletedCheckpoint,
 } from "@/lib/game/walkability";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import { requireMission } from "@/lib/missions/catalog";
@@ -87,7 +86,6 @@ export function GameView({
   onBegin,
   onMove,
   onChoose,
-  onContinue,
   onOpenReport,
   onToggleMute,
   onChooseAnother,
@@ -99,8 +97,10 @@ export function GameView({
   const [bumpKey, setBumpKey] = useState<string | null>(null);
   const [showMoveHint, setShowMoveHint] = useState(true);
   const [showRouteHint, setShowRouteHint] = useState(true);
+  const [toastHiddenFor, setToastHiddenFor] = useState<number | null>(null);
   const walkTimeout = useRef<number | null>(null);
   const bumpTimeout = useRef<number | null>(null);
+  const toastTimeout = useRef<number | null>(null);
   const reducedMotion = usePrefersReducedMotion();
   const world = currentWorld(state);
   const mission = state.missionId ? requireMission(state.missionId) : null;
@@ -108,15 +108,6 @@ export function GameView({
   const score = currentScore(state);
   const movementLocked = isMovementLocked(state.screen);
   const showPlayer = isMissionMapVisible(state.screen);
-
-  const selected = useMemo(() => {
-    const last = state.choices[state.choices.length - 1];
-    if (!last || !state.playthrough) {
-      return null;
-    }
-    const asked = state.playthrough.questions.find((item) => item.id === last.questionId);
-    return asked?.options.find((item) => item.id === last.optionId) ?? null;
-  }, [state.choices, state.playthrough]);
 
   const displayed = useMemo(() => {
     if (!question || !state.playthrough) {
@@ -151,7 +142,7 @@ export function GameView({
         onMove(direction);
         return;
       }
-      const next = tryMove(world, state.position, direction, state.choices.length);
+      const next = tryMove(world, state.position, direction);
       if (!next) {
         const blocked = stepFrom(state.position, direction);
         setBumpKey(tileKey(blocked));
@@ -171,7 +162,7 @@ export function GameView({
       walkTimeout.current = window.setTimeout(() => setWalking(false), 140);
       onMove(direction);
     },
-    [onMove, reducedMotion, state.choices.length, state.muted, state.position, state.screen, world],
+    [onMove, reducedMotion, state.muted, state.position, state.screen, world],
   );
 
   useEffect(() => {
@@ -189,11 +180,14 @@ export function GameView({
       if (walkTimeout.current !== null) {
         window.clearTimeout(walkTimeout.current);
       }
-      if (bumpTimeout.current !== null) {
-        window.clearTimeout(bumpTimeout.current);
-      }
-    };
-  }, [move, state.screen]);
+        if (bumpTimeout.current !== null) {
+          window.clearTimeout(bumpTimeout.current);
+        }
+        if (toastTimeout.current !== null) {
+          window.clearTimeout(toastTimeout.current);
+        }
+      };
+    }, [move, state.screen]);
 
   useEffect(() => {
     if (state.screen !== "exploring" || reducedMotion) {
@@ -202,6 +196,22 @@ export function GameView({
     const timeout = window.setTimeout(() => setShowRouteHint(false), 3200);
     return () => window.clearTimeout(timeout);
   }, [reducedMotion, state.missionId, state.screen]);
+
+  useEffect(() => {
+    if (!state.lastFeedback) {
+      return undefined;
+    }
+    const key = state.choices.length;
+    if (toastTimeout.current !== null) {
+      window.clearTimeout(toastTimeout.current);
+    }
+    toastTimeout.current = window.setTimeout(() => setToastHiddenFor(key), 4200);
+    return () => {
+      if (toastTimeout.current !== null) {
+        window.clearTimeout(toastTimeout.current);
+      }
+    };
+  }, [state.lastFeedback, state.choices.length]);
 
   if (!world || !mission || !state.playthrough) {
     return null;
@@ -226,7 +236,7 @@ export function GameView({
     ? `Phase ${1 + (mission.sessionPhases?.findIndex((phase) => phase.id === currentPhase.id) ?? 0)}: ${currentPhase.label}`
     : null;
   const letters: ("A" | "B" | "C")[] = ["A", "B", "C"];
-  const encounterActive = hasActiveDecision(state.screen) || hasDecisionFeedback(state.screen);
+  const encounterActive = hasActiveDecision(state.screen);
   const perspective = perspectiveFromState(state, mission);
   const exitUnlocked = state.choices.length >= total;
 
@@ -236,7 +246,7 @@ export function GameView({
       decisionNumber={state.choices.length}
       total={total}
         title={objective}
-      body="Walk toward the destination. Checkpoints trigger the next decision automatically — you do not need to hunt tiles."
+      body="Follow the visible path. Numbered markers are questions. The exit is marked separately."
     />
   );
 
@@ -274,25 +284,6 @@ export function GameView({
         onChoose={(optionId, letter) => {
           playTone(state.muted || reducedMotion, 220, 80);
           onChoose(optionId, letter);
-        }}
-      />
-    );
-  } else if (state.screen === "consequence" && selected) {
-    dock = (
-      <DecisionDock
-        mode="consequence"
-        decisionNumber={state.choices.length}
-        total={total}
-        title="What happened"
-        body={selected.consequence}
-        selected={selected}
-        scoreFlash={mission.dimensions.map((dimension) => ({
-          label: dimension.label,
-          points: selected.scores[dimension.id] ?? 0,
-        }))}
-        onContinue={() => {
-          playTone(state.muted || reducedMotion, 330, 90, "triangle");
-          onContinue();
         }}
       />
     );
@@ -384,39 +375,49 @@ export function GameView({
               }}
             >
               {world.tiles.flatMap((row, y) =>
-                row.map((kind, x) => {
+                row.map((tile, x) => {
                   const point = { x, y };
                   const key = tileKey(point);
-                  const walkable = isGeometryWalkable(world, point);
+                  const walkable = tile.walkable === true;
                   const highlight =
                     state.lastEncounterTile &&
                     encounterActive &&
                     key === tileKey(state.lastEncounterTile);
                   const landmark = world.landmarkTiles.some(
-                    (tile) => tile.x === x && tile.y === y,
+                    (mark) => mark.x === x && mark.y === y,
                   );
                   const hintStep = hintIndex.get(key);
-                  const objectiveTile =
-                    world.destination.x === x && world.destination.y === y;
+                  const checkpoint = isCheckpointTile(world, point);
+                  const checkpointDone = isCompletedCheckpoint(
+                    world,
+                    point,
+                    state.choices.length,
+                  );
                   return (
                     <div
                       key={key}
                       className={[
                         "rpg-tile",
-                        `rpg-tile-${kind}`,
+                        `rpg-tile-${tile.visual}`,
                         walkable ? "rpg-tile--walkable" : "rpg-tile--blocked",
                         highlight ? "tile-highlight" : "",
                         landmark ? "tile-landmark" : "",
-                        isCheckpointTile(world, point) ? "rpg-tile--checkpoint" : "",
-                        objectiveTile ? "rpg-tile--objective" : "",
+                        checkpoint ? "rpg-tile--checkpoint" : "",
+                        checkpointDone ? "rpg-tile--checkpoint-done" : "",
+                        tile.isExit ? "rpg-tile--objective" : "",
+                        tile.isStart ? "rpg-tile--start" : "",
                         showRouteHint && hintStep !== undefined ? "rpg-tile--hint" : "",
                         bumpKey === key ? "rpg-tile--bump" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      data-tile={kind}
-                      data-zone={world.zones[y]?.[x]}
+                      data-tile={tile.type}
                       data-walkable={walkable ? "true" : "false"}
+                      data-checkpoint={
+                        checkpoint && tile.checkpointOrder
+                          ? String(tile.checkpointOrder)
+                          : undefined
+                      }
                       style={
                         hintStep !== undefined
                           ? { ["--hint-i" as string]: String(hintStep) }
@@ -453,7 +454,7 @@ export function GameView({
                   direction={facing}
                   paused={movementLocked}
                   walking={walking}
-                  showDecisionIndicator={hasActiveDecision(state.screen) || hasDecisionFeedback(state.screen)}
+                  showDecisionIndicator={hasActiveDecision(state.screen)}
                   columns={world.columns}
                   rows={world.rows}
                 />
@@ -462,10 +463,18 @@ export function GameView({
           </div>
           {showMoveHint ? (
             <p className="map-move-hint">
-              Use the arrow keys or WASD to move along the highlighted paths.
+              Use the arrow keys, WASD, or tap a neighbouring tile to walk the path.
             </p>
           ) : null}
           <MapLegend />
+          {state.lastFeedback && toastHiddenFor !== state.choices.length ? (
+            <p
+              className={`decision-toast decision-toast-${state.lastFeedback.quality}`}
+              role="status"
+            >
+              {state.lastFeedback.consequence}
+            </p>
+          ) : null}
           {state.screen !== "briefing" ? dock : null}
         </div>
 

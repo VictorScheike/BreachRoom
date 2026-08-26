@@ -1,457 +1,356 @@
-import { buildWorld, type WorldMap } from "@/lib/game/world";
+import { put } from "@/lib/game/maps/paint";
+import { buildWorld, type GridPoint, type WorldMap } from "@/lib/game/world";
 import type { MissionId } from "@/lib/missions/types";
-import { blank, hline, joinLayouts, paintCell, paintRect, vline } from "@/lib/game/maps/paint";
 
 const DESTINATION_META: Record<
   MissionId,
-  { shortLabel: string; icon: "server" | "gate" | "launch" | "hub" | "coordination" }
+  { label: string; shortLabel: string; icon: "server" | "gate" | "launch" | "hub" | "coordination" }
 > = {
-  "locked-out": { shortLabel: "Core Server Room", icon: "server" },
-  "ai-forge": { shortLabel: "Launch Gateway", icon: "launch" },
-  "dependency-depths": { shortLabel: "Trusted Build Exit", icon: "gate" },
-  "inbox-under-siege": { shortLabel: "Security Hub", icon: "hub" },
-  "northstar-zero-hour": { shortLabel: "Coordination Room", icon: "coordination" },
+  "locked-out": { label: "Core Server Room", shortLabel: "Core Server Room", icon: "server" },
+  "ai-forge": { label: "Model Launch Gateway", shortLabel: "Launch Gateway", icon: "launch" },
+  "dependency-depths": { label: "Trusted Build Exit", shortLabel: "Trusted Build Exit", icon: "gate" },
+  "inbox-under-siege": {
+    label: "Security Hub — submit incident report",
+    shortLabel: "Security Hub",
+    icon: "hub",
+  },
+  "northstar-zero-hour": {
+    label: "Incident Coordination Room",
+    shortLabel: "Coordination Room",
+    icon: "coordination",
+  },
 };
 
-function toWorld(
-  id: MissionId,
+function grid(columns: number, rows: number, fill: string): string[][] {
+  return Array.from({ length: rows }, () => Array.from({ length: columns }, () => fill));
+}
+
+function cell(tiles: string[][], x: number, y: number, value: string): void {
+  put(tiles, x, y, value);
+}
+
+function hrun(tiles: string[][], y: number, x0: number, x1: number, value: string): void {
+  const step = x0 <= x1 ? 1 : -1;
+  for (let x = x0; x !== x1 + step; x += step) {
+    cell(tiles, x, y, value);
+  }
+}
+
+function vrun(tiles: string[][], x: number, y0: number, y1: number, value: string): void {
+  const step = y0 <= y1 ? 1 : -1;
+  for (let y = y0; y !== y1 + step; y += step) {
+    cell(tiles, x, y, value);
+  }
+}
+
+function platform(
   tiles: string[][],
-  zones: string[][],
-  start: { x: number; y: number },
-  destination: { x: number; y: number },
-  landmarkTiles: readonly { x: number; y: number }[],
-  destinationLabel: string,
-): WorldMap {
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  value: string,
+): void {
+  for (let y = y0; y <= y1; y += 1) {
+    hrun(tiles, y, x0, x1, value);
+  }
+}
+
+function decorateFill(
+  tiles: string[][],
+  fill: string,
+  value: string,
+  points: readonly GridPoint[],
+): void {
+  for (const point of points) {
+    if (tiles[point.y]?.[point.x] === fill) {
+      cell(tiles, point.x, point.y, value);
+    }
+  }
+}
+
+function decorateFillRect(
+  tiles: string[][],
+  fill: string,
+  value: string,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+): void {
+  for (let y = y0; y <= y1; y += 1) {
+    for (let x = x0; x <= x1; x += 1) {
+      if (tiles[y]?.[x] === fill) {
+        cell(tiles, x, y, value);
+      }
+    }
+  }
+}
+
+function join(tiles: string[][]): string[] {
+  return tiles.map((row) => row.join(""));
+}
+
+function worldFrom(id: MissionId, tiles: string[][]): WorldMap {
   const meta = DESTINATION_META[id];
   return buildWorld({
     id,
-    tilesLayout: joinLayouts(tiles),
-    zonesLayout: joinLayouts(zones),
-    start,
-    destination,
-    landmarkTiles,
-    destinationLabel,
+    layout: join(tiles),
+    destinationLabel: meta.label,
     destinationShortLabel: meta.shortLabel,
     destinationIcon: meta.icon,
   });
 }
 
-function makeForest(): WorldMap {
-  const cols = 16;
-  const rows = 12;
-  const tiles = blank(cols, rows, "T");
-  const zones = blank(cols, rows, ".");
-
-  paintRect(tiles, zones, 6, 10, 10, 11, "R", 0);
-  paintRect(tiles, zones, 4, 8, 12, 9, "g", 1);
-  paintRect(tiles, zones, 2, 6, 13, 7, "g", 2);
-  paintRect(tiles, zones, 2, 5, 13, 5, "g", 3);
-  paintRect(tiles, zones, 2, 4, 13, 4, "g", 4);
-  paintRect(tiles, zones, 2, 3, 13, 3, "g", 5);
-  paintRect(tiles, zones, 5, 2, 13, 2, "g", 6);
-  paintRect(tiles, zones, 5, 1, 10, 1, "g", 7);
-  paintRect(tiles, zones, 3, 1, 4, 1, "g", 8);
-  paintRect(tiles, zones, 1, 1, 2, 1, "K", 9);
-
-  for (const x of [3, 8, 12]) {
-    for (let y = 2; y <= 11; y += 1) {
-      const zoneChar = zones[y]?.[x];
-      if (zoneChar && zoneChar !== ".") {
-        paintCell(tiles, zones, x, y, "P", Number(zoneChar));
-      }
-    }
-  }
-  paintCell(tiles, zones, 8, 11, "R", 0);
-  paintCell(tiles, zones, 1, 1, "K", 9);
-  paintCell(tiles, zones, 2, 1, "K", 9);
-
-  paintRect(tiles, zones, 5, 6, 6, 7, "T", ".");
-  paintRect(tiles, zones, 10, 4, 11, 5, "T", ".");
-
-  return toWorld(
-    "locked-out",
-    tiles,
-    zones,
-    { x: 8, y: 11 },
-    { x: 1, y: 1 },
-    [
-      { x: 1, y: 1 },
-      { x: 2, y: 1 },
-    ],
-    "Core Server Room",
-  );
+function stamp(
+  tiles: string[][],
+  start: GridPoint,
+  exit: GridPoint,
+  checks: readonly GridPoint[],
+): void {
+  cell(tiles, start.x, start.y, "@");
+  cell(tiles, exit.x, exit.y, "E");
+  checks.forEach((point, index) => {
+    const mark = index < 9 ? String(index + 1) : String.fromCharCode("a".charCodeAt(0) + index - 9);
+    cell(tiles, point.x, point.y, mark);
+  });
 }
 
 function makeLava(): WorldMap {
-  const cols = 13;
-  const rows = 13;
-  const tiles = blank(cols, rows, "Q");
-  const zones = blank(cols, rows, ".");
-  const path: { x: number; y: number }[] = [
-    ...hline(11, 1, 1),
-    ...vline(1, 2, 11),
-    ...hline(2, 11, 11),
-    ...vline(11, 10, 4),
-    { x: 10, y: 4 },
-    { x: 9, y: 4 },
-    ...hline(8, 3, 4),
-    ...vline(3, 5, 8),
-    ...hline(4, 8, 8),
-    ...vline(8, 7, 6),
-    { x: 7, y: 6 },
-    { x: 6, y: 6 },
+  const tiles = grid(16, 12, "L");
+
+  platform(tiles, 1, 9, 3, 11, "S");
+  hrun(tiles, 10, 4, 6, "=");
+  platform(tiles, 7, 9, 9, 11, "S");
+  vrun(tiles, 8, 8, 8, "=");
+  platform(tiles, 7, 5, 9, 7, "S");
+  hrun(tiles, 6, 4, 6, "=");
+  platform(tiles, 1, 5, 3, 7, "S");
+  vrun(tiles, 2, 4, 4, "=");
+  platform(tiles, 1, 1, 3, 3, "S");
+  hrun(tiles, 2, 4, 6, "=");
+  platform(tiles, 7, 1, 9, 3, "S");
+  hrun(tiles, 2, 10, 11, "=");
+  platform(tiles, 12, 1, 14, 3, "S");
+
+  decorateFill(tiles, "L", "R", [
+    { x: 6, y: 0 },
+    { x: 11, y: 0 },
+    { x: 15, y: 1 },
+    { x: 0, y: 3 },
+    { x: 6, y: 4 },
+    { x: 11, y: 4 },
+    { x: 15, y: 6 },
+    { x: 0, y: 8 },
+    { x: 5, y: 8 },
+    { x: 12, y: 8 },
+    { x: 15, y: 11 },
+  ]);
+
+  const start = { x: 1, y: 10 };
+  const exit = { x: 14, y: 1 };
+  const checks: GridPoint[] = [
+    { x: 3, y: 9 },
+    { x: 9, y: 9 },
+    { x: 9, y: 6 },
+    { x: 2, y: 6 },
+    { x: 2, y: 2 },
+    { x: 8, y: 2 },
+    { x: 11, y: 2 },
+    { x: 13, y: 2 },
   ];
-
-  const unique: { x: number; y: number }[] = [];
-  const seen = new Set<string>();
-  for (const point of path) {
-    const key = `${point.x},${point.y}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    unique.push(point);
-  }
-
-  const dest = unique[unique.length - 1];
-  if (!dest) {
-    throw new Error("Lava spiral is empty");
-  }
-  const approach = unique.slice(0, -1);
-  approach.forEach((point, index) => {
-    const zone = Math.min(8, Math.floor((index / approach.length) * 9));
-    let tile = "g";
-    if (index === 0) {
-      tile = "X";
-    } else if (point.y === 11) {
-      tile = "M";
-    }
-    paintCell(tiles, zones, point.x, point.y, tile, zone);
-  });
-  paintCell(tiles, zones, dest.x, dest.y, "E", 9);
-
-  return toWorld(
-    "ai-forge",
-    tiles,
-    zones,
-    { x: 11, y: 1 },
-    dest,
-    [dest],
-    "Model Launch Gateway",
-  );
+  stamp(tiles, start, exit, checks);
+  return worldFrom("ai-forge", tiles);
 }
 
-function paintPath(
-  tiles: string[][],
-  zones: string[][],
-  points: readonly { x: number; y: number }[],
-  tile: string,
-  zone: number,
-): void {
-  for (const point of points) {
-    paintCell(tiles, zones, point.x, point.y, tile, zone);
-  }
+function makeForest(): WorldMap {
+  const tiles = grid(16, 12, "T");
+
+  platform(tiles, 1, 10, 4, 11, "G");
+  hrun(tiles, 11, 5, 11, "P");
+  vrun(tiles, 11, 8, 10, "P");
+  platform(tiles, 9, 7, 12, 8, "G");
+  hrun(tiles, 8, 4, 8, "P");
+  vrun(tiles, 4, 7, 7, "P");
+  cell(tiles, 4, 6, "W");
+  decorateFillRect(tiles, "T", "~", 0, 6, 15, 6);
+  vrun(tiles, 4, 4, 5, "P");
+  platform(tiles, 3, 3, 7, 4, "G");
+  hrun(tiles, 3, 8, 12, "P");
+  vrun(tiles, 12, 1, 2, "P");
+  platform(tiles, 10, 1, 13, 2, "G");
+
+  decorateFill(tiles, "T", "B", [
+    { x: 6, y: 0 },
+    { x: 14, y: 0 },
+    { x: 1, y: 2 },
+    { x: 15, y: 4 },
+    { x: 0, y: 8 },
+    { x: 14, y: 9 },
+    { x: 6, y: 9 },
+    { x: 15, y: 11 },
+  ]);
+
+  const start = { x: 1, y: 11 };
+  const exit = { x: 13, y: 1 };
+  const checks: GridPoint[] = [
+    { x: 3, y: 10 },
+    { x: 8, y: 11 },
+    { x: 11, y: 8 },
+    { x: 4, y: 7 },
+    { x: 4, y: 4 },
+    { x: 10, y: 3 },
+    { x: 12, y: 2 },
+    { x: 11, y: 1 },
+  ];
+  stamp(tiles, start, exit, checks);
+  return worldFrom("locked-out", tiles);
 }
 
 function makeCave(): WorldMap {
-  const cols = 16;
-  const rows = 12;
-  const tiles = blank(cols, rows, "T");
-  const zones = blank(cols, rows, ".");
+  const tiles = grid(16, 12, "#");
 
-  paintPath(tiles, zones, [
-    { x: 13, y: 10 },
-    { x: 14, y: 10 },
-    { x: 14, y: 11 },
-  ], "g", 0);
-  paintPath(tiles, zones, [
-    { x: 12, y: 10 },
-    { x: 11, y: 10 },
-    { x: 11, y: 11 },
-    { x: 10, y: 10 },
-  ], "U", 1);
-  paintPath(tiles, zones, [
-    { x: 9, y: 10 },
-    { x: 8, y: 10 },
-    { x: 8, y: 11 },
-    { x: 8, y: 9 },
-    { x: 7, y: 10 },
-  ], "g", 2);
-  paintPath(tiles, zones, [
-    { x: 7, y: 9 },
-    { x: 7, y: 8 },
-    { x: 6, y: 8 },
-    { x: 8, y: 8 },
-  ], "U", 3);
-  paintPath(tiles, zones, [
-    { x: 6, y: 7 },
-    { x: 5, y: 7 },
-    { x: 5, y: 8 },
-    { x: 5, y: 6 },
-    { x: 4, y: 7 },
-  ], "g", 4);
-  paintPath(tiles, zones, [
-    { x: 4, y: 6 },
-    { x: 4, y: 5 },
-    { x: 3, y: 5 },
-    { x: 5, y: 5 },
-    { x: 6, y: 5 },
-  ], "U", 5);
-  paintPath(tiles, zones, [
-    { x: 3, y: 4 },
-    { x: 3, y: 3 },
-    { x: 2, y: 3 },
-    { x: 4, y: 3 },
-    { x: 5, y: 3 },
-  ], "g", 6);
-  paintPath(tiles, zones, [
-    { x: 2, y: 2 },
-    { x: 3, y: 2 },
-    { x: 4, y: 2 },
-  ], "U", 7);
-  paintPath(tiles, zones, [
-    { x: 2, y: 1 },
-    { x: 3, y: 1 },
-    { x: 4, y: 1 },
-  ], "g", 8);
-  paintPath(tiles, zones, [
-    { x: 1, y: 1 },
-    { x: 1, y: 0 },
-  ], "V", 9);
+  platform(tiles, 1, 8, 5, 11, "A");
+  vrun(tiles, 3, 6, 7, "A");
+  platform(tiles, 1, 3, 5, 5, "A");
+  hrun(tiles, 4, 6, 8, "U");
+  platform(tiles, 9, 2, 13, 5, "A");
+  vrun(tiles, 12, 6, 7, "U");
+  platform(tiles, 9, 8, 14, 11, "A");
+  vrun(tiles, 13, 1, 1, "A");
+  platform(tiles, 12, 0, 14, 1, "A");
+  hrun(tiles, 9, 6, 8, "A");
 
-  paintCell(tiles, zones, 13, 11, "g", 0);
-  paintCell(tiles, zones, 14, 11, "W", 0);
+  decorateFillRect(tiles, "#", "H", 6, 0, 10, 1);
+  decorateFillRect(tiles, "#", "H", 6, 6, 11, 7);
+  decorateFillRect(tiles, "#", "H", 6, 8, 8, 11);
+  decorateFillRect(tiles, "#", "H", 0, 6, 2, 7);
+  decorateFillRect(tiles, "#", "H", 14, 3, 15, 6);
 
-  return toWorld(
-    "dependency-depths",
-    tiles,
-    zones,
-    { x: 13, y: 11 },
-    { x: 1, y: 0 },
-    [
-      { x: 1, y: 1 },
-      { x: 1, y: 0 },
-    ],
-    "Trusted Build Exit",
-  );
+  const start = { x: 2, y: 10 };
+  const exit = { x: 14, y: 0 };
+  const checks: GridPoint[] = [
+    { x: 4, y: 9 },
+    { x: 3, y: 6 },
+    { x: 2, y: 4 },
+    { x: 8, y: 4 },
+    { x: 11, y: 3 },
+    { x: 12, y: 7 },
+    { x: 10, y: 9 },
+    { x: 13, y: 1 },
+  ];
+  stamp(tiles, start, exit, checks);
+  return worldFrom("dependency-depths", tiles);
 }
 
 function makeOffice(): WorldMap {
-  const cols = 15;
-  const rows = 15;
-  const tiles = blank(cols, rows, "W");
-  const zones = blank(cols, rows, ".");
+  const tiles = grid(16, 12, "#");
 
-  paintRect(tiles, zones, 6, 6, 8, 8, "J", 0);
-  paintPath(tiles, zones, [
-    { x: 7, y: 5 },
-    { x: 7, y: 4 },
-    { x: 6, y: 4 },
-    { x: 5, y: 4 },
-    { x: 4, y: 4 },
-    { x: 3, y: 4 },
-    { x: 2, y: 4 },
-    { x: 2, y: 3 },
-    { x: 2, y: 2 },
-  ], "g", 1);
-  paintPath(tiles, zones, [
-    { x: 3, y: 2 },
-    { x: 4, y: 2 },
-    { x: 5, y: 2 },
-    { x: 6, y: 2 },
-    { x: 7, y: 2 },
-    { x: 8, y: 2 },
-    { x: 9, y: 2 },
-  ], "P", 2);
-  paintPath(tiles, zones, [
-    { x: 10, y: 2 },
-    { x: 11, y: 2 },
-    { x: 12, y: 2 },
-    { x: 12, y: 3 },
-    { x: 12, y: 4 },
-    { x: 12, y: 5 },
-  ], "g", 3);
-  paintPath(tiles, zones, [
-    { x: 12, y: 6 },
-    { x: 12, y: 7 },
-    { x: 12, y: 8 },
-    { x: 12, y: 9 },
-    { x: 11, y: 9 },
-  ], "P", 4);
-  paintPath(tiles, zones, [
+  platform(tiles, 1, 10, 14, 11, "O");
+  vrun(tiles, 1, 2, 9, "O");
+  vrun(tiles, 7, 2, 9, "O");
+  vrun(tiles, 14, 2, 9, "O");
+  hrun(tiles, 8, 1, 14, "O");
+  hrun(tiles, 5, 1, 14, "O");
+  hrun(tiles, 2, 1, 14, "O");
+  cell(tiles, 1, 9, "N");
+  cell(tiles, 7, 9, "N");
+  cell(tiles, 14, 9, "N");
+  cell(tiles, 1, 6, "N");
+  cell(tiles, 7, 6, "N");
+  cell(tiles, 14, 6, "N");
+  cell(tiles, 4, 2, "N");
+  cell(tiles, 11, 2, "N");
+  cell(tiles, 14, 1, "O");
+
+  decorateFillRect(tiles, "#", "D", 2, 3, 6, 4);
+  decorateFillRect(tiles, "#", "D", 8, 3, 13, 4);
+  decorateFillRect(tiles, "#", "K", 2, 6, 6, 7);
+  decorateFillRect(tiles, "#", "K", 8, 6, 13, 7);
+  decorateFillRect(tiles, "#", "F", 2, 0, 6, 1);
+  decorateFillRect(tiles, "#", "F", 8, 0, 13, 1);
+
+  const start = { x: 1, y: 11 };
+  const exit = { x: 14, y: 1 };
+  const checks: GridPoint[] = [
+    { x: 5, y: 11 },
     { x: 12, y: 10 },
-    { x: 12, y: 11 },
-    { x: 12, y: 12 },
-    { x: 11, y: 12 },
-    { x: 10, y: 12 },
-  ], "g", 5);
-  paintPath(tiles, zones, [
-    { x: 9, y: 12 },
-    { x: 8, y: 12 },
-    { x: 7, y: 12 },
-    { x: 6, y: 12 },
-    { x: 5, y: 12 },
-  ], "P", 6);
-  paintPath(tiles, zones, [
-    { x: 4, y: 12 },
-    { x: 3, y: 12 },
-    { x: 2, y: 12 },
-    { x: 2, y: 11 },
-    { x: 2, y: 10 },
-  ], "g", 7);
-  paintPath(tiles, zones, [
-    { x: 2, y: 9 },
-    { x: 2, y: 8 },
-    { x: 2, y: 7 },
-    { x: 3, y: 7 },
-    { x: 4, y: 7 },
-    { x: 4, y: 8 },
-  ], "P", 8);
-  paintCell(tiles, zones, 4, 6, "C", 9);
-  paintCell(tiles, zones, 2, 2, "Z", 1);
-  paintCell(tiles, zones, 12, 2, "Z", 3);
-  paintCell(tiles, zones, 12, 12, "Z", 5);
-  paintCell(tiles, zones, 2, 12, "Z", 7);
-  paintCell(tiles, zones, 7, 7, "J", 0);
-
-  return toWorld(
-    "inbox-under-siege",
-    tiles,
-    zones,
-    { x: 7, y: 7 },
-    { x: 4, y: 6 },
-    [
-      { x: 4, y: 6 },
-      { x: 4, y: 7 },
-    ],
-    "Security Hub — submit incident report",
-  );
-}
-
-function makeZeroHour(): WorldMap {
-  const cols = 18;
-  const rows = 12;
-  const tiles = blank(cols, rows, "T");
-  const zones = blank(cols, rows, ".");
-
-  paintRect(tiles, zones, 1, 1, 16, 10, "g", ".");
-
-  const route: { x: number; y: number }[] = [
-    { x: 9, y: 10 },
-    { x: 8, y: 10 },
-    { x: 7, y: 10 },
-    { x: 6, y: 10 },
-    { x: 5, y: 10 },
-    { x: 4, y: 10 },
-    { x: 4, y: 9 },
-    { x: 4, y: 8 },
-    { x: 5, y: 8 },
-    { x: 6, y: 8 },
+    { x: 14, y: 8 },
     { x: 7, y: 8 },
-    { x: 8, y: 8 },
-    { x: 9, y: 8 },
-    { x: 10, y: 8 },
-    { x: 11, y: 8 },
-    { x: 12, y: 8 },
-    { x: 13, y: 8 },
-    { x: 13, y: 7 },
-    { x: 13, y: 6 },
-    { x: 12, y: 6 },
-    { x: 11, y: 6 },
-    { x: 10, y: 6 },
-    { x: 9, y: 6 },
-    { x: 8, y: 6 },
-    { x: 7, y: 6 },
-    { x: 6, y: 6 },
-    { x: 5, y: 6 },
-    { x: 5, y: 5 },
-    { x: 5, y: 4 },
-    { x: 6, y: 4 },
-    { x: 7, y: 4 },
-    { x: 8, y: 4 },
-    { x: 9, y: 4 },
-    { x: 10, y: 4 },
-    { x: 11, y: 4 },
-    { x: 12, y: 4 },
-    { x: 13, y: 4 },
-    { x: 14, y: 4 },
-    { x: 14, y: 3 },
-    { x: 14, y: 2 },
-    { x: 13, y: 2 },
-    { x: 12, y: 2 },
+    { x: 1, y: 5 },
+    { x: 7, y: 5 },
+    { x: 14, y: 5 },
     { x: 11, y: 2 },
-    { x: 10, y: 2 },
-    { x: 9, y: 2 },
-    { x: 8, y: 2 },
-    { x: 7, y: 2 },
-    { x: 6, y: 2 },
-    { x: 5, y: 2 },
-    { x: 4, y: 2 },
-    { x: 3, y: 2 },
-    { x: 2, y: 2 },
-    { x: 2, y: 1 },
   ];
-
-  const lastIndex = route.length - 1;
-  const innerCount = lastIndex - 1;
-  route.forEach((point, index) => {
-    let zone = 0;
-    if (index === 0) {
-      zone = 0;
-    } else if (index === lastIndex) {
-      zone = 16;
-    } else {
-      zone = Math.min(15, 1 + Math.floor(((index - 1) * 15) / innerCount));
-    }
-    let tile = "P";
-    if (index === 0) {
-      tile = "R";
-    } else if (index < 8) {
-      tile = "g";
-    } else if (index < 16) {
-      tile = "P";
-    } else if (index < 24) {
-      tile = "Y";
-    } else if (index < 32) {
-      tile = "Z";
-    } else if (index < 40) {
-      tile = "K";
-    } else if (index === lastIndex) {
-      tile = "C";
-    } else {
-      tile = "D";
-    }
-    paintCell(tiles, zones, point.x, point.y, tile, zone);
-  });
-
-  const dest = route[route.length - 1];
-  if (!dest) {
-    throw new Error("Zero Hour route is empty");
-  }
-  paintCell(tiles, zones, dest.x, dest.y, "C", 16);
-  paintRect(tiles, zones, 1, 1, 3, 1, "K", 16);
-
-  return toWorld(
-    "northstar-zero-hour",
-    tiles,
-    zones,
-    { x: 9, y: 10 },
-    dest,
-    [
-      dest,
-      { x: 1, y: 1 },
-      { x: 2, y: 1 },
-      { x: 3, y: 1 },
-    ],
-    "Incident Coordination Room",
-  );
+  stamp(tiles, start, exit, checks);
+  return worldFrom("inbox-under-siege", tiles);
 }
 
-export const FOREST_MAP = makeForest();
+function makeCampus(): WorldMap {
+  const tiles = grid(18, 14, "T");
+
+  platform(tiles, 1, 12, 4, 13, "G");
+  hrun(tiles, 13, 5, 16, "P");
+  vrun(tiles, 16, 11, 12, "P");
+  hrun(tiles, 11, 4, 16, "P");
+  vrun(tiles, 4, 9, 10, "P");
+  hrun(tiles, 9, 4, 9, "P");
+  cell(tiles, 9, 8, "N");
+
+  decorateFillRect(tiles, "T", "~", 10, 12, 14, 12);
+  cell(tiles, 12, 12, "W");
+  hrun(tiles, 13, 10, 14, "P");
+
+  decorateFillRect(tiles, "T", "#", 0, 0, 17, 8);
+
+  vrun(tiles, 9, 6, 7, "O");
+  hrun(tiles, 6, 2, 15, "O");
+  vrun(tiles, 2, 3, 5, "O");
+  vrun(tiles, 15, 3, 5, "O");
+  hrun(tiles, 3, 2, 15, "O");
+  vrun(tiles, 2, 1, 2, "O");
+  hrun(tiles, 1, 2, 5, "O");
+  cell(tiles, 9, 7, "N");
+  cell(tiles, 2, 5, "N");
+  cell(tiles, 15, 5, "N");
+
+  decorateFillRect(tiles, "#", "D", 3, 4, 8, 5);
+  decorateFillRect(tiles, "#", "K", 10, 4, 14, 5);
+  decorateFillRect(tiles, "#", "F", 3, 7, 8, 7);
+  decorateFill(tiles, "T", "B", [
+    { x: 0, y: 10 },
+    { x: 7, y: 10 },
+    { x: 17, y: 13 },
+  ]);
+
+  const start = { x: 1, y: 13 };
+  const exit = { x: 2, y: 1 };
+  const checks: GridPoint[] = [
+    { x: 3, y: 12 },
+    { x: 8, y: 13 },
+    { x: 16, y: 13 },
+    { x: 16, y: 11 },
+    { x: 10, y: 11 },
+    { x: 4, y: 11 },
+    { x: 4, y: 9 },
+    { x: 9, y: 8 },
+    { x: 9, y: 6 },
+    { x: 2, y: 6 },
+    { x: 15, y: 6 },
+    { x: 15, y: 3 },
+    { x: 8, y: 3 },
+    { x: 2, y: 3 },
+    { x: 4, y: 1 },
+  ];
+  stamp(tiles, start, exit, checks);
+  return worldFrom("northstar-zero-hour", tiles);
+}
+
 export const LAVA_MAP = makeLava();
+export const FOREST_MAP = makeForest();
 export const CAVE_MAP = makeCave();
 export const OFFICE_MAP = makeOffice();
-export const ZERO_HOUR_MAP = makeZeroHour();
+export const ZERO_HOUR_MAP = makeCampus();
 
 const MAPS: Record<MissionId, WorldMap> = {
   "locked-out": FOREST_MAP,
@@ -464,3 +363,11 @@ const MAPS: Record<MissionId, WorldMap> = {
 export function worldForMission(id: MissionId): WorldMap {
   return MAPS[id];
 }
+
+export const ALL_MAPS: readonly WorldMap[] = [
+  FOREST_MAP,
+  LAVA_MAP,
+  CAVE_MAP,
+  OFFICE_MAP,
+  ZERO_HOUR_MAP,
+];
