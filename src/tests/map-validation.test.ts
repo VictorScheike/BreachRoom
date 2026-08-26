@@ -82,6 +82,29 @@ describe("map validation", () => {
     expect(new Set(fingerprints).size).toBe(ALL_MAPS.length);
   });
 
+  it("does not hide checkpoints under the exit label", () => {
+    for (const world of ALL_MAPS) {
+      const covered =
+        world.destination.y <= 1
+          ? [
+              { x: world.destination.x, y: world.destination.y + 1 },
+              { x: world.destination.x - 1, y: world.destination.y + 1 },
+              { x: world.destination.x + 1, y: world.destination.y + 1 },
+            ]
+          : [
+              { x: world.destination.x, y: world.destination.y - 1 },
+              { x: world.destination.x - 1, y: world.destination.y - 1 },
+              { x: world.destination.x + 1, y: world.destination.y - 1 },
+            ];
+      for (const point of covered) {
+        const hidden = world.checkpoints.some(
+          (checkpoint) => checkpoint.x === point.x && checkpoint.y === point.y,
+        );
+        expect(hidden, `${world.id} checkpoint hidden at ${point.x},${point.y}`).toBe(false);
+      }
+    }
+  });
+
   it("keeps lava as the blocked background with a minority stone route", () => {
     const tiles = LAVA_MAP.tiles.flat();
     const lavaCount = tiles.filter((tile) => tile.type === "lava" || tile.type === "rock").length;

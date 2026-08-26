@@ -131,7 +131,7 @@ function makeLava(): WorldMap {
   hrun(tiles, 2, 4, 6, "=");
   platform(tiles, 7, 1, 9, 3, "S");
   hrun(tiles, 2, 10, 11, "=");
-  platform(tiles, 12, 1, 14, 3, "S");
+  platform(tiles, 12, 0, 14, 3, "S");
 
   decorateFill(tiles, "L", "R", [
     { x: 6, y: 0 },
@@ -148,7 +148,7 @@ function makeLava(): WorldMap {
   ]);
 
   const start = { x: 1, y: 10 };
-  const exit = { x: 14, y: 1 };
+  const exit = { x: 14, y: 0 };
   const checks: GridPoint[] = [
     { x: 3, y: 9 },
     { x: 9, y: 9 },
@@ -157,7 +157,7 @@ function makeLava(): WorldMap {
     { x: 2, y: 2 },
     { x: 8, y: 2 },
     { x: 11, y: 2 },
-    { x: 13, y: 2 },
+    { x: 12, y: 2 },
   ];
   stamp(tiles, start, exit, checks);
   return worldFrom("ai-forge", tiles);
@@ -178,7 +178,7 @@ function makeForest(): WorldMap {
   platform(tiles, 3, 3, 7, 4, "G");
   hrun(tiles, 3, 8, 12, "P");
   vrun(tiles, 12, 1, 2, "P");
-  platform(tiles, 10, 1, 13, 2, "G");
+  platform(tiles, 10, 0, 13, 2, "G");
 
   decorateFill(tiles, "T", "B", [
     { x: 6, y: 0 },
@@ -192,7 +192,7 @@ function makeForest(): WorldMap {
   ]);
 
   const start = { x: 1, y: 11 };
-  const exit = { x: 13, y: 1 };
+  const exit = { x: 13, y: 0 };
   const checks: GridPoint[] = [
     { x: 3, y: 10 },
     { x: 8, y: 11 },
@@ -201,7 +201,7 @@ function makeForest(): WorldMap {
     { x: 4, y: 4 },
     { x: 10, y: 3 },
     { x: 12, y: 2 },
-    { x: 11, y: 1 },
+    { x: 10, y: 1 },
   ];
   stamp(tiles, start, exit, checks);
   return worldFrom("locked-out", tiles);
@@ -237,7 +237,7 @@ function makeCave(): WorldMap {
     { x: 11, y: 3 },
     { x: 12, y: 7 },
     { x: 10, y: 9 },
-    { x: 13, y: 1 },
+    { x: 12, y: 1 },
   ];
   stamp(tiles, start, exit, checks);
   return worldFrom("dependency-depths", tiles);
