@@ -124,6 +124,8 @@ function PlayApp() {
       completed: state.screen === "report" && !state.endedEarly,
       endedEarly: state.endedEarly,
       overall: report?.score.overall ?? null,
+      scenarioId: state.playthrough.scenarioId,
+      choices: state.choices,
       startedAt: Date.now(),
       updatedAt: Date.now(),
       roleGroupId: state.trainingConfig?.roleGroup ?? null,

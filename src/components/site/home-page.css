@@ -1431,7 +1431,7 @@
   list-style: none;
 }
 
-.progress-sessions li {
+.progress-sessions > li {
   display: grid;
   gap: 6px;
   min-width: 0;
@@ -1452,6 +1452,96 @@
 .progress-note {
   margin-top: 2rem;
   color: #4b6280;
+}
+
+.progress-completed {
+  margin-top: 1.6rem;
+}
+
+.progress-completed__lede {
+  max-width: 42rem;
+  margin: 0.4rem 0 1rem;
+  line-height: 1.55;
+}
+
+.progress-answer-summary {
+  margin: 0;
+  color: #3b4d66;
+  font-size: 0.92rem;
+}
+
+.progress-answers {
+  display: grid;
+  gap: 6px;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.progress-answers li {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.progress-answers__letter {
+  font-weight: 800;
+  color: #2563eb;
+}
+
+.progress-answers__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-answers__verdict {
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.progress-answers__verdict.is-correct {
+  color: #15803d;
+}
+
+.progress-answers__verdict.is-partly-correct {
+  color: #b45309;
+}
+
+.progress-answers__verdict.is-incorrect {
+  color: #b91c1c;
+}
+
+.progress-answers__more {
+  margin: 0.2rem 0 0;
+  color: #4b6280;
+  font-size: 0.85rem;
+}
+
+.progress-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0.55rem;
+}
+
+.progress-session-actions .btn-primary,
+.progress-session-actions .btn-tertiary {
+  width: auto;
+}
+
+.progress-score-fallback {
+  font-weight: 800;
 }
 
 .progress-skeleton {
