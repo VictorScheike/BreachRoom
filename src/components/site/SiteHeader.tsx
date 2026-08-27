@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/site/BrandMark";
 import { NAV_ITEMS, SITE_NAME } from "@/lib/site/copy";
@@ -31,7 +31,11 @@ function isActive(pathname: string, href: string, hash: string): boolean {
 export function SiteHeader() {
   const pathname = usePathname() ?? "/";
   const [hash, setHash] = useState("");
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const menuId = useId();
   const onPlay = normalisePath(pathname) === "/play";
+  const locationKey = `${pathname}#${hash}`;
+  const menuOpen = menuFor === locationKey;
 
   useEffect(() => {
     const update = () => setHash(window.location.hash);
@@ -39,6 +43,25 @@ export function SiteHeader() {
     window.addEventListener("hashchange", update);
     return () => window.removeEventListener("hashchange", update);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return undefined;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuFor(null);
+      }
+    };
+    document.body.classList.add("nav-drawer-open");
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("nav-drawer-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuFor(null);
 
   return (
     <header
@@ -49,11 +72,33 @@ export function SiteHeader() {
       }
     >
       <div className="site-header-inner">
-        <Link href="/" className="inline-flex min-h-11 items-center gap-3">
-          <BrandMark size={36} className="rounded-lg" />
-          <span className="text-lg font-semibold tracking-tight">{SITE_NAME}</span>
+        <Link href="/" className="site-brand inline-flex min-h-11 items-center gap-3" onClick={closeMenu}>
+          <BrandMark size={36} className="site-brand-mark rounded-lg" />
+          <span className="site-brand-name text-lg font-semibold tracking-tight">{SITE_NAME}</span>
         </Link>
-        <nav aria-label="Primary">
+        <button
+          type="button"
+          className="site-nav-toggle"
+          aria-expanded={menuOpen}
+          aria-controls={menuId}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          onClick={() => setMenuFor(menuOpen ? null : locationKey)}
+        >
+          <span className={menuOpen ? "site-nav-toggle__bars is-open" : "site-nav-toggle__bars"} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+        {menuOpen ? (
+          <button
+            type="button"
+            className="site-nav-backdrop"
+            aria-label="Close menu"
+            onClick={closeMenu}
+          />
+        ) : null}
+        <nav id={menuId} className={menuOpen ? "site-nav-panel is-open" : "site-nav-panel"} aria-label="Primary">
           <ul className="site-nav">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href, hash);
@@ -70,6 +115,7 @@ export function SiteHeader() {
                           : "site-nav-link"
                     }
                     aria-current={active ? "page" : undefined}
+                    onClick={closeMenu}
                   >
                     {item.label}
                   </Link>

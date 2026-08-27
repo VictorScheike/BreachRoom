@@ -101,6 +101,8 @@ export function GameView({
   const walkTimeout = useRef<number | null>(null);
   const bumpTimeout = useRef<number | null>(null);
   const toastTimeout = useRef<number | null>(null);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const swipeHandledRef = useRef(false);
   const reducedMotion = usePrefersReducedMotion();
   const world = currentWorld(state);
   const mission = state.missionId ? requireMission(state.missionId) : null;
@@ -163,6 +165,40 @@ export function GameView({
       onMove(direction);
     },
     [onMove, reducedMotion, state.muted, state.position, state.screen, world],
+  );
+
+  const onMapTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.changedTouches[0];
+    if (!touch) {
+      return;
+    }
+    swipeStart.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const onMapTouchEnd = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const start = swipeStart.current;
+      const touch = event.changedTouches[0];
+      swipeStart.current = null;
+      if (!start || !touch) {
+        return;
+      }
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 36) {
+        return;
+      }
+      swipeHandledRef.current = true;
+      window.setTimeout(() => {
+        swipeHandledRef.current = false;
+      }, 400);
+      if (Math.abs(dx) > Math.abs(dy)) {
+        move(dx > 0 ? "right" : "left", "touch");
+      } else {
+        move(dy > 0 ? "down" : "up", "touch");
+      }
+    },
+    [move],
   );
 
   useEffect(() => {
@@ -239,6 +275,10 @@ export function GameView({
   const encounterActive = hasActiveDecision(state.screen);
   const perspective = perspectiveFromState(state, mission);
   const exitUnlocked = state.choices.length >= total;
+  const sheetOpen =
+    state.screen === "briefing" ||
+    state.screen === "encounter" ||
+    state.screen === "finalEncounter";
 
   let dock = (
     <DecisionDock
@@ -307,7 +347,9 @@ export function GameView({
 
   return (
     <main id="main-content" className="game-page">
-      <div className={`game-shell game-shell-live theme-${mission.id}`}>
+      <div
+        className={`game-shell game-shell-live theme-${mission.id}${sheetOpen ? " is-sheet-open" : ""}`}
+      >
         <header className="game-hud">
           <p className="game-objective">
             Objective: Reach {world.destinationLabel} · {manhattan(state.position, world.destination)} tiles
@@ -355,6 +397,30 @@ export function GameView({
           </div>
         </div>
 
+        <div className="game-mobile-status">
+          <p className="game-mobile-status-objective">{world.destinationLabel}</p>
+          <div className="game-mobile-status-meta">
+            <span>
+              {state.choices.length}/{total}
+            </span>
+            <span>{perspective.playingAs}</span>
+            <details className="game-mobile-more">
+              <summary aria-label="Mission options">…</summary>
+              <div className="game-mobile-more-menu">
+                <button type="button" onClick={onToggleMute}>
+                  {state.muted ? "Sound: muted" : "Sound: on"}
+                </button>
+                <button type="button" onClick={() => setEndConfirm(true)}>
+                  End mission
+                </button>
+                <button type="button" onClick={onChooseAnother}>
+                  Mission select
+                </button>
+              </div>
+            </details>
+          </div>
+        </div>
+
         {state.screen === "briefing" ? dock : null}
 
         <div className="game-stage-column">
@@ -373,6 +439,8 @@ export function GameView({
                 gridTemplateRows: `repeat(${world.rows}, minmax(0, 1fr))`,
                 aspectRatio: `${world.columns} / ${world.rows}`,
               }}
+              onTouchStart={onMapTouchStart}
+              onTouchEnd={onMapTouchEnd}
             >
               {world.tiles.flatMap((row, y) =>
                 row.map((tile, x) => {
@@ -426,6 +494,9 @@ export function GameView({
                           : {}),
                       }}
                       onClick={() => {
+                        if (swipeHandledRef.current) {
+                          return;
+                        }
                         const direction = adjacentMove(state.position, point);
                         if (direction) {
                           move(direction);
@@ -498,20 +569,75 @@ export function GameView({
 
         <div className="game-pad" aria-label="Movement pad">
           <span />
-          <button type="button" disabled={movementLocked} onClick={() => move("up", "touch")}>
-            Up
+          <button
+            type="button"
+            aria-label="Move up"
+            disabled={movementLocked}
+            onClick={() => move("up", "touch")}
+          >
+            <span className="game-pad-icon" aria-hidden="true">
+              ▲
+            </span>
+            <span className="game-pad-label">Up</span>
           </button>
           <span />
-          <button type="button" disabled={movementLocked} onClick={() => move("left", "touch")}>
-            Left
+          <button
+            type="button"
+            aria-label="Move left"
+            disabled={movementLocked}
+            onClick={() => move("left", "touch")}
+          >
+            <span className="game-pad-icon" aria-hidden="true">
+              ◀
+            </span>
+            <span className="game-pad-label">Left</span>
           </button>
-          <button type="button" disabled={movementLocked} onClick={() => move("down", "touch")}>
-            Down
+          <button
+            type="button"
+            aria-label="Move down"
+            disabled={movementLocked}
+            onClick={() => move("down", "touch")}
+          >
+            <span className="game-pad-icon" aria-hidden="true">
+              ▼
+            </span>
+            <span className="game-pad-label">Down</span>
           </button>
-          <button type="button" disabled={movementLocked} onClick={() => move("right", "touch")}>
-            Right
+          <button
+            type="button"
+            aria-label="Move right"
+            disabled={movementLocked}
+            onClick={() => move("right", "touch")}
+          >
+            <span className="game-pad-icon" aria-hidden="true">
+              ▶
+            </span>
+            <span className="game-pad-label">Right</span>
           </button>
         </div>
+
+        <details className="game-mobile-details">
+          <summary>Mission details</summary>
+          <div className="game-mobile-details-body">
+            <MissionRoleBadge perspective={perspective} />
+            <p className="game-mobile-details-objective">{objective}</p>
+            {phaseCaption ? <p className="game-mobile-details-phase">{phaseCaption}</p> : null}
+            <ul className="game-status" aria-label="Mission status">
+              {(score?.dimensions ??
+                mission.dimensions.map((dimension) => ({
+                  id: dimension.id,
+                  label: dimension.label,
+                  percent: 0,
+                  points: 0,
+                }))).map((dimension) => (
+                <li key={dimension.id}>
+                  {dimension.label}
+                  <span>{dimension.percent}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
       </div>
     </main>
   );

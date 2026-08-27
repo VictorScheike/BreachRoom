@@ -19,8 +19,8 @@ export function SiteFooter() {
     <footer
       className={
         onPlay
-          ? "border-t border-line/80 bg-navy-950 py-8 text-muted"
-          : "border-t border-site-line bg-site py-10 text-site-muted"
+          ? "site-footer border-t border-line/80 bg-navy-950 py-8 text-muted"
+          : "site-footer border-t border-site-line bg-site py-10 text-site-muted"
       }
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 text-sm leading-6 sm:px-6 lg:px-8">
