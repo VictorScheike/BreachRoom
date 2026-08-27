@@ -26,10 +26,6 @@ function topicChips(mission: MissionDefinition): string[] {
 export function MissionCard({ mission, titleAs = "h3", descriptionLines = 3 }: MissionCardProps) {
   const Title = titleAs;
   const topics = topicChips(mission);
-  const audience =
-    mission.audienceMode === "general"
-      ? mission.audienceLabel ?? "Organisation-wide"
-      : null;
 
   return (
     <article className="mission-card">
@@ -43,7 +39,6 @@ export function MissionCard({ mission, titleAs = "h3", descriptionLines = 3 }: M
             {mission.decisionsPerSession ? ` · ${mission.decisionsPerSession} DECISIONS` : ""}
           </p>
           <Title className="mission-card__title">{mission.title}</Title>
-          {mission.subtitle ? <p className="mission-card__subtitle">{mission.subtitle}</p> : null}
           <p
             className={
               descriptionLines === 4
@@ -61,7 +56,6 @@ export function MissionCard({ mission, titleAs = "h3", descriptionLines = 3 }: M
           <p className="mission-card__destination">
             Destination: {destinationLabel(mission)}
           </p>
-          {audience ? <p className="mission-card__audience">Audience: Everyone</p> : null}
         </div>
         <div className="mission-card__footer">
           <Link className="btn-primary mission-card__action" href={playUrlForMission(mission.id)}>

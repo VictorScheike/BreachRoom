@@ -276,7 +276,7 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
     questions: NORTHSTAR_ZERO_HOUR_QUESTIONS,
     published: true,
     summary:
-      "A suspected malware and ransomware attack is spreading across Northstar Logistics. Coordinate containment, escalation, continuity and recovery before the incident controls the organisation.",
+      "Coordinate Northstar’s response as ransomware spreads across the organisation.",
     audienceMode: "general",
     audienceLabel: "Organisation-wide",
     requiresRoleSelection: false,
