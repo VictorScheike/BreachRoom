@@ -615,9 +615,9 @@
   align-items: flex-start;
   gap: 3px;
   width: max-content;
-  min-width: 13.5rem;
+  min-width: 15rem;
   max-width: none;
-  padding: 0.42rem 0.8rem;
+  padding: 0.5rem 1rem;
   border-radius: 0.45rem;
   background: #f0b429;
   color: #07111f;
