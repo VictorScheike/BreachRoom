@@ -67,13 +67,14 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
   const report = reportFromProgressSession(session);
   const preview = report?.journey.slice(0, 8) ?? [];
   const extra = report ? Math.max(0, report.journey.length - preview.length) : 0;
+  const score = report?.score.overall ?? session.overall;
 
   return (
     <li>
       <strong>{session.missionTitle}</strong>
       <span>
         {session.perspectiveLabel}
-        {session.overall !== null ? ` · Score ${session.overall}` : ""}
+        {score !== null ? ` · Score ${score}` : ""}
       </span>
       {report ? (
         <>
@@ -99,8 +100,8 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
           <Link className="btn-primary" href={progressReportUrl(session.id)}>
             See my score
           </Link>
-        ) : session.overall !== null ? (
-          <span className="progress-score-fallback">Score {session.overall}</span>
+        ) : score !== null ? (
+          <span className="progress-score-fallback">Score {score}</span>
         ) : null}
         <Link className="btn-tertiary" href={playUrlForMission(session.missionId, session.roleId)}>
           Replay
