@@ -268,5 +268,7 @@ describe("player stays visible during decisions", () => {
     expect(html).toContain("Use the arrow keys, WASD, or tap a neighbouring tile to walk the path.");
     expect(html).toContain("Begin incident response");
     expect(html.indexOf("decision-dock-briefing")).toBeLessThan(html.indexOf("game-map"));
+    expect(html).toContain("game-mobile-status");
+    expect(html).toContain("is-sheet-open");
   });
 });

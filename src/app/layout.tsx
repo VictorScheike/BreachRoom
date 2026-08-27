@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import "./globals.css";
 import "@/components/site/home-page.css";
+import "./mobile-play.css";
 
 const ibmSans = IBM_Plex_Sans({
   variable: "--font-ibm-sans",
@@ -28,6 +29,12 @@ export const metadata: Metadata = {
   title: "BreachRoom | Role-based cybersecurity training through playable decisions",
   description:
     "Learn security by making the decisions yourself. Free to play. No account required.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
