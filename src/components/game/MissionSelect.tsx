@@ -1,9 +1,21 @@
 import Link from "next/link";
 import { publishedMissions } from "@/lib/missions/catalog";
-import type { MissionId } from "@/lib/missions/types";
+import type { MissionDefinition, MissionId } from "@/lib/missions/types";
 
 interface MissionSelectProps {
   onSelect: (missionId: MissionId) => void;
+}
+
+function destinationLabel(mission: MissionDefinition): string {
+  return mission.destination.split("—")[0]?.trim() ?? mission.destination;
+}
+
+function learningLabel(mission: MissionDefinition): string {
+  return mission.learningAreas.slice(0, 3).join(" · ");
+}
+
+function frameworksLabel(mission: MissionDefinition): string {
+  return mission.frameworks.slice(0, 2).join(" · ");
 }
 
 export function MissionSelect({ onSelect }: MissionSelectProps) {
@@ -13,7 +25,7 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
         <p className="game-kicker">Try the exercise</p>
         <h1 className="game-panel-title">Choose a mission</h1>
         <p className="game-panel-copy">
-          Four playable maps. After you pick one, you choose a relevant role or the standard
+          Five playable maps. After you pick one, you choose a relevant role or the standard
           version. You can also browse the full library first.
         </p>
         <p>
@@ -25,7 +37,7 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
           {publishedMissions().map((mission) => (
             <article
               key={mission.id}
-              className={`mission-card mission-card-${mission.id}`}
+              className={`mission-card mission-select-card mission-card-${mission.id}`}
             >
               <div
                 className={`mission-preview mission-preview-${mission.id}`}
@@ -33,19 +45,21 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
               />
               <p className="game-kicker">{mission.difficulty}</p>
               <h2 className="mission-card-title">{mission.title}</h2>
-              <p className="game-panel-copy">{mission.story}</p>
-              <p className="mission-meta">
-                <strong>Learning:</strong> {mission.learningAreas.join(" · ")}
-              </p>
-              <p className="mission-meta">
-                <strong>Destination:</strong> {mission.destination}
-              </p>
-              <p className="mission-meta">
-                <strong>Frameworks:</strong> {mission.frameworks.join(" · ")}
-              </p>
+              <p className="mission-card-blurb">{mission.summary}</p>
+              <ul className="mission-card-facts">
+                <li>
+                  <strong>Learning:</strong> {learningLabel(mission)}
+                </li>
+                <li>
+                  <strong>Destination:</strong> {destinationLabel(mission)}
+                </li>
+                <li>
+                  <strong>Frameworks:</strong> {frameworksLabel(mission)}
+                </li>
+              </ul>
               <button
                 type="button"
-                className="game-primary"
+                className="game-primary mission-card-cta"
                 onClick={() => onSelect(mission.id)}
               >
                 Start mission

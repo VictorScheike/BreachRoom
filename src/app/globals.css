@@ -962,6 +962,8 @@ summary::-webkit-details-marker {
   gap: 1rem;
   margin-top: 1rem;
   grid-template-columns: 1fr;
+  grid-auto-rows: 1fr;
+  align-items: stretch;
 }
 
 @media (min-width: 768px) {
@@ -1033,6 +1035,10 @@ summary::-webkit-details-marker {
 }
 
 .mission-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 1rem;
   background: #122036;
@@ -1043,6 +1049,43 @@ summary::-webkit-details-marker {
   margin: 0.3rem 0 0;
   font-size: 1.25rem;
   font-weight: 700;
+}
+
+.mission-card-blurb {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  min-height: 4.35em;
+  margin: 0.55rem 0 0;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.mission-card-facts {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mission-card-facts li {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.mission-card-facts li:last-child {
+  margin-bottom: 0;
+}
+
+.mission-card-cta {
+  margin-top: auto;
+  align-self: stretch;
+}
+
+.mission-select-card .mission-card-facts {
+  margin-bottom: 0.9rem;
 }
 
 .mission-preview {
