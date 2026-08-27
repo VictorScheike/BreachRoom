@@ -1070,9 +1070,12 @@ summary::-webkit-details-marker {
 
 .mission-card-facts li {
   margin: 0 0 0.35rem;
+  overflow: hidden;
   color: var(--muted);
   font-size: 0.88rem;
   line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .mission-card-facts li:last-child {
@@ -1084,7 +1087,12 @@ summary::-webkit-details-marker {
   align-self: stretch;
 }
 
+.mission-select .mission-card-cta.game-primary {
+  margin-top: auto;
+}
+
 .mission-select-card .mission-card-facts {
+  flex: 1 1 auto;
   margin-bottom: 0.9rem;
 }
 

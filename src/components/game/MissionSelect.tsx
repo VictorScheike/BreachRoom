@@ -11,7 +11,7 @@ function destinationLabel(mission: MissionDefinition): string {
 }
 
 function learningLabel(mission: MissionDefinition): string {
-  return mission.learningAreas.slice(0, 3).join(" · ");
+  return mission.learningAreas.slice(0, 2).join(" · ");
 }
 
 function frameworksLabel(mission: MissionDefinition): string {
