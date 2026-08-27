@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ProgressDashboard, ProgressPage } from "@/components/site/ProgressPage";
+import { reportFromProgressSession } from "@/lib/progress/report";
 import {
   createEmptyProgressStore,
   loadProgress,
@@ -23,6 +24,8 @@ function sampleSession(overrides: Partial<ProgressSession> = {}): ProgressSessio
     completed: false,
     endedEarly: false,
     overall: null,
+    scenarioId: "lo-campus",
+    choices: [],
     startedAt: 1,
     updatedAt: 2,
     roleGroupId: "it-security",
@@ -112,5 +115,54 @@ describe("progress store", () => {
     expect(html).toContain("IT &amp; Security");
     expect(html).toContain("Topic progress");
     expect(html).toContain("Recommended next training");
+    expect(html).toContain("Completed missions");
+    expect(html).toContain("Inbox Under Siege");
+    expect(html).toContain("Score 72");
+    expect(html).toContain("before answers were stored");
+  });
+
+  it("shows how completed missions were answered and links to the score", () => {
+    const store = {
+      version: 2,
+      sessions: [
+        sampleSession({
+          id: "locked-out:9",
+          completed: true,
+          questionsCompleted: 2,
+          questionsRequired: 8,
+          overall: 81,
+          choices: [
+            { questionId: "lo-01", optionId: "lo-01-c", displayLetter: "A" },
+            { questionId: "lo-02", optionId: "lo-02-a", displayLetter: "B" },
+          ],
+        }),
+      ],
+    };
+    const html = renderToStaticMarkup(<ProgressDashboard store={store} hydrated />);
+    expect(html).toContain("Completed missions");
+    expect(html).toContain("You have finished Locked Out");
+    expect(html).toContain("See my score");
+    expect(html).toContain("progress/report?session=locked-out%3A9");
+    expect(html).toContain("Screens go dark");
+    expect(html).toContain("The Excel from &#x27;Finance&#x27;");
+    expect(html).toContain("correct");
+    expect(html).not.toContain("Recent training sessions");
+  });
+
+  it("rebuilds an after-action report from saved answers", () => {
+    const session = sampleSession({
+      completed: true,
+      choices: [
+        { questionId: "lo-01", optionId: "lo-01-c", displayLetter: "A" },
+        { questionId: "lo-02", optionId: "lo-02-a", displayLetter: "B" },
+      ],
+    });
+    const report = reportFromProgressSession(session);
+    expect(report).not.toBeNull();
+    expect(report?.journey).toHaveLength(2);
+    expect(report?.journey[0]?.selected.id).toBe("lo-01-c");
+    expect(report?.verdictCounts.correct).toBe(1);
+    expect(report?.verdictCounts.partlyCorrect).toBe(1);
+    expect(reportFromProgressSession(sampleSession())).toBeNull();
   });
 });

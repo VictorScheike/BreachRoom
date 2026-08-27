@@ -16,6 +16,8 @@ interface GameReportProps {
   onReplay: () => void;
   onNewScenario: () => void;
   onOtherMission: () => void;
+  backHref?: string;
+  backLabel?: string;
 }
 
 function ScoreRing({ value }: { value: number }) {
@@ -59,6 +61,8 @@ export function GameReport({
   onReplay,
   onNewScenario,
   onOtherMission,
+  backHref,
+  backLabel,
 }: GameReportProps) {
   const [filter, setFilter] = useState<JourneyFilter>("all");
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set());
@@ -79,6 +83,13 @@ export function GameReport({
   return (
     <main id="main-content" className="game-page">
       <div className="game-shell game-report">
+        {backHref ? (
+          <p>
+            <Link className="back-link" href={backHref}>
+              {backLabel ?? "Back to my progress"}
+            </Link>
+          </p>
+        ) : null}
         <section className={`report-hero report-hero-${report.destinationState}`}>
           <p className="game-kicker">
             {report.missionTitle} · {report.scenarioTitle}

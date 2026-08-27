@@ -5,11 +5,13 @@ import { Component, type ReactNode, useMemo, useSyncExternalStore } from "react"
 import {
   EMPTY_PROGRESS_STORE,
   loadProgress,
+  progressReportUrl,
   progressSummary,
   subscribeProgress,
   type ProgressSession,
   type ProgressStore,
 } from "@/lib/progress/store";
+import { answerSummaryLabel, reportFromProgressSession } from "@/lib/progress/report";
 import { topicLabel } from "@/lib/training/labels";
 import { playUrlForMission } from "@/lib/training/session";
 
@@ -61,6 +63,53 @@ function topicCounts(sessions: readonly ProgressSession[]): { id: string; label:
     .slice(0, 6);
 }
 
+function CompletedSessionCard({ session }: { session: ProgressSession }) {
+  const report = reportFromProgressSession(session);
+  const preview = report?.journey.slice(0, 8) ?? [];
+  const extra = report ? Math.max(0, report.journey.length - preview.length) : 0;
+
+  return (
+    <li>
+      <strong>{session.missionTitle}</strong>
+      <span>
+        {session.perspectiveLabel}
+        {session.overall !== null ? ` · Score ${session.overall}` : ""}
+      </span>
+      {report ? (
+        <>
+          <p className="progress-answer-summary">{answerSummaryLabel(report)}</p>
+          <ol className="progress-answers">
+            {preview.map((item) => (
+              <li key={`${session.id}-${item.index}`}>
+                <span className="progress-answers__letter">{item.displayLetter}</span>
+                <span className="progress-answers__title">{item.question.title}</span>
+                <em className={`progress-answers__verdict is-${item.verdict.id}`}>{item.verdict.label}</em>
+              </li>
+            ))}
+          </ol>
+          {extra > 0 ? <p className="progress-answers__more">+ {extra} more on the score page</p> : null}
+        </>
+      ) : (
+        <p className="progress-answer-summary">
+          This session was saved before answers were stored. Replay it to keep a full score next time.
+        </p>
+      )}
+      <div className="progress-session-actions">
+        {report ? (
+          <Link className="btn-primary" href={progressReportUrl(session.id)}>
+            See my score
+          </Link>
+        ) : session.overall !== null ? (
+          <span className="progress-score-fallback">Score {session.overall}</span>
+        ) : null}
+        <Link className="btn-tertiary" href={playUrlForMission(session.missionId, session.roleId)}>
+          Replay
+        </Link>
+      </div>
+    </li>
+  );
+}
+
 export function ProgressDashboard({
   store,
   hydrated,
@@ -70,7 +119,9 @@ export function ProgressDashboard({
 }) {
   const summary = useMemo(() => progressSummary(store), [store]);
   const unfinished = store.sessions.find((item) => !item.completed && !item.endedEarly);
-  const recent = store.sessions.slice(0, 6);
+  const completed = store.sessions.filter((item) => item.completed);
+  const completedNames = [...new Set(completed.map((item) => item.missionTitle))];
+  const inProgress = store.sessions.filter((item) => !item.completed).slice(0, 6);
   const topics = topicCounts(store.sessions);
   const empty = store.sessions.length === 0;
 
@@ -111,10 +162,25 @@ export function ProgressDashboard({
 
       {unfinished ? (
         <p>
-          <Link className="btn-primary" href={playUrlForMission(unfinished.missionId)}>
+          <Link className="btn-primary" href={playUrlForMission(unfinished.missionId, unfinished.roleId)}>
             Continue {unfinished.missionTitle}
           </Link>
         </p>
+      ) : null}
+
+      {completed.length > 0 ? (
+        <section className="progress-completed">
+          <h2>Completed missions</h2>
+          <p className="progress-completed__lede">
+            You have finished {completedNames.join(", ")}. Open a score to see how you answered each
+            decision.
+          </p>
+          <ul className="progress-sessions">
+            {completed.map((session) => (
+              <CompletedSessionCard key={session.id} session={session} />
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {topics.length > 0 ? (
@@ -131,29 +197,30 @@ export function ProgressDashboard({
         </section>
       ) : null}
 
-      {recent.length > 0 ? (
+      {inProgress.length > 0 ? (
         <section>
-          <h2>Recent training sessions</h2>
+          <h2>In progress</h2>
           <ul className="progress-sessions">
-            {recent.map((session) => (
+            {inProgress.map((session) => (
               <li key={session.id}>
                 <strong>{session.missionTitle}</strong>
                 <span>
                   {session.perspectiveLabel} · {session.questionsCompleted}/{session.questionsRequired}{" "}
-                  decisions · {session.completed ? "Completed" : session.endedEarly ? "Ended early" : "In progress"}
+                  decisions · {session.endedEarly ? "Ended early" : "In progress"}
                 </span>
-                <Link href={playUrlForMission(session.missionId)}>
-                  {session.completed ? "Replay" : "Continue"}
-                </Link>
+                <Link href={playUrlForMission(session.missionId, session.roleId)}>Continue</Link>
               </li>
             ))}
           </ul>
-          <p>
-            <Link className="btn-secondary" href="/training/">
-              Recommended next training
-            </Link>
-          </p>
         </section>
+      ) : null}
+
+      {!empty ? (
+        <p>
+          <Link className="btn-secondary" href="/training/">
+            Recommended next training
+          </Link>
+        </p>
       ) : (
         <div className="progress-empty-actions">
           <Link className="btn-primary" href="/missions/">

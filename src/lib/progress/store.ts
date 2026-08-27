@@ -1,5 +1,5 @@
 import { findMission } from "@/lib/missions/catalog";
-import type { MissionId } from "@/lib/missions/types";
+import type { MissionId, RecordedChoice } from "@/lib/missions/types";
 import type { MissionPerspective } from "@/lib/game/perspective";
 
 export const PROGRESS_STORAGE_KEY = "breachroom.progress.v2";
@@ -17,6 +17,8 @@ export interface ProgressSession {
   completed: boolean;
   endedEarly: boolean;
   overall: number | null;
+  scenarioId: string | null;
+  choices: readonly RecordedChoice[];
   startedAt: number;
   updatedAt: number;
   roleGroupId: string | null;
@@ -111,6 +113,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function asChoice(value: unknown): RecordedChoice | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  if (typeof value.questionId !== "string" || typeof value.optionId !== "string") {
+    return null;
+  }
+  if (value.displayLetter !== "A" && value.displayLetter !== "B" && value.displayLetter !== "C") {
+    return null;
+  }
+  return {
+    questionId: value.questionId,
+    optionId: value.optionId,
+    displayLetter: value.displayLetter,
+  };
+}
+
 function asSession(value: unknown): ProgressSession | null {
   if (!isRecord(value)) {
     return null;
@@ -145,6 +164,10 @@ function asSession(value: unknown): ProgressSession | null {
     completed,
     endedEarly: value.endedEarly === true,
     overall: typeof value.overall === "number" ? value.overall : null,
+    scenarioId: typeof value.scenarioId === "string" ? value.scenarioId : null,
+    choices: Array.isArray(value.choices)
+      ? value.choices.map(asChoice).filter((item): item is RecordedChoice => item !== null)
+      : [],
     startedAt: typeof value.startedAt === "number" ? value.startedAt : Date.now(),
     updatedAt: typeof value.updatedAt === "number" ? value.updatedAt : Date.now(),
     roleGroupId: typeof value.roleGroupId === "string" ? value.roleGroupId : null,
@@ -227,4 +250,8 @@ export function progressSummary(store: ProgressStore): {
 
 export function sessionIdFor(missionId: string, seed: number): string {
   return `${missionId}:${seed}`;
+}
+
+export function progressReportUrl(sessionId: string): string {
+  return `/progress/report/?session=${encodeURIComponent(sessionId)}`;
 }
