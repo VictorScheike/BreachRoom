@@ -398,9 +398,7 @@ export function GameView({
         </div>
 
         <div className="game-mobile-status">
-          <p className="game-mobile-status-objective">
-            Reach {world.destinationLabel}
-          </p>
+          <p className="game-mobile-status-objective">{world.destinationLabel}</p>
           <div className="game-mobile-status-meta">
             <span>
               {state.choices.length}/{total}

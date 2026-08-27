@@ -212,10 +212,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.45rem 0.65rem;
+    gap: 0.35rem 0.55rem;
     min-width: 0;
     margin: 0 0 0.4rem;
-    padding: 0.35rem 0.45rem;
+    padding: 0.3rem 0.4rem;
     border: 1px solid var(--line);
     border-radius: 0.65rem;
     background: #101c30;
@@ -223,14 +223,16 @@
 
   .game-mobile-status-objective {
     min-width: 0;
+    flex: 1 1 auto;
     margin: 0;
     color: var(--amber);
     font-size: 0.78rem;
     font-weight: 700;
     line-height: 1.25;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .game-mobile-status-meta {
@@ -245,6 +247,26 @@
 
   .game-mobile-status-meta span {
     white-space: nowrap;
+  }
+
+  .game-mobile-status-meta span:nth-child(2) {
+    max-width: 7.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (max-width: 360px) {
+    .game-mobile-status {
+      align-items: flex-start;
+    }
+
+    .game-mobile-status-objective {
+      font-size: 0.74rem;
+    }
+
+    .game-mobile-status-meta span:nth-child(2) {
+      max-width: 5.8rem;
+    }
   }
 
   .game-mobile-more {
@@ -303,8 +325,8 @@
     width: 100%;
     max-width: 100%;
     height: auto;
-    max-height: min(52vh, calc(100vh - 13rem));
-    max-height: min(52dvh, calc(100dvh - 13rem));
+    max-height: min(58vh, calc(100vh - 11rem));
+    max-height: min(58dvh, calc(100dvh - 11rem));
     touch-action: none;
     image-rendering: pixelated;
   }
@@ -355,7 +377,12 @@
     display: block;
   }
 
-  .game-shell-live.is-sheet-open .game-pad {
+  .game-shell-live.is-sheet-open .game-pad,
+  .game-shell-live.is-sheet-open .game-mobile-details {
+    display: none;
+  }
+
+  .game-mobile-details:not([open]) .game-mobile-details-body {
     display: none;
   }
 
