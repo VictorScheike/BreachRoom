@@ -77,30 +77,30 @@ export function WizardActions({
   onReset,
   extra,
 }: WizardActionsProps) {
-  const showSecondary = step !== 1;
+  const showReset = step !== 1;
   return (
     <footer className="wizard-actions">
-      <div className="wizard-actions__secondary">
-        {showSecondary && onBack ? (
+      <div className="wizard-actions__cluster">
+        {showReset && onBack ? (
           <button type="button" className="btn-secondary" onClick={onBack}>
             Back
           </button>
         ) : null}
-        {showSecondary ? (
-          <button type="button" className="btn-tertiary" onClick={onReset}>
-            Start over
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="btn-primary wizard-actions__continue"
+          disabled={continueDisabled}
+          onClick={onContinue}
+        >
+          {continueLabel}
+        </button>
         {extra}
       </div>
-      <button
-        type="button"
-        className="btn-primary wizard-actions__continue"
-        disabled={continueDisabled}
-        onClick={onContinue}
-      >
-        {continueLabel}
-      </button>
+      {showReset ? (
+        <button type="button" className="btn-tertiary wizard-actions__reset" onClick={onReset}>
+          Start over
+        </button>
+      ) : null}
     </footer>
   );
 }

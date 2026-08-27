@@ -94,4 +94,34 @@ describe("destination markers", () => {
     expect(html).toContain("mission-thumb-hotspot--below");
     expect(html).not.toContain("mission-thumb-hotspot--above");
   });
+
+  it("samples the real map tiles so mission cards match the playable worlds", () => {
+    const lava = renderToStaticMarkup(
+      <MissionThumbnail missionId="ai-forge" label="Model Launch Gateway" />,
+    );
+    const forest = renderToStaticMarkup(
+      <MissionThumbnail missionId="locked-out" label="Core Server Room" />,
+    );
+    const cave = renderToStaticMarkup(
+      <MissionThumbnail missionId="dependency-depths" label="Trusted Build Exit" />,
+    );
+    const office = renderToStaticMarkup(
+      <MissionThumbnail missionId="inbox-under-siege" label="Security Hub" />,
+    );
+    const campus = renderToStaticMarkup(
+      <MissionThumbnail missionId="northstar-zero-hour" label="Incident Coordination Room" />,
+    );
+    expect(lava).toContain("rpg-tile-lava");
+    expect(lava).toContain("rpg-tile-stone-floor");
+    expect(forest).toContain("rpg-tile-tree");
+    expect(forest).toContain("rpg-tile-clearing");
+    expect(cave).toContain("rpg-tile-chasm");
+    expect(cave).toContain("rpg-tile-cave-floor");
+    expect(office).toContain("rpg-tile-corridor");
+    expect(office).toContain("rpg-tile-wall");
+    expect(campus).toContain("rpg-tile-tree");
+    expect(campus).toContain("rpg-tile-corridor");
+    expect(campus).toContain("Incident Coordination Room");
+    expect(campus).toContain("mission-thumb-hotspot--end");
+  });
 });

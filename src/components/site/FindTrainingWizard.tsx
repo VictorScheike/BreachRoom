@@ -305,21 +305,21 @@ export function FindTrainingWizard({ initialGroup }: { initialGroup?: RoleGroupI
             and these eight questions already selected. You will not need to choose again.
           </p>
           <footer className="wizard-actions">
-            <div className="wizard-actions__secondary">
-              <button type="button" className="btn-tertiary" onClick={reset}>
-                Start over
-              </button>
+            <div className="wizard-actions__cluster">
               <Link className="btn-secondary" href="/missions/">
                 Browse all missions
               </Link>
+              <Link
+                className="btn-primary wizard-actions__continue"
+                href={playUrlForConfig(result.config)}
+                onClick={() => startConfig(result.config)}
+              >
+                Start this training
+              </Link>
             </div>
-            <Link
-              className="btn-primary wizard-actions__continue"
-              href={playUrlForConfig(result.config)}
-              onClick={() => startConfig(result.config)}
-            >
-              Start this training
-            </Link>
+            <button type="button" className="btn-tertiary wizard-actions__reset" onClick={reset}>
+              Start over
+            </button>
           </footer>
           {alternative ? (
             <div className="training-alt">

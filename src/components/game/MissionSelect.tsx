@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MissionThumbnail } from "@/components/site/MissionThumbnail";
 import { publishedMissions } from "@/lib/missions/catalog";
 import type { MissionDefinition, MissionId } from "@/lib/missions/types";
 
@@ -25,8 +26,9 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
         <p className="game-kicker">Try the exercise</p>
         <h1 className="game-panel-title">Choose a mission</h1>
         <p className="game-panel-copy">
-          Five playable maps. After you pick one, you choose a relevant role or the standard
-          version. You can also browse the full library first.
+          These maps exist so you can practise the hard calls before they land on your desk. Each
+          one is a different workplace under pressure — after you pick a map, you choose a relevant
+          role or the standard version.
         </p>
         <p>
           <Link className="back-link" href="/missions/">
@@ -39,10 +41,9 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
               key={mission.id}
               className={`mission-card mission-select-card mission-card-${mission.id}`}
             >
-              <div
-                className={`mission-preview mission-preview-${mission.id}`}
-                aria-hidden="true"
-              />
+              <div className="mission-select-thumb">
+                <MissionThumbnail missionId={mission.id} label={destinationLabel(mission)} />
+              </div>
               <p className="game-kicker">{mission.difficulty}</p>
               <h2 className="mission-card-title">{mission.title}</h2>
               <p className="mission-card-blurb">{mission.summary}</p>

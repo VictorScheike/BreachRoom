@@ -1097,12 +1097,27 @@ summary::-webkit-details-marker {
   margin-bottom: 0.9rem;
 }
 
-.mission-preview {
-  height: 5.5rem;
-  margin-bottom: 0.6rem;
-  overflow: hidden;
+.mission-select-thumb {
+  position: relative;
+  height: 7.4rem;
+  margin: 0 0 0.7rem;
+  overflow: visible;
+  padding: 2.4rem 0.45rem 0.45rem;
   border-radius: 0.6rem;
-  image-rendering: pixelated;
+  background: #0b1220;
+  box-sizing: border-box;
+}
+
+.mission-select-thumb .mission-thumb,
+.mission-select-thumb .mission-thumb-grid {
+  height: 100%;
+}
+
+.mission-select-thumb .mission-thumb-mark {
+  min-width: 11.5rem;
+  max-width: none;
+  padding: 0.32rem 0.65rem;
+  font-size: 0.62rem;
 }
 
 .mission-preview-locked-out {

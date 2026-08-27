@@ -17,6 +17,8 @@ describe("mission select cards", () => {
     expect(html).toContain("mission-card-blurb");
     expect(html).toContain("mission-card-cta");
     expect(html).toContain("mission-select-card");
+    expect(html).toContain("mission-select-thumb");
+    expect(html).toContain("practise the hard calls");
   });
 
   it("keeps card summaries to a short, similar length", () => {

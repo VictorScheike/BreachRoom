@@ -43,8 +43,11 @@ export function HomePage() {
 
         <section className="home-section" aria-labelledby="playable-missions-heading">
           <h2 id="playable-missions-heading">Playable missions</h2>
-          <p>
-            Choose a scenario, enter the map and see how your decisions shape the outcome.
+          <p className="section-lede missions-intro">
+            These maps exist so you can practise the hard calls before they land on your desk.
+            Each one is a different workplace under pressure — phishing, ransomware, a risky AI
+            launch, a poisoned build, a lockout. Walking the route and deciding at each checkpoint
+            is how the judgement sticks.
           </p>
           <div className="mission-grid">
             {missions.map((mission) => (

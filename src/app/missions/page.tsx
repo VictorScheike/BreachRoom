@@ -13,9 +13,11 @@ export default function MissionsPage() {
       <main id="main-content" className="site-page home-wrap">
         <p className="home-eyebrow">Mission library</p>
         <h1>Choose a mission</h1>
-        <p className="training-lede">
-          Each mission is a playable map with eight decisions and a written debrief. After you
-          choose one, you will only be offered roles that actually fit that scenario.
+        <p className="training-lede missions-intro">
+          These maps exist so you can practise the hard calls before they land on your desk. Each
+          one is a different workplace under pressure — phishing, ransomware, a risky AI launch, a
+          poisoned build, a lockout. Walking the route and deciding at each checkpoint is how the
+          judgement sticks.
         </p>
         <MissionsLibrary />
       </main>
