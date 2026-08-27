@@ -1056,6 +1056,7 @@ summary::-webkit-details-marker {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+  height: 4.35em;
   min-height: 4.35em;
   margin: 0.55rem 0 0;
   line-height: 1.45;
