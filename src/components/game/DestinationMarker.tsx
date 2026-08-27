@@ -34,8 +34,11 @@ export function DestinationMarker({ destination, world, unlocked }: DestinationM
     <div
       className={`${placementClass(destination, world)} ${unlocked ? "is-open" : "is-locked"}`}
       style={{
-        gridColumn: destination.x + 1,
-        gridRow: destination.y + 1,
+        position: "absolute",
+        left: `${(destination.x / world.columns) * 100}%`,
+        top: `${(destination.y / world.rows) * 100}%`,
+        width: `${100 / world.columns}%`,
+        height: `${100 / world.rows}%`,
       }}
       data-destination-x={destination.x}
       data-destination-y={destination.y}

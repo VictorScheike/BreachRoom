@@ -12,6 +12,7 @@ export type TileType =
   | "desk"
   | "serverRack"
   | "rock"
+  | "ledge"
   | "stoneFloor"
   | "stoneBridge"
   | "path"
@@ -157,6 +158,15 @@ export const TILE_DEFS: Record<TileType, TileDefinition> = {
     isExit: false,
     label: "Rock",
   },
+  ledge: {
+    type: "ledge",
+    walkable: false,
+    visual: "ledge",
+    canTriggerQuestion: false,
+    isStart: false,
+    isExit: false,
+    label: "Stone edge",
+  },
   stoneFloor: {
     type: "stoneFloor",
     walkable: true,
@@ -283,6 +293,7 @@ const SURFACE_CHARS: Record<string, TileType> = {
   D: "desk",
   K: "serverRack",
   R: "rock",
+  V: "ledge",
   S: "stoneFloor",
   "=": "stoneBridge",
   P: "path",
@@ -329,8 +340,62 @@ export function tileFromChar(char: string, x: number, y: number, mapId: string):
   return cloneTile(type);
 }
 
+export const PATH_VISUALS: readonly string[] = [
+  "stone-floor",
+  "stone-bridge",
+  "path",
+  "clearing",
+  "wood-bridge",
+  "cave-floor",
+  "cave-bridge",
+  "corridor",
+  "doorway",
+];
+
+export function overlayMarker(
+  surface: MapTile,
+  marker: "start" | "exit" | "checkpoint",
+  extra: Partial<MapTile> = {},
+): MapTile {
+  if (surface.walkable !== true) {
+    throw new Error(`Cannot place ${marker} on blocked ${surface.type}`);
+  }
+  return {
+    ...TILE_DEFS[marker],
+    visual: surface.visual,
+    ...extra,
+  };
+}
+
 export function isWalkableTile(tile: MapTile | null | undefined): boolean {
   return tile?.walkable === true;
+}
+
+export function looksLikePath(tile: MapTile | null | undefined): boolean {
+  return tile?.walkable === true && PATH_VISUALS.includes(tile.visual);
+}
+
+export function placeRouteMarkers(
+  tiles: MapTile[][],
+  start: { x: number; y: number },
+  exit: { x: number; y: number },
+  checkpoints: readonly { x: number; y: number }[],
+): void {
+  const at = (point: { x: number; y: number }, label: string): MapTile => {
+    const tile = tiles[point.y]?.[point.x];
+    if (!tile) {
+      throw new Error(`${label} is outside the map at ${point.x},${point.y}`);
+    }
+    return tile;
+  };
+  tiles[start.y]![start.x] = overlayMarker(at(start, "start"), "start");
+  tiles[exit.y]![exit.x] = overlayMarker(at(exit, "exit"), "exit");
+  checkpoints.forEach((point, index) => {
+    tiles[point.y]![point.x] = overlayMarker(at(point, `checkpoint ${index + 1}`), "checkpoint", {
+      checkpointOrder: index + 1,
+      label: `Checkpoint ${index + 1}`,
+    });
+  });
 }
 
 export function isBlockedEnvironment(type: TileType): boolean {

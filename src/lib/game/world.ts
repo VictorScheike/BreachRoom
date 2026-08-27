@@ -188,8 +188,10 @@ export function parseLayout(layout: readonly string[], mapId: string): MapTile[]
   });
 }
 
-export function buildWorld(spec: WorldSpec): WorldMap {
-  const tiles = parseLayout(spec.layout, spec.id);
+export function assembleWorld(
+  spec: Omit<WorldSpec, "layout">,
+  tiles: MapTile[][],
+): WorldMap {
   const columns = tiles[0]?.length ?? 0;
   const rows = tiles.length;
   const starts = findPoints(tiles, (tile) => tile.isStart);
@@ -232,6 +234,10 @@ export function buildWorld(spec: WorldSpec): WorldMap {
     landmarkTiles: [exit],
     destinationLabel: destination.label,
   };
+}
+
+export function buildWorld(spec: WorldSpec): WorldMap {
+  return assembleWorld(spec, parseLayout(spec.layout, spec.id));
 }
 
 export function floodWalkable(world: WorldMap, origin: GridPoint): Set<string> {

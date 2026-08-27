@@ -260,7 +260,7 @@ summary::-webkit-details-marker {
   image-rendering: pixelated;
   overflow: hidden;
   border: 2px solid #1b3358;
-  background: #05070c;
+  background: #c2410c;
 }
 
 .world-ai-forge.game-map {
@@ -313,24 +313,24 @@ summary::-webkit-details-marker {
 }
 
 .rpg-tile--checkpoint::after {
-  content: attr(data-checkpoint);
+  content: "?";
   position: absolute;
   top: 50%;
   left: 50%;
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 58%;
-  height: 58%;
+  width: 62%;
+  height: 62%;
   min-width: 0.7rem;
   min-height: 0.7rem;
   transform: translate(-50%, -50%);
   border: 1px solid #0b1220;
-  border-radius: 999px;
-  background: #f0b429;
+  border-radius: 4px;
+  background: #facc15;
   color: #0b1220;
-  font-size: clamp(0.45rem, 1.8vw, 0.72rem);
-  font-weight: 800;
+  font-size: clamp(0.5rem, 2vw, 0.85rem);
+  font-weight: 900;
   line-height: 1;
   pointer-events: none;
 }
@@ -467,8 +467,8 @@ summary::-webkit-details-marker {
 }
 
 .player-sprite {
-  width: 72%;
-  height: 72%;
+  width: 52%;
+  height: 52%;
   image-rendering: pixelated;
   filter:
     drop-shadow(0 0 1px #f8fafc)
@@ -1122,7 +1122,7 @@ summary::-webkit-details-marker {
 }
 
 .rpg-tile-void {
-  background: #05070c;
+  background: #9a3412;
 }
 
 .rpg-tile-wall {
@@ -1171,8 +1171,17 @@ summary::-webkit-details-marker {
 }
 
 .rpg-tile-rock {
-  background: #78716c;
-  box-shadow: inset 0 -8px 0 #44403c, inset 6px 6px 0 #a8a29e;
+  background: #57534e;
+  box-shadow: inset 0 -8px 0 #292524, inset 6px 6px 0 #78716c;
+}
+
+.rpg-tile-ledge {
+  background: #52525b;
+  box-shadow:
+    inset 0 3px 0 #d4d4d8,
+    inset 0 -8px 0 #27272a,
+    inset 4px 0 0 #3f3f46,
+    inset -3px 0 0 #18181b;
 }
 
 .rpg-tile-pipe {
@@ -1183,16 +1192,17 @@ summary::-webkit-details-marker {
 .rpg-tile-stone-floor,
 .rpg-tile-stoneFloor {
   background:
-    linear-gradient(#e7e5e4 0 2px, transparent 2px) 0 0 / 100% 8px,
-    #d6d3d1;
-  box-shadow: inset 0 0 0 2px #44403c, 0 0 0 1px #1c1917;
+    linear-gradient(rgba(244, 244, 245, 0.7) 0 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, rgba(244, 244, 245, 0.7) 0 1px, transparent 1px) 0 0 / 8px 8px,
+    #d4d4d8;
+  box-shadow: inset 0 0 0 1px #a1a1aa;
 }
 
 .rpg-tile-stone-bridge,
 .rpg-tile-bridge {
   background:
-    repeating-linear-gradient(#e2e8f0 0 4px, #94a3b8 4px 6px);
-  box-shadow: inset 0 0 0 2px #0f172a, 0 0 0 1px #f8fafc;
+    repeating-linear-gradient(#e4e4e7 0 4px, #a1a1aa 4px 6px);
+  box-shadow: inset 0 0 0 1px #52525b;
 }
 
 .rpg-tile-clearing {
@@ -1236,8 +1246,8 @@ summary::-webkit-details-marker {
 }
 
 .rpg-tile-doorway {
-  background: #7c2d12;
-  box-shadow: inset 0 0 0 2px #fbbf24;
+  background: #d6d3d1;
+  box-shadow: inset 0 0 0 3px #fbbf24, inset 0 0 0 6px #a8a29e;
 }
 
 .rpg-tile-crystal {
@@ -1343,7 +1353,7 @@ summary::-webkit-details-marker {
 }
 
 .map-destination {
-  position: relative;
+  position: absolute;
   z-index: 3;
   display: flex;
   align-items: center;
@@ -1356,11 +1366,11 @@ summary::-webkit-details-marker {
 .map-destination__object {
   display: grid;
   place-items: center;
-  width: 82%;
-  height: 82%;
+  width: 78%;
+  height: 78%;
   border-radius: 4px;
-  background: #0b1220;
-  color: #7dd3fc;
+  background: rgba(14, 116, 179, 0.88);
+  color: #e0f2fe;
   box-shadow: inset 0 0 0 2px #38bdf8;
   font-size: clamp(0.55rem, 1.6vw, 0.85rem);
 }

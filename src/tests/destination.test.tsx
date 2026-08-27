@@ -24,8 +24,8 @@ describe("destination markers", () => {
       );
       expect(html).toContain(`data-destination-x="${world.destination.x}"`);
       expect(html).toContain(`data-destination-y="${world.destination.y}"`);
-      expect(html).toContain(`grid-column:${world.destination.x + 1}`);
-      expect(html).toContain(`grid-row:${world.destination.y + 1}`);
+      expect(html).toContain(`left:${(world.destination.x / world.columns) * 100}%`);
+      expect(html).toContain(`top:${(world.destination.y / world.rows) * 100}%`);
       expect(html).toContain("EXIT LOCKED");
       const open = renderToStaticMarkup(
         <DestinationMarker destination={world.destination} world={world} unlocked />,

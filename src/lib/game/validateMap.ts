@@ -1,4 +1,4 @@
-import { TILE_DEFS, unknownTileWarnings, type TileType } from "@/lib/game/tiles";
+import { TILE_DEFS, looksLikePath, unknownTileWarnings, type TileType } from "@/lib/game/tiles";
 import {
   floodWalkable,
   isInsideMap,
@@ -22,6 +22,7 @@ const MUST_STAY_BLOCKED: readonly TileType[] = [
   "desk",
   "serverRack",
   "rock",
+  "ledge",
 ];
 
 export interface MapValidation {
@@ -85,6 +86,9 @@ export function validateWorld(world: WorldMap, expectedCheckpoints?: number): Ma
       const tile = tileAt(world, { x, y });
       if (MUST_STAY_BLOCKED.includes(tile.type) && tile.walkable === true) {
         issues.push(issue(world, `${tile.type} at ${x},${y} is walkable`));
+      }
+      if (tile.walkable === true && !looksLikePath(tile)) {
+        issues.push(issue(world, `walkable ${tile.type} at ${x},${y} does not look like a path`));
       }
       if (TILE_DEFS[tile.type] === undefined) {
         issues.push(issue(world, `unknown tile type at ${x},${y}`));

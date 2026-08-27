@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALL_MAPS, LAVA_MAP, worldForMission } from "@/lib/game/maps";
-import { TILE_DEFS, isWalkableTile, tileFromChar } from "@/lib/game/tiles";
+import { TILE_DEFS, isWalkableTile, looksLikePath, tileFromChar } from "@/lib/game/tiles";
 import { assertWorldValid, validateWorld } from "@/lib/game/validateMap";
 import { tryMove } from "@/lib/game/world";
 import { publishedMissions } from "@/lib/missions/catalog";
@@ -13,6 +13,7 @@ describe("shared tile registry", () => {
     expect(TILE_DEFS.wall.walkable).toBe(false);
     expect(TILE_DEFS.water.walkable).toBe(false);
     expect(TILE_DEFS.rock.walkable).toBe(false);
+    expect(TILE_DEFS.ledge.walkable).toBe(false);
     expect(TILE_DEFS.stoneFloor.walkable).toBe(true);
     expect(TILE_DEFS.stoneBridge.walkable).toBe(true);
     expect(TILE_DEFS.path.walkable).toBe(true);
@@ -69,6 +70,7 @@ describe("map validation", () => {
       return lava.tiles[next.y]?.[next.x]?.walkable !== true;
     });
     expect(movedOntoBlocked).toBe(false);
+    expect(lava.tiles[0]?.[0]?.walkable).toBe(false);
     expect(tryMove(lava, { x: 0, y: 0 }, "right")).toBeNull();
     expect(tryMove(lava, { x: 0, y: 0 }, "down")).toBeNull();
   });
@@ -107,10 +109,42 @@ describe("map validation", () => {
 
   it("keeps lava as the blocked background with a minority stone route", () => {
     const tiles = LAVA_MAP.tiles.flat();
-    const lavaCount = tiles.filter((tile) => tile.type === "lava" || tile.type === "rock").length;
+    const lavaCount = tiles.filter((tile) => tile.type === "lava").length;
     const walkableCount = tiles.filter((tile) => tile.walkable).length;
-    expect(lavaCount).toBeGreaterThan(walkableCount);
+    const blockedCount = tiles.length - walkableCount;
+    expect(lavaCount).toBeGreaterThan(40);
+    expect(blockedCount).toBeGreaterThan(walkableCount);
     expect(walkableCount / tiles.length).toBeLessThan(0.45);
     expect(tiles.some((tile) => tile.type === "stoneBridge")).toBe(true);
+    expect(tiles.some((tile) => tile.type === "ledge")).toBe(true);
+    expect(looksLikePath(LAVA_MAP.tiles[LAVA_MAP.start.y]?.[LAVA_MAP.start.x])).toBe(true);
+  });
+
+  it("never places the player or a question on a tile that looks blocked", () => {
+    for (const world of ALL_MAPS) {
+      const start = world.tiles[world.start.y]?.[world.start.x];
+      expect(looksLikePath(start), `${world.id} start looks blocked`).toBe(true);
+      const walkableNeighbors = [
+        { x: world.start.x + 1, y: world.start.y },
+        { x: world.start.x - 1, y: world.start.y },
+        { x: world.start.x, y: world.start.y + 1 },
+        { x: world.start.x, y: world.start.y - 1 },
+      ].filter((point) => world.tiles[point.y]?.[point.x]?.walkable === true);
+      expect(walkableNeighbors.length, `${world.id} start is not on an interior path tile`).toBeGreaterThanOrEqual(2);
+      for (const point of world.checkpoints) {
+        expect(
+          looksLikePath(world.tiles[point.y]?.[point.x]),
+          `${world.id} checkpoint at ${point.x},${point.y} does not look like a path`,
+        ).toBe(true);
+      }
+      expect(looksLikePath(world.tiles[world.destination.y]?.[world.destination.x])).toBe(true);
+      for (const row of world.tiles) {
+        for (const tile of row) {
+          if (tile.walkable) {
+            expect(looksLikePath(tile)).toBe(true);
+          }
+        }
+      }
+    }
   });
 });

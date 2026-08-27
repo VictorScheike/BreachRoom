@@ -7,8 +7,9 @@ interface ConsequencePanelProps {
 
 export function ConsequencePanel({
   consequence,
-  onContinue,
+  onContinue: _onContinue,
 }: ConsequencePanelProps) {
+  void _onContinue;
   return (
     <div
       className="game-panel-overlay"
@@ -28,9 +29,6 @@ export function ConsequencePanel({
           {consequence.principle}
         </p>
         <p className="game-panel-copy">{consequence.effects}</p>
-        <button type="button" className="game-primary" onClick={onContinue}>
-          Continue journey
-        </button>
       </div>
     </div>
   );

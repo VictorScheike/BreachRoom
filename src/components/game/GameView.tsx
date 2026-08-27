@@ -246,7 +246,7 @@ export function GameView({
       decisionNumber={state.choices.length}
       total={total}
         title={objective}
-      body="Follow the visible path. Numbered markers are questions. The exit is marked separately."
+      body="Walk toward the destination. Yellow ? markers are questions. Checkpoints trigger the next decision automatically – you do not need to hunt tiles."
     />
   );
 
@@ -418,11 +418,13 @@ export function GameView({
                           ? String(tile.checkpointOrder)
                           : undefined
                       }
-                      style={
-                        hintStep !== undefined
+                      style={{
+                        gridColumn: x + 1,
+                        gridRow: y + 1,
+                        ...(hintStep !== undefined
                           ? { ["--hint-i" as string]: String(hintStep) }
-                          : undefined
-                      }
+                          : {}),
+                      }}
                       onClick={() => {
                         const direction = adjacentMove(state.position, point);
                         if (direction) {

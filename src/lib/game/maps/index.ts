@@ -1,5 +1,15 @@
-import { put } from "@/lib/game/maps/paint";
-import { buildWorld, type GridPoint, type WorldMap } from "@/lib/game/world";
+import {
+  bridgeH,
+  bridgeV,
+  decorateFill,
+  decorateFillRect,
+  grid,
+  join,
+  platform,
+  ringLedge,
+} from "@/lib/game/maps/layout";
+import { placeRouteMarkers } from "@/lib/game/tiles";
+import { assembleWorld, parseLayout, type GridPoint, type WorldMap } from "@/lib/game/world";
 import type { MissionId } from "@/lib/missions/types";
 
 const DESTINATION_META: Record<
@@ -21,329 +31,262 @@ const DESTINATION_META: Record<
   },
 };
 
-function grid(columns: number, rows: number, fill: string): string[][] {
-  return Array.from({ length: rows }, () => Array.from({ length: columns }, () => fill));
-}
-
-function cell(tiles: string[][], x: number, y: number, value: string): void {
-  put(tiles, x, y, value);
-}
-
-function hrun(tiles: string[][], y: number, x0: number, x1: number, value: string): void {
-  const step = x0 <= x1 ? 1 : -1;
-  for (let x = x0; x !== x1 + step; x += step) {
-    cell(tiles, x, y, value);
-  }
-}
-
-function vrun(tiles: string[][], x: number, y0: number, y1: number, value: string): void {
-  const step = y0 <= y1 ? 1 : -1;
-  for (let y = y0; y !== y1 + step; y += step) {
-    cell(tiles, x, y, value);
-  }
-}
-
-function platform(
-  tiles: string[][],
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  value: string,
-): void {
-  for (let y = y0; y <= y1; y += 1) {
-    hrun(tiles, y, x0, x1, value);
-  }
-}
-
-function decorateFill(
-  tiles: string[][],
-  fill: string,
-  value: string,
-  points: readonly GridPoint[],
-): void {
-  for (const point of points) {
-    if (tiles[point.y]?.[point.x] === fill) {
-      cell(tiles, point.x, point.y, value);
-    }
-  }
-}
-
-function decorateFillRect(
-  tiles: string[][],
-  fill: string,
-  value: string,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-): void {
-  for (let y = y0; y <= y1; y += 1) {
-    for (let x = x0; x <= x1; x += 1) {
-      if (tiles[y]?.[x] === fill) {
-        cell(tiles, x, y, value);
-      }
-    }
-  }
-}
-
-function join(tiles: string[][]): string[] {
-  return tiles.map((row) => row.join(""));
-}
-
-function worldFrom(id: MissionId, tiles: string[][]): WorldMap {
-  const meta = DESTINATION_META[id];
-  return buildWorld({
-    id,
-    layout: join(tiles),
-    destinationLabel: meta.label,
-    destinationShortLabel: meta.shortLabel,
-    destinationIcon: meta.icon,
-  });
-}
-
-function stamp(
-  tiles: string[][],
+function worldFrom(
+  id: MissionId,
+  chars: string[][],
   start: GridPoint,
   exit: GridPoint,
   checks: readonly GridPoint[],
-): void {
-  cell(tiles, start.x, start.y, "@");
-  cell(tiles, exit.x, exit.y, "E");
-  checks.forEach((point, index) => {
-    const mark = index < 9 ? String(index + 1) : String.fromCharCode("a".charCodeAt(0) + index - 9);
-    cell(tiles, point.x, point.y, mark);
-  });
+): WorldMap {
+  const tiles = parseLayout(join(chars), id);
+  placeRouteMarkers(tiles, start, exit, checks);
+  const meta = DESTINATION_META[id];
+  return assembleWorld(
+    {
+      id,
+      destinationLabel: meta.label,
+      destinationShortLabel: meta.shortLabel,
+      destinationIcon: meta.icon,
+    },
+    tiles,
+  );
 }
 
+/**
+ * Lava reference layout: 3×3 stone islands, 2-wide bridges, lava everywhere else.
+ * Route: bottom-left → bottom-mid → mid-mid → mid-left → top-left → top-mid →
+ * top-right → mid-right (exit).
+ */
 function makeLava(): WorldMap {
-  const tiles = grid(16, 12, "L");
-
-  platform(tiles, 1, 9, 3, 11, "S");
-  hrun(tiles, 10, 4, 6, "=");
-  platform(tiles, 7, 9, 9, 11, "S");
-  vrun(tiles, 8, 8, 8, "=");
-  platform(tiles, 7, 5, 9, 7, "S");
-  hrun(tiles, 6, 4, 6, "=");
-  platform(tiles, 1, 5, 3, 7, "S");
-  vrun(tiles, 2, 4, 4, "=");
-  platform(tiles, 1, 1, 3, 3, "S");
-  hrun(tiles, 2, 4, 6, "=");
-  platform(tiles, 7, 1, 9, 3, "S");
-  hrun(tiles, 2, 10, 11, "=");
-  platform(tiles, 12, 0, 14, 3, "S");
-
+  const tiles = grid(20, 16, "L");
+  platform(tiles, 2, 14, "S");
+  bridgeH(tiles, 14, 4, 7, "=");
+  platform(tiles, 9, 14, "S");
+  bridgeV(tiles, 8, 10, 12, "=");
+  platform(tiles, 9, 8, "S");
+  bridgeH(tiles, 8, 4, 7, "=");
+  platform(tiles, 2, 8, "S");
+  bridgeV(tiles, 1, 4, 6, "=");
+  platform(tiles, 2, 2, "S");
+  bridgeH(tiles, 2, 4, 7, "=");
+  platform(tiles, 9, 2, "S");
+  bridgeH(tiles, 2, 11, 14, "=");
+  platform(tiles, 16, 2, "S");
+  bridgeV(tiles, 15, 4, 6, "=");
+  platform(tiles, 16, 8, "S");
+  ringLedge(tiles, "L", "V");
   decorateFill(tiles, "L", "R", [
-    { x: 6, y: 0 },
-    { x: 11, y: 0 },
-    { x: 15, y: 1 },
-    { x: 0, y: 3 },
-    { x: 6, y: 4 },
-    { x: 11, y: 4 },
-    { x: 15, y: 6 },
-    { x: 0, y: 8 },
-    { x: 5, y: 8 },
-    { x: 12, y: 8 },
-    { x: 15, y: 11 },
-  ]);
-
-  const start = { x: 1, y: 10 };
-  const exit = { x: 14, y: 0 };
-  const checks: GridPoint[] = [
-    { x: 3, y: 9 },
-    { x: 9, y: 9 },
-    { x: 9, y: 6 },
-    { x: 2, y: 6 },
-    { x: 2, y: 2 },
-    { x: 8, y: 2 },
-    { x: 11, y: 2 },
-    { x: 12, y: 2 },
-  ];
-  stamp(tiles, start, exit, checks);
-  return worldFrom("ai-forge", tiles);
-}
-
-function makeForest(): WorldMap {
-  const tiles = grid(16, 12, "T");
-
-  platform(tiles, 1, 10, 4, 11, "G");
-  hrun(tiles, 11, 5, 11, "P");
-  vrun(tiles, 11, 8, 10, "P");
-  platform(tiles, 9, 7, 12, 8, "G");
-  hrun(tiles, 8, 4, 8, "P");
-  vrun(tiles, 4, 7, 7, "P");
-  cell(tiles, 4, 6, "W");
-  decorateFillRect(tiles, "T", "~", 0, 6, 15, 6);
-  vrun(tiles, 4, 4, 5, "P");
-  platform(tiles, 3, 3, 7, 4, "G");
-  hrun(tiles, 3, 8, 12, "P");
-  vrun(tiles, 12, 1, 2, "P");
-  platform(tiles, 10, 0, 13, 2, "G");
-
-  decorateFill(tiles, "T", "B", [
-    { x: 6, y: 0 },
-    { x: 14, y: 0 },
-    { x: 1, y: 2 },
-    { x: 15, y: 4 },
-    { x: 0, y: 8 },
-    { x: 14, y: 9 },
-    { x: 6, y: 9 },
-    { x: 15, y: 11 },
-  ]);
-
-  const start = { x: 1, y: 11 };
-  const exit = { x: 13, y: 0 };
-  const checks: GridPoint[] = [
-    { x: 3, y: 10 },
-    { x: 8, y: 11 },
-    { x: 11, y: 8 },
-    { x: 4, y: 7 },
-    { x: 4, y: 4 },
-    { x: 10, y: 3 },
-    { x: 12, y: 2 },
-    { x: 10, y: 1 },
-  ];
-  stamp(tiles, start, exit, checks);
-  return worldFrom("locked-out", tiles);
-}
-
-function makeCave(): WorldMap {
-  const tiles = grid(16, 12, "#");
-
-  platform(tiles, 1, 8, 5, 11, "A");
-  vrun(tiles, 3, 6, 7, "A");
-  platform(tiles, 1, 3, 5, 5, "A");
-  hrun(tiles, 4, 6, 8, "U");
-  platform(tiles, 9, 2, 13, 5, "A");
-  vrun(tiles, 12, 6, 7, "U");
-  platform(tiles, 9, 8, 14, 11, "A");
-  vrun(tiles, 13, 1, 1, "A");
-  platform(tiles, 12, 0, 14, 1, "A");
-  hrun(tiles, 9, 6, 8, "A");
-
-  decorateFillRect(tiles, "#", "H", 6, 0, 10, 1);
-  decorateFillRect(tiles, "#", "H", 6, 6, 11, 7);
-  decorateFillRect(tiles, "#", "H", 6, 8, 8, 11);
-  decorateFillRect(tiles, "#", "H", 0, 6, 2, 7);
-  decorateFillRect(tiles, "#", "H", 14, 3, 15, 6);
-
-  const start = { x: 2, y: 10 };
-  const exit = { x: 14, y: 0 };
-  const checks: GridPoint[] = [
-    { x: 4, y: 9 },
-    { x: 3, y: 6 },
-    { x: 2, y: 4 },
-    { x: 8, y: 4 },
-    { x: 11, y: 3 },
-    { x: 12, y: 7 },
-    { x: 10, y: 9 },
-    { x: 12, y: 1 },
-  ];
-  stamp(tiles, start, exit, checks);
-  return worldFrom("dependency-depths", tiles);
-}
-
-function makeOffice(): WorldMap {
-  const tiles = grid(16, 12, "#");
-
-  platform(tiles, 1, 10, 14, 11, "O");
-  vrun(tiles, 1, 2, 9, "O");
-  vrun(tiles, 7, 2, 9, "O");
-  vrun(tiles, 14, 2, 9, "O");
-  hrun(tiles, 8, 1, 14, "O");
-  hrun(tiles, 5, 1, 14, "O");
-  hrun(tiles, 2, 1, 14, "O");
-  cell(tiles, 1, 9, "N");
-  cell(tiles, 7, 9, "N");
-  cell(tiles, 14, 9, "N");
-  cell(tiles, 1, 6, "N");
-  cell(tiles, 7, 6, "N");
-  cell(tiles, 14, 6, "N");
-  cell(tiles, 4, 2, "N");
-  cell(tiles, 11, 2, "N");
-  cell(tiles, 14, 1, "O");
-
-  decorateFillRect(tiles, "#", "D", 2, 3, 6, 4);
-  decorateFillRect(tiles, "#", "D", 8, 3, 13, 4);
-  decorateFillRect(tiles, "#", "K", 2, 6, 6, 7);
-  decorateFillRect(tiles, "#", "K", 8, 6, 13, 7);
-  decorateFillRect(tiles, "#", "F", 2, 0, 6, 1);
-  decorateFillRect(tiles, "#", "F", 8, 0, 13, 1);
-
-  const start = { x: 1, y: 11 };
-  const exit = { x: 14, y: 1 };
-  const checks: GridPoint[] = [
-    { x: 5, y: 11 },
-    { x: 12, y: 10 },
-    { x: 14, y: 8 },
-    { x: 7, y: 8 },
-    { x: 1, y: 5 },
-    { x: 7, y: 5 },
-    { x: 14, y: 5 },
-    { x: 11, y: 2 },
-  ];
-  stamp(tiles, start, exit, checks);
-  return worldFrom("inbox-under-siege", tiles);
-}
-
-function makeCampus(): WorldMap {
-  const tiles = grid(18, 14, "T");
-
-  platform(tiles, 1, 12, 4, 13, "G");
-  hrun(tiles, 13, 5, 16, "P");
-  vrun(tiles, 16, 11, 12, "P");
-  hrun(tiles, 11, 4, 16, "P");
-  vrun(tiles, 4, 9, 10, "P");
-  hrun(tiles, 9, 4, 9, "P");
-  cell(tiles, 9, 8, "N");
-
-  decorateFillRect(tiles, "T", "~", 10, 12, 14, 12);
-  cell(tiles, 12, 12, "W");
-  hrun(tiles, 13, 10, 14, "P");
-
-  decorateFillRect(tiles, "T", "#", 0, 0, 17, 8);
-
-  vrun(tiles, 9, 6, 7, "O");
-  hrun(tiles, 6, 2, 15, "O");
-  vrun(tiles, 2, 3, 5, "O");
-  vrun(tiles, 15, 3, 5, "O");
-  hrun(tiles, 3, 2, 15, "O");
-  vrun(tiles, 2, 1, 2, "O");
-  hrun(tiles, 1, 2, 5, "O");
-  cell(tiles, 9, 7, "N");
-  cell(tiles, 2, 5, "N");
-  cell(tiles, 15, 5, "N");
-
-  decorateFillRect(tiles, "#", "D", 3, 4, 8, 5);
-  decorateFillRect(tiles, "#", "K", 10, 4, 14, 5);
-  decorateFillRect(tiles, "#", "F", 3, 7, 8, 7);
-  decorateFill(tiles, "T", "B", [
+    { x: 5, y: 0 },
+    { x: 12, y: 5 },
+    { x: 19, y: 3 },
+    { x: 6, y: 11 },
+    { x: 19, y: 15 },
     { x: 0, y: 10 },
-    { x: 7, y: 10 },
-    { x: 17, y: 13 },
   ]);
+  return worldFrom(
+    "ai-forge",
+    tiles,
+    { x: 2, y: 14 },
+    { x: 17, y: 8 },
+    [
+      { x: 2, y: 13 },
+      { x: 9, y: 14 },
+      { x: 9, y: 8 },
+      { x: 2, y: 8 },
+      { x: 2, y: 2 },
+      { x: 9, y: 2 },
+      { x: 16, y: 2 },
+      { x: 16, y: 8 },
+    ],
+  );
+}
 
-  const start = { x: 1, y: 13 };
-  const exit = { x: 2, y: 1 };
-  const checks: GridPoint[] = [
-    { x: 3, y: 12 },
-    { x: 8, y: 13 },
-    { x: 16, y: 13 },
-    { x: 16, y: 11 },
-    { x: 10, y: 11 },
-    { x: 4, y: 11 },
-    { x: 4, y: 9 },
-    { x: 9, y: 8 },
-    { x: 9, y: 6 },
-    { x: 2, y: 6 },
-    { x: 15, y: 6 },
-    { x: 15, y: 3 },
-    { x: 8, y: 3 },
-    { x: 2, y: 3 },
-    { x: 4, y: 1 },
-  ];
-  stamp(tiles, start, exit, checks);
-  return worldFrom("northstar-zero-hour", tiles);
+/** Forest: dirt/clearing islands, trees and water blocked, wooden bridge over the river. */
+function makeForest(): WorldMap {
+  const tiles = grid(20, 16, "T");
+  platform(tiles, 2, 14, "G");
+  bridgeH(tiles, 14, 4, 7, "P");
+  platform(tiles, 9, 14, "G");
+  bridgeH(tiles, 14, 11, 14, "P");
+  platform(tiles, 16, 14, "G");
+  decorateFillRect(tiles, "T", "~", 0, 10, 19, 12);
+  bridgeV(tiles, 15, 10, 12, "W");
+  platform(tiles, 16, 8, "G");
+  bridgeH(tiles, 8, 4, 14, "P");
+  platform(tiles, 2, 8, "G");
+  bridgeV(tiles, 1, 4, 6, "P");
+  platform(tiles, 2, 2, "G");
+  bridgeH(tiles, 2, 4, 8, "P");
+  platform(tiles, 10, 2, "G");
+  bridgeH(tiles, 2, 12, 14, "P");
+  platform(tiles, 16, 2, "G");
+  ringLedge(tiles, "T", "C");
+  decorateFill(tiles, "T", "B", [
+    { x: 6, y: 5 },
+    { x: 12, y: 5 },
+    { x: 19, y: 14 },
+    { x: 0, y: 4 },
+  ]);
+  return worldFrom(
+    "locked-out",
+    tiles,
+    { x: 2, y: 14 },
+    { x: 16, y: 2 },
+    [
+      { x: 2, y: 13 },
+      { x: 9, y: 14 },
+      { x: 16, y: 14 },
+      { x: 16, y: 8 },
+      { x: 2, y: 8 },
+      { x: 2, y: 2 },
+      { x: 10, y: 2 },
+      { x: 16, y: 3 },
+    ],
+  );
+}
+
+/** Cave: lit stone islands in dark chasm, cave walls as the raised rim. */
+function makeCave(): WorldMap {
+  const tiles = grid(20, 16, "H");
+  platform(tiles, 3, 13, "A");
+  bridgeH(tiles, 13, 5, 8, "U");
+  platform(tiles, 10, 13, "A");
+  bridgeH(tiles, 13, 12, 14, "U");
+  platform(tiles, 16, 13, "A");
+  bridgeV(tiles, 15, 9, 11, "U");
+  platform(tiles, 16, 7, "A");
+  bridgeH(tiles, 7, 5, 14, "U");
+  platform(tiles, 3, 7, "A");
+  bridgeV(tiles, 2, 4, 5, "U");
+  platform(tiles, 3, 2, "A");
+  bridgeH(tiles, 2, 5, 8, "U");
+  platform(tiles, 10, 2, "A");
+  bridgeH(tiles, 2, 12, 14, "U");
+  platform(tiles, 16, 2, "A");
+  ringLedge(tiles, "H", "#");
+  return worldFrom(
+    "dependency-depths",
+    tiles,
+    { x: 3, y: 13 },
+    { x: 16, y: 2 },
+    [
+      { x: 3, y: 12 },
+      { x: 10, y: 13 },
+      { x: 16, y: 13 },
+      { x: 16, y: 7 },
+      { x: 3, y: 7 },
+      { x: 3, y: 2 },
+      { x: 10, y: 2 },
+      { x: 16, y: 3 },
+    ],
+  );
+}
+
+/**
+ * Office: corridor islands around a desk/server core.
+ * Start on the bottom-mid floor; Security Hub is the connected bottom-left island.
+ */
+function makeOffice(): WorldMap {
+  const tiles = grid(20, 16, "#");
+  platform(tiles, 9, 14, "O");
+  bridgeH(tiles, 14, 11, 14, "O");
+  platform(tiles, 16, 14, "O");
+  bridgeV(tiles, 15, 10, 12, "O");
+  platform(tiles, 16, 8, "O");
+  bridgeV(tiles, 15, 4, 6, "O");
+  platform(tiles, 16, 2, "O");
+  bridgeH(tiles, 2, 11, 14, "O");
+  platform(tiles, 9, 2, "O");
+  bridgeH(tiles, 2, 4, 7, "O");
+  platform(tiles, 2, 2, "O");
+  bridgeV(tiles, 1, 4, 6, "O");
+  platform(tiles, 2, 8, "O");
+  bridgeV(tiles, 1, 10, 12, "O");
+  platform(tiles, 2, 14, "O");
+  decorateFillRect(tiles, "#", "D", 6, 6, 13, 10);
+  decorateFillRect(tiles, "#", "K", 6, 1, 13, 1);
+  decorateFill(tiles, "#", "F", [
+    { x: 6, y: 4 },
+    { x: 13, y: 4 },
+    { x: 10, y: 12 },
+  ]);
+  return worldFrom(
+    "inbox-under-siege",
+    tiles,
+    { x: 9, y: 14 },
+    { x: 2, y: 14 },
+    [
+      { x: 9, y: 13 },
+      { x: 16, y: 14 },
+      { x: 16, y: 8 },
+      { x: 16, y: 2 },
+      { x: 9, y: 2 },
+      { x: 2, y: 2 },
+      { x: 2, y: 8 },
+      { x: 3, y: 14 },
+    ],
+  );
+}
+
+/** Campus: outdoor dirt islands, then indoor corridor islands, 15 checkpoints. */
+function makeCampus(): WorldMap {
+  const tiles = grid(22, 16, "T");
+  platform(tiles, 2, 14, "G");
+  bridgeH(tiles, 14, 4, 6, "P");
+  platform(tiles, 8, 14, "G");
+  bridgeH(tiles, 14, 10, 11, "P");
+  platform(tiles, 13, 14, "G");
+  bridgeH(tiles, 14, 15, 17, "P");
+  platform(tiles, 19, 14, "G");
+  decorateFillRect(tiles, "T", "~", 8, 12, 16, 12);
+  bridgeH(tiles, 12, 12, 13, "W");
+  bridgeV(tiles, 18, 11, 12, "P");
+  platform(tiles, 19, 9, "G");
+  bridgeH(tiles, 9, 14, 17, "P");
+  platform(tiles, 12, 9, "G");
+  bridgeH(tiles, 9, 7, 10, "P");
+  platform(tiles, 5, 9, "G");
+  decorateFillRect(tiles, "T", "#", 0, 0, 21, 7);
+  bridgeV(tiles, 4, 7, 7, "N");
+  platform(tiles, 5, 6, "O");
+  bridgeH(tiles, 6, 7, 9, "O");
+  platform(tiles, 11, 6, "O");
+  bridgeH(tiles, 6, 13, 17, "O");
+  platform(tiles, 19, 6, "O");
+  bridgeV(tiles, 18, 3, 4, "O");
+  platform(tiles, 19, 2, "O");
+  bridgeH(tiles, 2, 14, 17, "O");
+  platform(tiles, 12, 2, "O");
+  bridgeH(tiles, 2, 10, 10, "O");
+  platform(tiles, 8, 2, "O");
+  bridgeH(tiles, 2, 4, 6, "O");
+  platform(tiles, 2, 2, "O");
+  decorateFillRect(tiles, "#", "D", 8, 4, 16, 4);
+  decorateFillRect(tiles, "#", "K", 8, 0, 16, 0);
+  ringLedge(tiles, "T", "C");
+  return worldFrom(
+    "northstar-zero-hour",
+    tiles,
+    { x: 2, y: 14 },
+    { x: 2, y: 1 },
+    [
+      { x: 2, y: 13 },
+      { x: 8, y: 14 },
+      { x: 13, y: 14 },
+      { x: 19, y: 14 },
+      { x: 19, y: 9 },
+      { x: 12, y: 9 },
+      { x: 5, y: 9 },
+      { x: 5, y: 6 },
+      { x: 11, y: 6 },
+      { x: 19, y: 6 },
+      { x: 19, y: 2 },
+      { x: 12, y: 2 },
+      { x: 8, y: 2 },
+      { x: 8, y: 1 },
+      { x: 2, y: 3 },
+    ],
+  );
 }
 
 export const LAVA_MAP = makeLava();
