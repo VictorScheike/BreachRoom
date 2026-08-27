@@ -410,7 +410,7 @@ summary::-webkit-details-marker {
 }
 
 .rpg-tile-path {
-  background: #8b6b3d;
+  background: #c4a574;
   box-shadow: inset 0 0 0 1px #6e522e;
 }
 
@@ -1206,7 +1206,7 @@ summary::-webkit-details-marker {
 }
 
 .rpg-tile-clearing {
-  background: #6d9a4e;
+  background: #86b05c;
   box-shadow: inset 0 0 0 1px #4d7c0f;
 }
 
@@ -1218,9 +1218,10 @@ summary::-webkit-details-marker {
 
 .rpg-tile-cave-floor {
   background:
-    linear-gradient(rgba(253, 224, 71, 0.18), rgba(253, 224, 71, 0.18)),
-    #57534e;
-  box-shadow: inset 0 0 0 1px #d6d3d1;
+    linear-gradient(rgba(253, 224, 71, 0.28) 0 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, rgba(253, 224, 71, 0.28) 0 1px, transparent 1px) 0 0 / 8px 8px,
+    #d6d3d1;
+  box-shadow: inset 0 0 0 1px #a8a29e;
 }
 
 .rpg-tile-cave-bridge,
@@ -1318,9 +1319,10 @@ summary::-webkit-details-marker {
 .world-dependency-depths .rpg-tile-start,
 .world-dependency-depths .rpg-tile-exit {
   background:
-    linear-gradient(rgba(253, 224, 71, 0.18), rgba(253, 224, 71, 0.18)),
-    #57534e;
-  box-shadow: inset 0 0 0 1px #d6d3d1;
+    linear-gradient(rgba(253, 224, 71, 0.28) 0 1px, transparent 1px) 0 0 / 8px 8px,
+    linear-gradient(90deg, rgba(253, 224, 71, 0.28) 0 1px, transparent 1px) 0 0 / 8px 8px,
+    #d6d3d1;
+  box-shadow: inset 0 0 0 1px #a8a29e;
 }
 
 .world-inbox-under-siege .rpg-tile-checkpoint,
