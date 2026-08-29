@@ -1,5 +1,6 @@
 "use client";
 
+import { nodeById } from "@/lib/lab/catalog";
 import { OUTCOME_LABELS } from "@/lib/lab/copy";
 import type { ResolvedStage } from "@/lib/lab/types";
 
@@ -25,7 +26,7 @@ export function IncidentPanel({ stage }: { stage: ResolvedStage | null }) {
         </div>
         <div>
           <dt>Current target</dt>
-          <dd>{stage.stopNode.replace("-", " ")}</dd>
+          <dd>{nodeById(stage.stopNode).name}</dd>
         </div>
         <div>
           <dt>Control response</dt>
