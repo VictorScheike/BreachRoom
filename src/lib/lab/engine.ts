@@ -2,6 +2,7 @@ import { LAB_MISSION, optionById, optionForChoice } from "./catalog";
 import type {
   ArchitectureReview,
   AttackSimulation,
+  DecisionId,
   FinalResultKind,
   LabChoices,
   MapNodeId,
@@ -198,6 +199,7 @@ function buildReview(
         ? `${upload?.title ?? "The sandbox"} stopped the poisoned file.`
         : `${api?.title ?? "API permissions"} decided how far a manipulated workflow could read.`;
 
+  const recommended = recommendedControl(flags);
   const improvement = !flags.payoutHeld
     ? "Require human approval before payout changes and customer-facing actions."
     : !flags.uploadHeld
@@ -219,12 +221,38 @@ function buildReview(
         ? "A blocked technique ended at that node. The next attempt was a new pivot, not a magical continuation past the control that already held."
         : "When several neighbouring choices were thin — identity, uploads, API reach and approval — the campaign had a clear run.",
     recommendedImprovement: improvement,
+    recommendedDecisionId: recommended,
     dataExposed: flags.apiHeld
       ? flags.payoutHeld
         ? "No customer dataset was shown to have left through payout or bulk API access."
         : "Payout was exposed even though bulk API reads were limited."
       : "Additional claims data was reachable through the service path.",
   };
+}
+
+function recommendedControl(flags: {
+  identityHeld: boolean;
+  uploadHeld: boolean;
+  apiHeld: boolean;
+  payoutHeld: boolean;
+  detected: boolean;
+}): DecisionId {
+  if (!flags.payoutHeld) {
+    return "oversight";
+  }
+  if (!flags.uploadHeld) {
+    return "input";
+  }
+  if (!flags.identityHeld) {
+    return "identity";
+  }
+  if (!flags.apiHeld) {
+    return "data-access";
+  }
+  if (!flags.detected) {
+    return "detection";
+  }
+  return "model";
 }
 
 export function compareResults(left: FinalResultKind | null, right: FinalResultKind): FinalResultKind {

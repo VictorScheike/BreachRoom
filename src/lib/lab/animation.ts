@@ -11,7 +11,7 @@ import type {
   StageOutcomeKind,
 } from "./types";
 
-export const ATTACK_STEP_MS = 2200;
+export const ATTACK_STEP_MS = 1800;
 export const ATTACK_TRAVEL_MS = 1100;
 
 export interface AttackBeat {

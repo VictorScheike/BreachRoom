@@ -1,7 +1,10 @@
 "use client";
 
-import { ArchitectureMap } from "@/components/lab/ArchitectureMap";
+import { LocalImpactGraph } from "@/components/lab/LocalImpactGraph";
+import { DecisionImpactStrip } from "@/components/lab/DecisionImpactStrip";
 import { LabIcon } from "@/components/lab/LabIcon";
+import { chosenCount } from "@/lib/lab/catalog";
+import { subgraphFor, subgraphOutcome } from "@/lib/lab/subgraphs";
 import type { ArchitectureDecision, LabChoices, LabDifficulty, OptionId } from "@/lib/lab/types";
 
 export function DecisionScreen({
@@ -24,11 +27,17 @@ export function DecisionScreen({
   canGoBack: boolean;
 }) {
   const guided = difficulty === "guided";
+  const subgraph = subgraphFor(decision.id);
+  const pending = decision.options.find((item) => item.id === pendingOptionId) ?? null;
+  const outcome = subgraphOutcome(subgraph, pendingOptionId, pending?.strength === "strong");
+  const lockedCount = chosenCount(choices);
 
   return (
-    <section className="lab-decision" aria-labelledby="lab-decision-heading">
+    <section className="lab-decision" aria-labelledby="lab-decision-heading" data-decision={decision.id}>
       <div className="lab-decision__copy">
-        <p className="lab-kicker">Decision {decision.number} of 10</p>
+        <p className="lab-kicker">
+          Decision {decision.number} of 10 · {subgraph.domain} · {lockedCount} of 10 controls selected
+        </p>
         <h2 id="lab-decision-heading">{decision.question}</h2>
         <div className="lab-options" role="radiogroup" aria-label="Architecture options">
           {decision.options.map((option) => {
@@ -55,30 +64,19 @@ export function DecisionScreen({
             );
           })}
         </div>
-        {pendingOptionId ? (
-          <p className="lab-confirm" role="status">
-            {decision.options.find((item) => item.id === pendingOptionId)?.confirmation}
-          </p>
-        ) : (
-          <p className="lab-confirm lab-confirm--idle">Select an option to add it to the architecture.</p>
-        )}
         <div className="lab-decision__actions">
           <button type="button" className="lab-secondary" onClick={onBack} disabled={!canGoBack}>
             Previous decision
           </button>
           <button type="button" className="lab-primary" onClick={onContinue} disabled={!pendingOptionId}>
-            Continue
+            Lock choice and continue
           </button>
         </div>
       </div>
       <div className="lab-decision__map">
-        <ArchitectureMap
-          choices={choices}
-          previewOptionId={pendingOptionId}
-          compact
-          inspectable={false}
-          phase="decide"
-        />
+        <p className="lab-kicker">What this choice changes</p>
+        <LocalImpactGraph subgraph={subgraph} option={pending} outcome={outcome} />
+        <DecisionImpactStrip outcome={outcome} />
       </div>
     </section>
   );

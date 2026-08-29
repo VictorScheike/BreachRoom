@@ -170,6 +170,7 @@ export interface ArchitectureReview {
   greatestImpact: string;
   defenceInDepth: string;
   recommendedImprovement: string;
+  recommendedDecisionId: DecisionId;
   dataExposed: string;
 }
 

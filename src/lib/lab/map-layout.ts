@@ -245,6 +245,35 @@ export function edgeEndpoints(
   return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
 }
 
+export function curvePath(x1: number, y1: number, x2: number, y2: number): string {
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  const bulge = Math.min(48, len * 0.14);
+  return `M ${x1} ${y1} Q ${mx - (dy / len) * bulge} ${my + (dx / len) * bulge} ${x2} ${y2}`;
+}
+
+export function scaledPoint(node: MapNodeDefinition, layout: BoardLayout): NodePoint {
+  const point = nodePoint(node, layout);
+  return { x: point.x * 10, y: point.y * 6.2 };
+}
+
+export function edgePath(fromNode: MapNodeDefinition, toNode: MapNodeDefinition, layout: BoardLayout): string {
+  const from = scaledPoint(fromNode, layout);
+  const to = scaledPoint(toNode, layout);
+  const start = ellipseEdge(from, to, {
+    rx: nodeRadii(fromNode.kind, layout).rx * 10,
+    ry: nodeRadii(fromNode.kind, layout).ry * 6.2,
+  });
+  const end = ellipseEdge(to, from, {
+    rx: nodeRadii(toNode.kind, layout).rx * 10,
+    ry: nodeRadii(toNode.kind, layout).ry * 6.2,
+  });
+  return curvePath(start.x, start.y, end.x, end.y);
+}
+
 export function findEdge(from: MapNodeId, to: MapNodeId): MapEdgeDefinition | undefined {
   return LAB_EDGES.find(
     (edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from),

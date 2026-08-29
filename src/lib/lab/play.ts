@@ -151,6 +151,39 @@ export function nextAttackStep(state: LabPersistedState): LabPersistedState {
   );
 }
 
+export function previousAttackStep(state: LabPersistedState): LabPersistedState {
+  if (state.phase === "result") {
+    const simulation = simulateAttack(state.choices);
+    const last = simulation.stages[TECHNIQUE_COUNT - 1];
+    const beats = last ? beatsForStage(last) : [];
+    return {
+      ...state,
+      phase: "attack",
+      revealedStageCount: TECHNIQUE_COUNT,
+      attackBeat: Math.max(0, beats.length - 1),
+      paused: true,
+    };
+  }
+  if (state.phase !== "attack") {
+    return state;
+  }
+  if (state.attackBeat > 0) {
+    return { ...state, attackBeat: state.attackBeat - 1, paused: true };
+  }
+  if (state.revealedStageCount > 1) {
+    const simulation = simulateAttack(state.choices);
+    const previous = simulation.stages[state.revealedStageCount - 2];
+    const beats = previous ? beatsForStage(previous) : [];
+    return {
+      ...state,
+      revealedStageCount: state.revealedStageCount - 1,
+      attackBeat: Math.max(0, beats.length - 1),
+      paused: true,
+    };
+  }
+  return { ...state, paused: true };
+}
+
 export function pauseAttack(state: LabPersistedState, paused: boolean): LabPersistedState {
   if (state.phase !== "attack") {
     return state;
@@ -184,12 +217,13 @@ export function resetArchitecture(state: LabPersistedState): LabPersistedState {
   };
 }
 
-export function improveAndRetry(state: LabPersistedState): LabPersistedState {
+export function improveAndRetry(state: LabPersistedState, decisionId?: DecisionId): LabPersistedState {
+  const index = decisionId ? Math.max(0, DECISION_IDS.indexOf(decisionId)) : 0;
   return {
     ...state,
     phase: "decide",
-    currentDecisionIndex: 0,
-    pendingOptionId: pendingForIndex(state.choices, 0),
+    currentDecisionIndex: index,
+    pendingOptionId: pendingForIndex(state.choices, index),
     revealedStageCount: 0,
     attackBeat: 0,
     paused: false,

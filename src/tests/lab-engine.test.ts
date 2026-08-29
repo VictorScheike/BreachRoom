@@ -17,11 +17,13 @@ import {
   launchAttack,
   nextAttackStep,
   pauseAttack,
+  previousAttackStep,
   replayAttack,
   resetArchitecture,
   selectOption,
 } from "@/lib/lab/play";
 import { beatsForStage, deriveBoardVisual } from "@/lib/lab/animation";
+import { subgraphFor, subgraphOutcome } from "@/lib/lab/subgraphs";
 import { EMPTY_LAB_STATE } from "@/lib/lab/store";
 import { DECISION_IDS, type LabChoices, type LabPersistedState } from "@/lib/lab/types";
 
@@ -190,6 +192,22 @@ describe("lab play session", () => {
     expect(pauseAttack(paused, false).paused).toBe(false);
   });
 
+  it("can go backward and forward without changing selected decisions", () => {
+    let state = launchAttack(filledState(STRONG_ARCHITECTURE)).state;
+    const choices = state.choices;
+    state = nextAttackStep(state);
+    expect(state.attackBeat).toBe(1);
+    state = previousAttackStep(state);
+    expect(state.attackBeat).toBe(0);
+    expect(state.revealedStageCount).toBe(1);
+    expect(state.paused).toBe(true);
+    expect(state.choices).toEqual(choices);
+    state = pauseAttack(state, false);
+    state = nextAttackStep(state);
+    expect(state.attackBeat).toBe(1);
+    expect(state.choices).toEqual(STRONG_ARCHITECTURE);
+  });
+
   it("resets every attack visual on replay", () => {
     let state = launchAttack(filledState(STRONG_ARCHITECTURE)).state;
     state = nextAttackStep(state);
@@ -245,4 +263,23 @@ describe("lab play session", () => {
     expect(retried.revealedStageCount).toBe(0);
     expect(resetArchitecture(state).choices).toEqual({});
   });
+
+  it("can jump to the recommended control from Improve this control", () => {
+    const { state, simulation } = runAttack(WEAK_ARCHITECTURE);
+    const retried = improveAndRetry(state, simulation.review.recommendedDecisionId);
+    expect(retried.phase).toBe("decide");
+    expect(retried.currentDecisionIndex).toBe(DECISION_IDS.indexOf(simulation.review.recommendedDecisionId));
+    expect(retried.choices).toEqual(WEAK_ARCHITECTURE);
+  });
 });
+
+describe("local architecture slices", () => {
+  it("resolves held and exposed outcomes from option ids", () => {
+    const subgraph = subgraphFor("identity");
+    expect(subgraphOutcome(subgraph, null, true)).toBeNull();
+    expect(subgraphOutcome(subgraph, "identity-mfa", true)?.controlStatus).toBe("held");
+    expect(subgraphOutcome(subgraph, "identity-password", false)?.controlStatus).toBe("exposed");
+    expect(subgraphOutcome(subgraph, "identity-mfa", true)?.headline).toContain("Identity");
+  });
+});
+
