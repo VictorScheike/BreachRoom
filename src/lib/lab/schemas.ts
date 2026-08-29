@@ -1,95 +1,89 @@
 import { z } from "zod";
 import {
-  ATTACK_STAGE_IDS,
-  CONTROL_AREAS,
-  FIXED_NODE_IDS,
+  ATTACK_TECHNIQUE_IDS,
+  DECISION_IDS,
+  FINAL_RESULTS,
   LAB_DIFFICULTIES,
-  READINESS_PILLARS,
-  SLOT_IDS,
-  STAGE_OUTCOMES,
-  TRUST_ZONES,
+  LAB_PHASES,
+  MAP_NODE_IDS,
+  NODE_KINDS,
 } from "./types";
-
-const NODE_IDS = [...SLOT_IDS, ...FIXED_NODE_IDS] as const;
 
 const nonEmpty = z.string().trim().min(1);
 
-export const readinessVectorSchema = z
-  .object({
-    prevention: z.number().int().min(0).max(4),
-    dataProtection: z.number().int().min(0).max(4),
-    containment: z.number().int().min(0).max(4),
-    detection: z.number().int().min(0).max(4),
-  })
-  .strict();
-
-export const componentReactionSchema = z
-  .object({
-    outcome: z.enum(STAGE_OUTCOMES),
-    attackerAction: nonEmpty,
-    controlReaction: nonEmpty,
-    explanation: nonEmpty,
-    architectDetail: nonEmpty,
-  })
-  .strict();
-
-export const architectureComponentSchema = z
+export const architectureOptionSchema = z
   .object({
     id: nonEmpty,
-    slotId: z.enum(SLOT_IDS),
-    name: nonEmpty,
-    icon: nonEmpty,
-    area: z.enum(CONTROL_AREAS),
+    decisionId: z.enum(DECISION_IDS),
+    title: nonEmpty,
     description: nonEmpty,
-    architectDescription: nonEmpty,
+    challengeDescription: nonEmpty,
     tradeOff: nonEmpty,
-    architectTradeOff: nonEmpty,
-    hint: nonEmpty,
+    confirmation: nonEmpty,
     recommended: z.boolean(),
-    difficulties: z.array(z.enum(LAB_DIFFICULTIES)).min(1),
-    readiness: readinessVectorSchema,
-    reactions: z.record(z.enum(ATTACK_STAGE_IDS), componentReactionSchema),
+    strength: z.enum(["strong", "weak"]),
+    icon: nonEmpty,
+    mapTitle: nonEmpty,
+    mapDetail: nonEmpty,
   })
   .strict();
 
-export const architectureSlotSchema = z
+export const architectureDecisionSchema = z
   .object({
-    id: z.enum(SLOT_IDS),
-    name: nonEmpty,
-    zone: z.enum(TRUST_ZONES),
-    purpose: nonEmpty,
-    architectPurpose: nonEmpty,
+    id: z.enum(DECISION_IDS),
+    number: z.number().int().min(1).max(10),
+    question: nonEmpty,
+    nodeId: z.enum(MAP_NODE_IDS),
+    options: z.tuple([architectureOptionSchema, architectureOptionSchema]),
   })
   .strict();
 
-export const fixedNodeSchema = z
+export const mapNodeSchema = z
   .object({
-    id: z.enum([
-      "claims-handler",
-      "claims-portal",
-      "uploaded-document",
-      "ai-application",
-      "claims-database",
-      "external-network",
-    ]),
+    id: z.enum(MAP_NODE_IDS),
     name: nonEmpty,
-    zone: z.enum(TRUST_ZONES),
+    kind: z.enum(NODE_KINDS),
+    decisionId: z.union([z.enum(DECISION_IDS), z.null()]),
     description: nonEmpty,
+    column: z.number().int().min(0).max(4),
+    row: z.number().int().min(0).max(2),
   })
   .strict();
 
-export const attackStageSchema = z
+export const mapEdgeSchema = z
   .object({
-    id: z.enum(ATTACK_STAGE_IDS),
-    number: z.number().int().min(1).max(6),
+    id: nonEmpty,
+    from: z.enum(MAP_NODE_IDS),
+    to: z.enum(MAP_NODE_IDS),
+  })
+  .strict();
+
+export const techniqueCheckSchema = z
+  .object({
+    decisionId: z.enum(DECISION_IDS),
+    strongOptionId: nonEmpty,
+    stopNode: z.enum(MAP_NODE_IDS),
+    outcome: z.enum(["blocked", "contained", "partial", "detected"]),
+    attackerAction: nonEmpty,
+    controlResponse: nonEmpty,
+    explanation: nonEmpty,
+    impact: nonEmpty,
+  })
+  .strict();
+
+export const attackTechniqueSchema = z
+  .object({
+    id: z.enum(ATTACK_TECHNIQUE_IDS),
+    number: z.number().int().min(1).max(7),
     name: nonEmpty,
     summary: nonEmpty,
-    guidedDetail: nonEmpty,
-    architectPrompt: nonEmpty,
-    highlight: z.array(z.enum(NODE_IDS)).min(1),
-    controllingSlots: z.array(z.enum(SLOT_IDS)),
-    requiresAttackerInside: z.boolean(),
-    legitimateActivity: z.boolean().optional(),
+    entryNode: z.enum(MAP_NODE_IDS),
+    path: z.array(z.enum(MAP_NODE_IDS)).min(2),
+    checks: z.array(techniqueCheckSchema).min(1),
+    successAction: nonEmpty,
+    successResponse: nonEmpty,
+    successExplanation: nonEmpty,
+    successImpact: nonEmpty,
   })
   .strict();
 
@@ -98,48 +92,55 @@ export const labMissionSchema = z
     id: nonEmpty,
     title: nonEmpty,
     missionLabel: nonEmpty,
-    attack: z
-      .object({
-        id: nonEmpty,
-        name: nonEmpty,
-        company: nonEmpty,
-        fictionalNote: nonEmpty,
-        tagline: nonEmpty,
-        scenario: nonEmpty,
-        stages: z.array(attackStageSchema).length(6),
-      })
-      .strict(),
-    slots: z.array(architectureSlotSchema).length(8),
-    components: z.array(architectureComponentSchema).min(16),
-    fixedNodes: z.array(fixedNodeSchema).length(6),
+    company: nonEmpty,
+    fictionalNote: nonEmpty,
+    tagline: nonEmpty,
+    scenario: nonEmpty,
+    decisions: z.array(architectureDecisionSchema).length(10),
+    nodes: z.array(mapNodeSchema).length(13),
+    edges: z.array(mapEdgeSchema).min(10),
+    techniques: z.array(attackTechniqueSchema).length(7),
   })
   .strict()
   .superRefine((mission, ctx) => {
-    const slotIds = new Set(mission.slots.map((slot) => slot.id));
-    for (const slotId of SLOT_IDS) {
-      if (!slotIds.has(slotId)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Missing slot ${slotId}` });
+    const decisionIds = new Set(mission.decisions.map((item) => item.id));
+    for (const id of DECISION_IDS) {
+      if (!decisionIds.has(id)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Missing decision ${id}` });
       }
     }
-    const componentIds = new Set<string>();
-    for (const component of mission.components) {
-      if (componentIds.has(component.id)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Duplicate component ${component.id}` });
+    const optionIds = new Set<string>();
+    for (const decision of mission.decisions) {
+      if (decision.options[0].decisionId !== decision.id || decision.options[1].decisionId !== decision.id) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Option parent mismatch on ${decision.id}` });
       }
-      componentIds.add(component.id);
-      if (!slotIds.has(component.slotId)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Component ${component.id} points at unknown slot`,
-        });
+      if (decision.options[0].strength === decision.options[1].strength) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${decision.id} needs one strong and one weak option` });
+      }
+      for (const option of decision.options) {
+        if (optionIds.has(option.id)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Duplicate option ${option.id}` });
+        }
+        optionIds.add(option.id);
       }
     }
-    for (const pillar of READINESS_PILLARS) {
-      if (mission.components.every((component) => component.readiness[pillar] === 0)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `No component contributes to ${pillar}`,
-        });
+    for (const technique of mission.techniques) {
+      for (const check of technique.checks) {
+        if (!optionIds.has(check.strongOptionId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Technique ${technique.id} points at unknown option ${check.strongOptionId}`,
+          });
+        }
+        if (!technique.path.includes(check.stopNode)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Technique ${technique.id} stop node ${check.stopNode} is not on its path`,
+          });
+        }
       }
+    }
+    if (!FINAL_RESULTS.includes("prevented") || !LAB_DIFFICULTIES.includes("guided") || !LAB_PHASES.includes("decide")) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Lab enums drifted" });
     }
   });

@@ -1,184 +1,166 @@
-export const LAB_DIFFICULTIES = ["guided", "architect"] as const;
+export const LAB_DIFFICULTIES = ["guided", "challenge"] as const;
 export type LabDifficulty = (typeof LAB_DIFFICULTIES)[number];
 
-export const LAB_PHASES = ["build", "attack", "review"] as const;
+export const LAB_PHASES = ["setup", "decide", "review", "attack", "result"] as const;
 export type LabPhase = (typeof LAB_PHASES)[number];
 
-export const SLOT_IDS = [
+export const DECISION_IDS = [
   "identity",
+  "input",
   "model",
-  "guardrails",
-  "data-access",
-  "agency",
-  "monitoring",
+  "retrieval",
   "secrets",
-  "supply-chain",
-] as const;
-export type SlotId = (typeof SLOT_IDS)[number];
-
-export const FIXED_NODE_IDS = [
-  "claims-handler",
-  "claims-portal",
-  "uploaded-document",
-  "ai-application",
-  "claims-database",
-  "external-network",
-] as const;
-export type FixedNodeId = (typeof FIXED_NODE_IDS)[number];
-
-export type ArchitectureNodeId = SlotId | FixedNodeId;
-
-export const TRUST_ZONES = ["user-input", "ai-application", "protected-systems"] as const;
-export type TrustZoneId = (typeof TRUST_ZONES)[number];
-
-export const CONTROL_AREAS = [
-  "identity",
-  "ai-security",
-  "data-protection",
+  "data-access",
   "oversight",
-  "detection",
+  "network",
   "supply-chain",
+  "detection",
 ] as const;
-export type ControlArea = (typeof CONTROL_AREAS)[number];
+export type DecisionId = (typeof DECISION_IDS)[number];
 
-export const READINESS_PILLARS = ["prevention", "dataProtection", "containment", "detection"] as const;
-export type ReadinessPillar = (typeof READINESS_PILLARS)[number];
-
-export const STAGE_OUTCOMES = ["blocked", "contained", "detected", "successful"] as const;
-export type StageOutcomeKind = (typeof STAGE_OUTCOMES)[number];
-
-export const FINAL_RESULTS = [
-  "architecture-holds",
-  "attack-contained",
-  "partial-breach",
-  "architecture-breached",
+export const MAP_NODE_IDS = [
+  "portal",
+  "identity",
+  "input",
+  "network",
+  "model",
+  "app",
+  "supply-chain",
+  "retrieval",
+  "secrets",
+  "detection",
+  "data-access",
+  "database",
+  "oversight",
 ] as const;
-export type FinalResultKind = (typeof FINAL_RESULTS)[number];
+export type MapNodeId = (typeof MAP_NODE_IDS)[number];
 
-export const ATTACK_STAGE_IDS = [
-  "initial-access",
+export const NODE_KINDS = ["core", "control", "asset"] as const;
+export type NodeKind = (typeof NODE_KINDS)[number];
+
+export const ATTACK_TECHNIQUE_IDS = [
+  "stolen-credentials",
   "poisoned-document",
   "prompt-injection",
-  "model-data",
-  "unsafe-action",
+  "api-abuse",
+  "payout-manipulation",
+  "lateral-movement",
   "detection",
 ] as const;
-export type AttackStageId = (typeof ATTACK_STAGE_IDS)[number];
+export type AttackTechniqueId = (typeof ATTACK_TECHNIQUE_IDS)[number];
 
-export type ComponentId = string;
+export const STAGE_OUTCOMES = ["blocked", "contained", "partial", "detected", "successful"] as const;
+export type StageOutcomeKind = (typeof STAGE_OUTCOMES)[number];
 
-export interface ReadinessVector {
-  prevention: number;
-  dataProtection: number;
-  containment: number;
-  detection: number;
-}
+export const FINAL_RESULTS = ["prevented", "contained", "breached"] as const;
+export type FinalResultKind = (typeof FINAL_RESULTS)[number];
 
-export interface ComponentReaction {
-  outcome: StageOutcomeKind;
-  attackerAction: string;
-  controlReaction: string;
-  explanation: string;
-  architectDetail: string;
-}
+export type OptionId = string;
 
-export interface ArchitectureComponent {
-  id: ComponentId;
-  slotId: SlotId;
-  name: string;
-  icon: string;
-  area: ControlArea;
+export type LabChoices = Partial<Record<DecisionId, OptionId>>;
+
+export interface ArchitectureOption {
+  id: OptionId;
+  decisionId: DecisionId;
+  title: string;
   description: string;
-  architectDescription: string;
+  challengeDescription: string;
   tradeOff: string;
-  architectTradeOff: string;
-  hint: string;
+  confirmation: string;
   recommended: boolean;
-  difficulties: readonly LabDifficulty[];
-  readiness: ReadinessVector;
-  reactions: Partial<Record<AttackStageId, ComponentReaction>>;
+  strength: "strong" | "weak";
+  icon: string;
+  mapTitle: string;
+  mapDetail: string;
 }
 
-export interface ArchitectureSlot {
-  id: SlotId;
-  name: string;
-  zone: TrustZoneId;
-  purpose: string;
-  architectPurpose: string;
+export interface ArchitectureDecision {
+  id: DecisionId;
+  number: number;
+  question: string;
+  nodeId: MapNodeId;
+  options: readonly [ArchitectureOption, ArchitectureOption];
 }
 
-export interface FixedNode {
-  id: FixedNodeId;
+export interface MapNodeDefinition {
+  id: MapNodeId;
   name: string;
-  zone: TrustZoneId;
+  kind: NodeKind;
+  decisionId: DecisionId | null;
   description: string;
+  column: number;
+  row: number;
 }
 
-export interface AttackStageDefinition {
-  id: AttackStageId;
+export interface MapEdgeDefinition {
+  id: string;
+  from: MapNodeId;
+  to: MapNodeId;
+}
+
+export interface TechniqueCheck {
+  decisionId: DecisionId;
+  strongOptionId: OptionId;
+  stopNode: MapNodeId;
+  outcome: Extract<StageOutcomeKind, "blocked" | "contained" | "partial" | "detected">;
+  attackerAction: string;
+  controlResponse: string;
+  explanation: string;
+  impact: string;
+}
+
+export interface AttackTechniqueDefinition {
+  id: AttackTechniqueId;
   number: number;
   name: string;
   summary: string;
-  guidedDetail: string;
-  architectPrompt: string;
-  highlight: readonly ArchitectureNodeId[];
-  controllingSlots: readonly SlotId[];
-  requiresAttackerInside: boolean;
-  legitimateActivity?: boolean;
-}
-
-export interface AttackDefinition {
-  id: string;
-  name: string;
-  company: string;
-  fictionalNote: string;
-  tagline: string;
-  scenario: string;
-  stages: readonly AttackStageDefinition[];
+  entryNode: MapNodeId;
+  path: readonly MapNodeId[];
+  checks: readonly TechniqueCheck[];
+  successAction: string;
+  successResponse: string;
+  successExplanation: string;
+  successImpact: string;
 }
 
 export interface LabMissionDefinition {
   id: string;
   title: string;
   missionLabel: string;
-  attack: AttackDefinition;
-  slots: readonly ArchitectureSlot[];
-  components: readonly ArchitectureComponent[];
-  fixedNodes: readonly FixedNode[];
+  company: string;
+  fictionalNote: string;
+  tagline: string;
+  scenario: string;
+  decisions: readonly ArchitectureDecision[];
+  nodes: readonly MapNodeDefinition[];
+  edges: readonly MapEdgeDefinition[];
+  techniques: readonly AttackTechniqueDefinition[];
 }
 
-export type LabPlacements = Partial<Record<SlotId, ComponentId>>;
-
 export interface ResolvedStage {
-  id: AttackStageId;
+  id: AttackTechniqueId;
   number: number;
   name: string;
   outcome: StageOutcomeKind;
   attackerAction: string;
-  controlReaction: string;
+  controlResponse: string;
   explanation: string;
-  architectDetail: string;
-  highlight: readonly ArchitectureNodeId[];
-  chainReached: boolean;
-  legitimateActivity: boolean;
-  systemHealth: number;
-  dataExposure: "none" | "internal" | "external";
-  attackerProgress: number;
+  impact: string;
+  entryNode: MapNodeId;
+  stopNode: MapNodeId;
+  travelledPath: readonly MapNodeId[];
+  blocked: boolean;
+  isPivot: boolean;
+  pivotLabel: string | null;
 }
 
 export interface ArchitectureReview {
-  strengths: readonly string[];
-  weaknesses: readonly string[];
-  dataExposed: string;
-  blockedControls: readonly string[];
-  failedControls: readonly string[];
-  bestDecision: string;
-  mostImportantImprovement: string;
-  residualRisk: string;
-  businessTradeOffs: string;
+  protectedItems: readonly string[];
+  exposedItems: readonly string[];
+  greatestImpact: string;
   defenceInDepth: string;
-  nextSteps: readonly string[];
-  mappings: readonly { label: string; note: string }[];
+  recommendedImprovement: string;
+  dataExposed: string;
 }
 
 export interface AttackSimulation {
@@ -194,9 +176,12 @@ export interface LabPersistedState {
   version: number;
   missionId: string;
   difficulty: LabDifficulty;
-  placements: LabPlacements;
+  choices: LabChoices;
+  currentDecisionIndex: number;
+  pendingOptionId: OptionId | null;
   phase: LabPhase;
   revealedStageCount: number;
+  paused: boolean;
   attempts: number;
   lastResult: FinalResultKind | null;
   bestResult: FinalResultKind | null;

@@ -1,33 +1,33 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
-import { ArchitectureCanvas } from "@/components/lab/ArchitectureCanvas";
-import { ArchitectureReview } from "@/components/lab/ArchitectureReview";
-import { AttackSimulator } from "@/components/lab/AttackSimulator";
-import { ComponentPalette } from "@/components/lab/ComponentPalette";
-import { LabIcon } from "@/components/lab/LabIcon";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { ArchitectureMap } from "@/components/lab/ArchitectureMap";
+import { DecisionScreen } from "@/components/lab/DecisionScreen";
+import { DifficultySelect } from "@/components/lab/DifficultySelect";
+import { FinalReview } from "@/components/lab/FinalReview";
+import { IncidentPanel } from "@/components/lab/IncidentPanel";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
-import { LAB_MISSION, requireComponent } from "@/lib/lab/catalog";
-import { HARDNESS_CAPTION } from "@/lib/lab/copy";
-import { readinessBand, readinessFor, simulateAttack } from "@/lib/lab/engine";
+import { LAB_MISSION, decisionById, optionForChoice } from "@/lib/lab/catalog";
+import { DIFFICULTY_CAPTION } from "@/lib/lab/copy";
+import { simulateAttack } from "@/lib/lab/engine";
+import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import {
+  beginLab,
   changeDifficulty,
+  confirmDecision,
+  goToDecision,
   improveAndRetry,
   launchAttack,
   nextAttackStep,
+  pauseAttack,
   persistLab,
-  placeOnSlot,
+  replayAttack,
+  resetArchitecture,
+  selectOption,
 } from "@/lib/lab/play";
 import { EMPTY_LAB_STATE, loadLabState, subscribeLab } from "@/lib/lab/store";
-import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
-import type {
-  ArchitectureComponent,
-  ArchitectureNodeId,
-  LabDifficulty,
-  LabPersistedState,
-  SlotId,
-} from "@/lib/lab/types";
-import { SLOT_IDS } from "@/lib/lab/types";
+import type { LabDifficulty, LabPersistedState, MapNodeId } from "@/lib/lab/types";
+import { DECISION_IDS } from "@/lib/lab/types";
 import "./lab.css";
 
 export function ArchitectureDefenceLab() {
@@ -43,238 +43,202 @@ export function ArchitectureDefenceLabView({
   onChange: (state: LabPersistedState) => void;
 }) {
   const reducedMotion = usePrefersReducedMotion();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [inspectId, setInspectId] = useState<ArchitectureNodeId | null>(null);
+  const [inspectId, setInspectId] = useState<MapNodeId | null>(null);
   const [missingMessage, setMissingMessage] = useState<string | null>(null);
-  const locked = state.phase !== "build";
   const simulation = useMemo(
-    () => (locked ? simulateAttack(state.placements) : null),
-    [locked, state.placements],
+    () => (state.phase === "attack" || state.phase === "result" || state.phase === "review"
+      ? simulateAttack(state.choices)
+      : null),
+    [state.choices, state.phase],
   );
-  const revealed = state.phase === "build" ? 0 : state.revealedStageCount;
+  const revealed = state.phase === "attack" || state.phase === "result" ? state.revealedStageCount : 0;
   const activeStage = simulation && revealed > 0 ? simulation.stages[revealed - 1] ?? null : null;
-  const highlighted = activeStage?.highlight ?? [];
-  const readiness = readinessFor(state.placements);
-  const showPreciseReadiness = state.difficulty === "guided" || state.phase !== "build";
+  const currentDecision = decisionById(DECISION_IDS[state.currentDecisionIndex] ?? "identity");
 
   const update = (next: LabPersistedState) => {
     onChange(next);
   };
 
-  const handleSelect = (component: ArchitectureComponent) => {
-    if (locked) {
-      return;
+  useEffect(() => {
+    if (state.phase !== "attack" || state.paused || reducedMotion) {
+      return undefined;
     }
-    setSelectedId((current) => (current === component.id ? null : component.id));
-    setInspectId(component.slotId);
-  };
-
-  const handlePlace = (componentId: string, nodeId: ArchitectureNodeId) => {
-    if (!SLOT_IDS.includes(nodeId as SlotId)) {
-      return;
-    }
-    const next = placeOnSlot(state, componentId, nodeId as SlotId);
-    update(next);
-    setSelectedId(null);
-    setMissingMessage(null);
-    setInspectId(nodeId);
-  };
-
-  const handleLaunch = () => {
-    const result = launchAttack(state);
-    if (result.error) {
-      setMissingMessage(result.error);
-      return;
-    }
-    setMissingMessage(null);
-    setSelectedId(null);
-    update(result.state);
-  };
-
-  const handleNext = () => {
-    update(nextAttackStep(state));
-  };
+    const timer = window.setTimeout(() => {
+      onChange(nextAttackStep(state));
+    }, 1400);
+    return () => window.clearTimeout(timer);
+  }, [state, reducedMotion, onChange]);
 
   const handleDifficulty = (difficulty: LabDifficulty) => {
-    if (locked) {
-      return;
-    }
     update(changeDifficulty(state, difficulty));
-    setSelectedId(null);
   };
 
-  const handleRetry = () => {
-    update(improveAndRetry(state));
-    setMissingMessage(null);
-  };
-
-  const compatibleSlot = selectedId ? requireComponent(selectedId).slotId : draggingId ? requireComponent(draggingId).slotId : null;
+  const inspectNode = inspectId ? LAB_MISSION.nodes.find((item) => item.id === inspectId) : null;
+  const inspectChoice = inspectNode?.decisionId ? optionForChoice(state.choices, inspectNode.decisionId) : null;
+  const inspectTechnique = inspectNode?.decisionId
+    ? LAB_MISSION.techniques.find((item) => item.checks.some((check) => check.decisionId === inspectNode.decisionId))
+    : null;
 
   return (
     <div
-      className={[
-        "lab-shell",
-        reducedMotion ? "is-reduced-motion" : "",
-        `is-${state.phase}`,
-        compatibleSlot ? `is-aiming-${compatibleSlot}` : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={["lab-shell", reducedMotion ? "is-reduced-motion" : "", `is-${state.phase}`].filter(Boolean).join(" ")}
       data-phase={state.phase}
       data-difficulty={state.difficulty}
     >
       <header className="lab-top">
         <div className="lab-brand">
           <p>BreachRoom</p>
-          <h1>
-            <LabIcon name="shield" />
-            Architecture Defence Lab
-          </h1>
+          <h1>Architecture Defence Lab</h1>
         </div>
-        <div className="lab-hardness" role="group" aria-label={HARDNESS_CAPTION}>
-          <span className="lab-hardness__label">{HARDNESS_CAPTION}</span>
-          <button
-            type="button"
-            className={state.difficulty === "guided" ? "is-active" : ""}
-            aria-pressed={state.difficulty === "guided"}
-            disabled={locked}
-            onClick={() => handleDifficulty("guided")}
-          >
-            Guided
-          </button>
-          <button
-            type="button"
-            className={state.difficulty === "architect" ? "is-active" : ""}
-            aria-pressed={state.difficulty === "architect"}
-            disabled={locked}
-            onClick={() => handleDifficulty("architect")}
-          >
-            Architect
-          </button>
-        </div>
+        {state.phase !== "setup" ? (
+          <div className="lab-hardness" role="group" aria-label={DIFFICULTY_CAPTION}>
+            <span className="lab-hardness__label">{DIFFICULTY_CAPTION}</span>
+            <button
+              type="button"
+              className={state.difficulty === "guided" ? "is-active" : ""}
+              aria-pressed={state.difficulty === "guided"}
+              disabled={state.phase === "attack" || state.phase === "result"}
+              onClick={() => handleDifficulty("guided")}
+            >
+              Guided
+            </button>
+            <button
+              type="button"
+              className={state.difficulty === "challenge" ? "is-active" : ""}
+              aria-pressed={state.difficulty === "challenge"}
+              disabled={state.phase === "attack" || state.phase === "result"}
+              onClick={() => handleDifficulty("challenge")}
+            >
+              Challenge
+            </button>
+          </div>
+        ) : null}
       </header>
 
       <div className="lab-mission-head">
         <div>
           <p className="lab-mission-head__kicker">
-            {LAB_MISSION.missionLabel} · {LAB_MISSION.attack.name}
+            {LAB_MISSION.missionLabel} · {LAB_MISSION.title}
           </p>
-          <p className="lab-mission-head__tagline">{LAB_MISSION.attack.tagline}</p>
-          <p>{LAB_MISSION.attack.scenario}</p>
-          <p className="lab-fictional">{LAB_MISSION.attack.fictionalNote}</p>
+          <p className="lab-mission-head__tagline">{LAB_MISSION.tagline}</p>
+          <p>{LAB_MISSION.scenario}</p>
+          <p className="lab-fictional">{LAB_MISSION.fictionalNote}</p>
         </div>
         <p className="lab-phase-pill">
-          {state.phase === "build"
-            ? "Phase 1 · Build"
-            : state.phase === "attack"
-              ? "Phase 2 · Under Attack"
-              : "Phase 2 · Review"}
+          {state.phase === "setup"
+            ? "Choose difficulty"
+            : state.phase === "decide"
+              ? `Decision ${currentDecision.number} of 10`
+              : state.phase === "review"
+                ? "Architecture complete · 10/10"
+                : state.phase === "attack"
+                  ? "Red Team campaign"
+                  : "Final assessment"}
         </p>
       </div>
 
-      <ReadinessPanel readiness={readiness} precise={showPreciseReadiness} filled={SLOT_IDS.filter((slot) => state.placements[slot]).length} />
+      {state.phase === "setup" ? (
+        <DifficultySelect
+          difficulty={state.difficulty}
+          onChange={handleDifficulty}
+          onBegin={() => update(beginLab(state, state.difficulty))}
+        />
+      ) : null}
 
-      <div className="lab-workspace">
-        {state.phase === "build" ? (
-          <ComponentPalette
-            difficulty={state.difficulty}
-            selectedId={selectedId}
-            locked={locked}
-            onSelect={handleSelect}
-            onDragStart={setDraggingId}
-            onDragEnd={() => setDraggingId(null)}
+      {state.phase === "decide" ? (
+        <DecisionScreen
+          decision={currentDecision}
+          difficulty={state.difficulty}
+          choices={state.choices}
+          pendingOptionId={state.pendingOptionId}
+          onSelect={(optionId) => update(selectOption(state, optionId))}
+          onContinue={() => update(confirmDecision(state))}
+          onBack={() => update(goToDecision(state, state.currentDecisionIndex - 1))}
+          canGoBack={state.currentDecisionIndex > 0}
+        />
+      ) : null}
+
+      {state.phase === "review" || state.phase === "attack" || state.phase === "result" ? (
+        <div className="lab-board">
+          <ArchitectureMap
+            choices={state.choices}
+            simulation={simulation}
+            revealedStageCount={revealed}
+            selectedNodeId={inspectId}
+            onSelectNode={setInspectId}
           />
-        ) : (
-          <aside className="lab-palette lab-palette--locked" aria-hidden="true">
-            <div className="lab-palette__head">
-              <h2>Components locked</h2>
-              <p>Replace components after the attack by choosing Improve and Retry.</p>
-            </div>
-          </aside>
-        )}
-        <ArchitectureCanvas
-          placements={state.placements}
-          difficulty={state.difficulty}
-          selectedComponentId={selectedId}
-          draggingId={draggingId}
-          locked={locked}
-          highlighted={highlighted}
-          activeStage={activeStage}
-          inspectId={inspectId}
-          onPlace={handlePlace}
-          onInspect={setInspectId}
-        />
-      </div>
-
-      {state.phase === "review" && simulation ? (
-        <ArchitectureReview
-          simulation={simulation}
-          difficulty={state.difficulty}
-          onReviewArchitecture={() => {
-            const first = simulation.stages[0];
-            setInspectId(first?.highlight[0] ?? "ai-application");
-            document.querySelector(".lab-canvas")?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
-          }}
-          onRetry={handleRetry}
-        />
-      ) : (
-        <AttackSimulator
-          phase={state.phase}
-          difficulty={state.difficulty}
-          revealedStageCount={revealed}
-          simulation={simulation}
-          missingMessage={missingMessage}
-          onLaunch={handleLaunch}
-          onNext={handleNext}
-          onReset={() => {
-            update({ ...state, placements: {} });
-            setSelectedId(null);
-            setMissingMessage(null);
-          }}
-        />
-      )}
-
-      <p className="lab-company">
-        Fictional company: {LAB_MISSION.attack.company}. {LAB_MISSION.attack.fictionalNote}
-      </p>
-      <EducationalDisclaimer variant="short" className="lab-disclaimer" />
-    </div>
-  );
-}
-
-function ReadinessPanel({
-  readiness,
-  precise,
-  filled,
-}: {
-  readiness: ReturnType<typeof readinessFor>;
-  precise: boolean;
-  filled: number;
-}) {
-  const band = readinessBand(readiness.overall);
-  return (
-    <section className="lab-readiness" aria-label="Defence readiness">
-      <div className="lab-readiness__main">
-        <p>Defence readiness</p>
-        {precise ? <strong>{filled === 0 ? "—" : `${readiness.overall}`}</strong> : <strong className={`is-${band}`}>{band}</strong>}
-        <div className="lab-readiness__bar" aria-hidden="true">
-          <span style={{ width: `${filled === 0 ? 0 : readiness.overall}%` }} />
+          <div className="lab-board__side">
+            {inspectNode ? (
+              <article className="lab-inspect">
+                <p className="lab-kicker">{inspectNode.name}</p>
+                <h2>{inspectChoice?.title ?? inspectNode.name}</h2>
+                <p>{inspectChoice?.tradeOff ?? inspectNode.description}</p>
+                {inspectTechnique ? <p>This control is tested by {inspectTechnique.name}.</p> : null}
+              </article>
+            ) : (
+              <IncidentPanel stage={state.phase === "review" ? null : activeStage} />
+            )}
+            {state.phase === "review" ? (
+              <div className="lab-attack-controls">
+                {missingMessage ? <p className="lab-missing">{missingMessage}</p> : null}
+                <button
+                  type="button"
+                  className="lab-primary"
+                  onClick={() => {
+                    const result = launchAttack(state);
+                    if (result.error) {
+                      setMissingMessage(result.error);
+                      return;
+                    }
+                    setMissingMessage(null);
+                    update(result.state);
+                  }}
+                >
+                  Run Red Team
+                </button>
+                <button type="button" className="lab-secondary" onClick={() => update(goToDecision(state, 9))}>
+                  Change a decision
+                </button>
+              </div>
+            ) : null}
+            {state.phase === "attack" ? (
+              <div className="lab-attack-controls">
+                <button
+                  type="button"
+                  className="lab-secondary"
+                  onClick={() => update(pauseAttack(state, !state.paused))}
+                >
+                  {state.paused ? "Resume" : "Pause"}
+                </button>
+                <button type="button" className="lab-primary" onClick={() => update(nextAttackStep(state))}>
+                  Next attack step
+                </button>
+                <button type="button" className="lab-secondary" onClick={() => update(replayAttack(state))}>
+                  Replay attack
+                </button>
+              </div>
+            ) : null}
+            {state.phase === "result" && simulation ? (
+              <FinalReview
+                simulation={simulation}
+                difficulty={state.difficulty}
+                onRetry={() => update(improveAndRetry(state))}
+                onReplay={() => update(replayAttack(state))}
+              />
+            ) : null}
+          </div>
         </div>
+      ) : null}
+
+      <div className="lab-foot">
+        <button type="button" className="lab-text" onClick={() => update(resetArchitecture(state))}>
+          Reset architecture
+        </button>
+        <p className="lab-company">
+          Fictional company: {LAB_MISSION.company}. {LAB_MISSION.fictionalNote}
+        </p>
+        <EducationalDisclaimer variant="short" className="lab-disclaimer" />
       </div>
-      <ul>
-        {(["prevention", "dataProtection", "containment", "detection"] as const).map((pillar) => {
-          const label =
-            pillar === "dataProtection" ? "Data protection" : pillar.charAt(0).toUpperCase() + pillar.slice(1);
-          const value = readiness[pillar];
-          return (
-            <li key={pillar}>
-              <span>{label}</span>
-              <b>{precise ? `${value}` : readinessBand(value)}</b>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+    </div>
   );
 }

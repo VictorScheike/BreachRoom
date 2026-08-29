@@ -1,66 +1,103 @@
-import { slotById } from "./catalog";
-import { canPlace, missingSlots, placeComponent, simulateAttack } from "./engine";
+import { DECISION_COUNT, LAB_MISSION, TECHNIQUE_COUNT, isComplete, optionById } from "./catalog";
+import { simulateAttack } from "./engine";
 import { saveLabState, withAttemptResult } from "./store";
 import { syncLabProgress } from "./progress";
-import { SLOT_IDS, type LabDifficulty, type LabPersistedState, type LabPlacements, type SlotId } from "./types";
+import { DECISION_IDS, type DecisionId, type LabDifficulty, type LabPersistedState, type OptionId } from "./types";
 
-export function placementsForDifficulty(
-  placements: LabPlacements,
-  difficulty: LabDifficulty,
-): LabPlacements {
-  const next: LabPlacements = {};
-  for (const slotId of SLOT_IDS) {
-    const id = placements[slotId];
-    if (id && canPlace(id, slotId, difficulty)) {
-      next[slotId] = id;
-    }
+function pendingForIndex(choices: LabPersistedState["choices"], index: number): OptionId | null {
+  const decision = LAB_MISSION.decisions[index];
+  if (!decision) {
+    return null;
   }
-  return next;
+  return choices[decision.id] ?? null;
 }
 
-export function changeDifficulty(state: LabPersistedState, difficulty: LabDifficulty): LabPersistedState {
-  if (state.phase !== "build") {
-    return state;
-  }
+export function beginLab(state: LabPersistedState, difficulty: LabDifficulty): LabPersistedState {
   return {
     ...state,
     difficulty,
-    placements: placementsForDifficulty(state.placements, difficulty),
+    phase: "decide",
+    currentDecisionIndex: 0,
+    pendingOptionId: pendingForIndex(state.choices, 0),
+    revealedStageCount: 0,
+    paused: false,
   };
 }
 
-export function placeOnSlot(
-  state: LabPersistedState,
-  componentId: string,
-  slotId: SlotId,
-): LabPersistedState {
-  if (state.phase !== "build") {
+export function changeDifficulty(state: LabPersistedState, difficulty: LabDifficulty): LabPersistedState {
+  if (state.phase === "attack" || state.phase === "result") {
     return state;
+  }
+  return { ...state, difficulty };
+}
+
+export function selectOption(state: LabPersistedState, optionId: OptionId): LabPersistedState {
+  if (state.phase !== "decide") {
+    return state;
+  }
+  try {
+    const option = optionById(optionId);
+    const current = LAB_MISSION.decisions[state.currentDecisionIndex];
+    if (!current || option.decisionId !== current.id) {
+      return state;
+    }
+    return { ...state, pendingOptionId: optionId };
+  } catch {
+    return state;
+  }
+}
+
+export function confirmDecision(state: LabPersistedState): LabPersistedState {
+  if (state.phase !== "decide" || !state.pendingOptionId) {
+    return state;
+  }
+  const option = optionById(state.pendingOptionId);
+  const current = LAB_MISSION.decisions[state.currentDecisionIndex];
+  if (!current || option.decisionId !== current.id) {
+    return state;
+  }
+  const choices = { ...state.choices, [option.decisionId]: option.id };
+  const nextIndex = state.currentDecisionIndex + 1;
+  if (nextIndex >= DECISION_COUNT) {
+    return {
+      ...state,
+      choices,
+      pendingOptionId: null,
+      currentDecisionIndex: DECISION_COUNT - 1,
+      phase: "review",
+    };
   }
   return {
     ...state,
-    placements: placeComponent(state.placements, componentId, slotId, state.difficulty),
+    choices,
+    currentDecisionIndex: nextIndex,
+    pendingOptionId: pendingForIndex(choices, nextIndex),
   };
 }
 
-export function missingSlotMessage(missing: readonly SlotId[]): string {
-  const names = missing.map((id) => slotById(id).name);
-  if (names.length === 1) {
-    return `Place a component in ${names[0]} before launching the attack.`;
+export function goToDecision(state: LabPersistedState, index: number): LabPersistedState {
+  if (state.phase !== "decide" && state.phase !== "review") {
+    return state;
   }
-  return `Fill every architecture slot before launching. Still empty: ${names.join(", ")}.`;
+  const bounded = Math.max(0, Math.min(DECISION_COUNT - 1, index));
+  return {
+    ...state,
+    phase: "decide",
+    currentDecisionIndex: bounded,
+    pendingOptionId: pendingForIndex(state.choices, bounded),
+  };
 }
 
 export function launchAttack(state: LabPersistedState): { state: LabPersistedState; error: string | null } {
-  const missing = missingSlots(state.placements, state.difficulty);
-  if (missing.length > 0) {
-    return { state, error: missingSlotMessage(missing) };
+  if (!isComplete(state.choices)) {
+    return { state, error: "Make all 10 architecture decisions before running the Red Team." };
   }
   return {
     state: {
       ...state,
       phase: "attack",
       revealedStageCount: 1,
+      paused: false,
     },
     error: null,
   };
@@ -70,30 +107,69 @@ export function nextAttackStep(state: LabPersistedState): LabPersistedState {
   if (state.phase !== "attack") {
     return state;
   }
-  if (state.revealedStageCount < 6) {
-    return { ...state, revealedStageCount: state.revealedStageCount + 1 };
+  if (state.revealedStageCount < TECHNIQUE_COUNT) {
+    return { ...state, revealedStageCount: state.revealedStageCount + 1, paused: false };
   }
-  const simulation = simulateAttack(state.placements);
+  const simulation = simulateAttack(state.choices);
   return withAttemptResult(
     {
       ...state,
-      phase: "review",
-      revealedStageCount: 6,
+      phase: "result",
+      revealedStageCount: TECHNIQUE_COUNT,
+      paused: false,
     },
     simulation.result,
     simulation.score,
   );
 }
 
+export function pauseAttack(state: LabPersistedState, paused: boolean): LabPersistedState {
+  if (state.phase !== "attack") {
+    return state;
+  }
+  return { ...state, paused };
+}
+
+export function replayAttack(state: LabPersistedState): LabPersistedState {
+  if (!isComplete(state.choices)) {
+    return state;
+  }
+  return {
+    ...state,
+    phase: "attack",
+    revealedStageCount: 1,
+    paused: false,
+  };
+}
+
+export function resetArchitecture(state: LabPersistedState): LabPersistedState {
+  return {
+    ...state,
+    choices: {},
+    currentDecisionIndex: 0,
+    pendingOptionId: null,
+    phase: "setup",
+    revealedStageCount: 0,
+    paused: false,
+  };
+}
+
 export function improveAndRetry(state: LabPersistedState): LabPersistedState {
   return {
     ...state,
-    phase: "build",
+    phase: "decide",
+    currentDecisionIndex: 0,
+    pendingOptionId: pendingForIndex(state.choices, 0),
     revealedStageCount: 0,
+    paused: false,
   };
 }
 
 export function persistLab(state: LabPersistedState): void {
   saveLabState(state);
   syncLabProgress(state, state.lastResult, state.bestScore);
+}
+
+export function currentDecisionId(state: LabPersistedState): DecisionId {
+  return DECISION_IDS[state.currentDecisionIndex] ?? "identity";
 }

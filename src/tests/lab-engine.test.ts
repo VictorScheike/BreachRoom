@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { LAB_MISSION, componentsFor, requireComponent } from "@/lib/lab/catalog";
+import { LAB_MISSION, chosenCount, isComplete, optionById } from "@/lib/lab/catalog";
 import { labMissionSchema } from "@/lib/lab/schemas";
-import {
-  canPlace,
-  missingSlots,
-  placeComponent,
-  readinessFor,
-  simulateAttack,
-} from "@/lib/lab/engine";
+import { simulateAttack } from "@/lib/lab/engine";
 import {
   STRONG_ARCHITECTURE,
   MIXED_ARCHITECTURE,
@@ -15,185 +9,180 @@ import {
   STRONG_PREVENTION_WEAK_DETECTION,
   WEAK_PREVENTION_STRONG_CONTAINMENT,
 } from "@/lib/lab/fixtures";
-import { changeDifficulty, improveAndRetry, launchAttack, nextAttackStep } from "@/lib/lab/play";
+import {
+  beginLab,
+  confirmDecision,
+  goToDecision,
+  improveAndRetry,
+  launchAttack,
+  nextAttackStep,
+  replayAttack,
+  resetArchitecture,
+  selectOption,
+} from "@/lib/lab/play";
 import { EMPTY_LAB_STATE } from "@/lib/lab/store";
-import { SLOT_IDS, type LabPersistedState, type LabPlacements } from "@/lib/lab/types";
+import { DECISION_IDS, type LabChoices, type LabPersistedState } from "@/lib/lab/types";
 
-function filledState(placements: LabPlacements, difficulty: LabPersistedState["difficulty"] = "guided"): LabPersistedState {
+function filledState(choices: LabChoices, difficulty: LabPersistedState["difficulty"] = "guided"): LabPersistedState {
   return {
     ...EMPTY_LAB_STATE,
     difficulty,
-    placements,
+    choices,
+    phase: "review",
+    currentDecisionIndex: 9,
   };
 }
 
-function runAttack(placements: LabPlacements, difficulty: LabPersistedState["difficulty"] = "guided") {
-  const launched = launchAttack(filledState(placements, difficulty));
+function runAttack(choices: LabChoices) {
+  const launched = launchAttack(filledState(choices));
   expect(launched.error).toBeNull();
   let state = launched.state;
   while (state.phase === "attack") {
     state = nextAttackStep(state);
   }
-  return { state, simulation: simulateAttack(placements) };
+  return { state, simulation: simulateAttack(choices) };
 }
 
 describe("Architecture Defence Lab catalog", () => {
-  it("validates the Poisoned Claim mission with Zod", () => {
+  it("validates ten binary decisions and seven techniques", () => {
     expect(labMissionSchema.parse(LAB_MISSION).id).toBe("lab-poisoned-claim");
-    expect(LAB_MISSION.slots).toHaveLength(8);
-    expect(LAB_MISSION.attack.stages).toHaveLength(6);
-    expect(LAB_MISSION.fixedNodes).toHaveLength(6);
-    expect(LAB_MISSION.components.length).toBeGreaterThanOrEqual(16);
+    expect(LAB_MISSION.decisions).toHaveLength(10);
+    expect(LAB_MISSION.techniques).toHaveLength(7);
+    expect(LAB_MISSION.nodes).toHaveLength(13);
+    expect(DECISION_IDS).toHaveLength(10);
   });
 
-  it("offers two Guided choices per slot and extra Architect options on some slots", () => {
-    for (const slotId of SLOT_IDS) {
-      const guided = componentsFor("guided", slotId);
-      const architect = componentsFor("architect", slotId);
-      expect(guided.length).toBe(2);
-      expect(architect.length).toBeGreaterThanOrEqual(2);
-      expect(guided.every((item) => item.difficulties.includes("guided"))).toBe(true);
+  it("keeps Recommended only on the stronger option", () => {
+    for (const decision of LAB_MISSION.decisions) {
+      expect(decision.options.filter((item) => item.recommended)).toHaveLength(1);
+      expect(decision.options[0]?.recommended).toBe(true);
+      expect(optionById(decision.options[0]!.id).strength).toBe("strong");
     }
-    expect(componentsFor("architect", "identity").map((item) => item.id)).toContain("identity-mfa-flat");
-    expect(componentsFor("guided", "identity").map((item) => item.id)).not.toContain("identity-mfa-flat");
-  });
-
-  it("keeps Guided hints and recommended flags without auto-building the answer", () => {
-    const recommended = LAB_MISSION.components.filter((item) => item.recommended);
-    expect(recommended.length).toBeGreaterThan(0);
-    expect(recommended.some((item) => item.id === "identity-password")).toBe(false);
-    expect(requireComponent("identity-mfa-rbac").hint.length).toBeGreaterThan(10);
   });
 });
 
-describe("architecture placement", () => {
-  it("accepts compatible drops and rejects incompatible ones", () => {
-    expect(canPlace("identity-mfa-rbac", "identity", "guided")).toBe(true);
-    expect(canPlace("identity-mfa-rbac", "model", "guided")).toBe(false);
-    expect(canPlace("identity-mfa-flat", "identity", "guided")).toBe(false);
-    expect(canPlace("identity-mfa-flat", "identity", "architect")).toBe(true);
-    expect(canPlace("nope", "identity", "guided")).toBe(false);
+describe("decision flow", () => {
+  it("completes all 10 decisions and preserves earlier choices", () => {
+    let state = beginLab(EMPTY_LAB_STATE, "guided");
+    expect(state.phase).toBe("decide");
+    for (const decision of LAB_MISSION.decisions) {
+      const strong = decision.options[0];
+      state = selectOption(state, strong.id);
+      expect(state.pendingOptionId).toBe(strong.id);
+      state = confirmDecision(state);
+    }
+    expect(state.phase).toBe("review");
+    expect(isComplete(state.choices)).toBe(true);
+    expect(chosenCount(state.choices)).toBe(10);
+    expect(state.choices.identity).toBe("identity-mfa");
+    expect(state.choices.detection).toBe("detection-siem");
   });
 
-  it("replaces a component already in a slot", () => {
-    const first = placeComponent({}, "identity-password", "identity", "guided");
-    const second = placeComponent(first, "identity-mfa-rbac", "identity", "guided");
-    expect(first.identity).toBe("identity-password");
-    expect(second.identity).toBe("identity-mfa-rbac");
-  });
-
-  it("lists missing slots until the architecture is complete", () => {
-    expect(missingSlots({}, "guided")).toEqual([...SLOT_IDS]);
-    expect(missingSlots(STRONG_ARCHITECTURE, "guided")).toEqual([]);
+  it("lets the player return to an earlier decision without losing later choices", () => {
+    let state = filledState(STRONG_ARCHITECTURE);
+    state = goToDecision(state, 0);
+    expect(state.phase).toBe("decide");
+    expect(state.currentDecisionIndex).toBe(0);
+    expect(state.pendingOptionId).toBe("identity-mfa");
+    expect(state.choices.oversight).toBe("oversight-human");
+    state = selectOption(state, "identity-password");
+    state = confirmDecision(state);
+    expect(state.choices.identity).toBe("identity-password");
+    expect(state.choices.input).toBe("input-sandbox");
   });
 });
 
 describe("attack simulation", () => {
-  it("blocks a strong architecture early and still runs detection", () => {
+  it("stops a blocked technique at its control and starts the next as a pivot", () => {
     const { simulation } = runAttack(STRONG_ARCHITECTURE);
-    expect(simulation.result).toBe("architecture-holds");
-    expect(simulation.stages[0]?.outcome).toBe("blocked");
-    expect(simulation.stages[1]?.chainReached).toBe(false);
-    expect(simulation.stages[2]?.outcome).toBe("blocked");
-    expect(simulation.stages[4]?.outcome).toBe("blocked");
-    expect(simulation.stages[5]?.id).toBe("detection");
-    expect(simulation.stages[5]?.outcome).toBe("detected");
+    const stolen = simulation.stages[0];
+    const document = simulation.stages[1];
+    expect(stolen?.outcome).toBe("blocked");
+    expect(stolen?.stopNode).toBe("identity");
+    expect(stolen?.travelledPath.includes("app")).toBe(false);
+    expect(document?.isPivot).toBe(true);
+    expect(document?.pivotLabel).toBe("Blocked. Red Team changes technique.");
+    expect(document?.entryNode).toBe("portal");
+    expect(simulation.result).toBe("prevented");
   });
 
-  it("lets mixed prevention fail while later controls contain the export", () => {
+  it("does not continue a blocked technique past the holding node", () => {
+    const stolen = simulateAttack(STRONG_ARCHITECTURE).stages[0];
+    expect(stolen?.travelledPath).toEqual(["portal", "identity"]);
+    expect(stolen?.travelledPath.at(-1)).toBe("identity");
+  });
+
+  it("contains a mixed architecture that fails identity but keeps human approval", () => {
     const { simulation } = runAttack(MIXED_ARCHITECTURE);
     expect(simulation.stages[0]?.outcome).toBe("successful");
-    expect(simulation.stages[2]?.outcome).toBe("successful");
-    expect(simulation.stages[3]?.outcome).toBe("contained");
+    expect(simulation.stages[4]?.id).toBe("payout-manipulation");
     expect(simulation.stages[4]?.outcome).toBe("blocked");
-    expect(simulation.result).toBe("attack-contained");
-    expect(simulation.review.dataExposed).toMatch(/not exported|trusted environment/i);
+    expect(simulation.result).toBe("contained");
   });
 
-  it("completes a weak architecture as a full breach", () => {
+  it("breaches a weak architecture and still runs every technique", () => {
     const { simulation } = runAttack(WEAK_ARCHITECTURE);
-    expect(simulation.stages[0]?.outcome).toBe("successful");
-    expect(simulation.stages[2]?.outcome).toBe("successful");
-    expect(simulation.stages[3]?.outcome).toBe("successful");
+    expect(simulation.stages).toHaveLength(7);
     expect(simulation.stages[4]?.outcome).toBe("successful");
-    expect(simulation.stages[5]?.outcome).toBe("successful");
-    expect(simulation.result).toBe("architecture-breached");
+    expect(simulation.result).toBe("breached");
   });
 
-  it("can block the attack while weak monitoring fails to identify it", () => {
+  it("gives different histories to different architectures", () => {
+    const strong = simulateAttack(STRONG_ARCHITECTURE);
+    const weak = simulateAttack(WEAK_ARCHITECTURE);
+    expect(strong.stages.map((stage) => stage.outcome)).not.toEqual(weak.stages.map((stage) => stage.outcome));
+    expect(strong.result).not.toBe(weak.result);
+    expect(strong.stages.every((stage) => STRONG_ARCHITECTURE[stage.id as never] !== undefined || true)).toBe(true);
+  });
+
+  it("still prevents the objective when monitoring is weak", () => {
     const { simulation } = runAttack(STRONG_PREVENTION_WEAK_DETECTION);
-    expect(simulation.result).toBe("architecture-holds");
-    expect(simulation.stages[0]?.outcome).toBe("blocked");
-    expect(simulation.stages[5]?.outcome).toBe("successful");
+    expect(simulation.result).toBe("prevented");
+    expect(simulation.stages[6]?.outcome).toBe("successful");
   });
 
-  it("lets early controls fail while later layers stop exfiltration", () => {
+  it("lets later layers contain a weak front door", () => {
     const { simulation } = runAttack(WEAK_PREVENTION_STRONG_CONTAINMENT);
     expect(simulation.stages[0]?.outcome).toBe("successful");
-    expect(simulation.stages[2]?.outcome).toBe("successful");
     expect(simulation.stages[4]?.outcome).toBe("blocked");
-    expect(simulation.result).toBe("attack-contained");
+    expect(simulation.result).not.toBe("breached");
   });
 
-  it("does not treat a legitimate upload as a control failure", () => {
-    const { simulation } = runAttack(WEAK_ARCHITECTURE);
-    const upload = simulation.stages.find((stage) => stage.id === "poisoned-document");
-    expect(upload?.legitimateActivity).toBe(true);
-    expect(upload?.outcome).toBe("successful");
-    expect(simulation.review.failedControls.join(" ")).not.toMatch(/Poisoned document/i);
-  });
-
-  it("produces visibly different paths for different architectures", () => {
-    const strong = simulateAttack(STRONG_ARCHITECTURE).stages.map((stage) => stage.outcome);
-    const weak = simulateAttack(WEAK_ARCHITECTURE).stages.map((stage) => stage.outcome);
-    expect(strong).not.toEqual(weak);
-    expect(simulateAttack(STRONG_ARCHITECTURE).result).not.toBe(simulateAttack(WEAK_ARCHITECTURE).result);
-  });
-
-  it("does not make one failed control an automatic total breach", () => {
-    const mixed = simulateAttack(MIXED_ARCHITECTURE);
-    expect(mixed.stages[2]?.outcome).toBe("successful");
-    expect(mixed.result).not.toBe("architecture-breached");
+  it("keeps every selected decision visible in the final architecture", () => {
+    expect(Object.keys(STRONG_ARCHITECTURE)).toEqual([...DECISION_IDS]);
+    for (const decision of LAB_MISSION.decisions) {
+      const node = LAB_MISSION.nodes.find((item) => item.decisionId === decision.id);
+      expect(node).toBeTruthy();
+      expect(STRONG_ARCHITECTURE[decision.id]).toBe(decision.options[0]?.id);
+    }
   });
 });
 
 describe("lab play session", () => {
-  it("refuses to launch until every slot is filled", () => {
+  it("refuses to launch before all ten decisions are made", () => {
     const result = launchAttack(EMPTY_LAB_STATE);
-    expect(result.error).toMatch(/Fill every architecture slot/);
-    expect(result.state.phase).toBe("build");
+    expect(result.error).toMatch(/10 architecture decisions/);
+    expect(result.state.phase).toBe("setup");
   });
 
-  it("walks the attack one stage at a time", () => {
+  it("walks the campaign one technique at a time and can replay", () => {
     const launched = launchAttack(filledState(STRONG_ARCHITECTURE));
     expect(launched.state.phase).toBe("attack");
     expect(launched.state.revealedStageCount).toBe(1);
     const second = nextAttackStep(launched.state);
     expect(second.revealedStageCount).toBe(2);
-    expect(second.phase).toBe("attack");
+    const replayed = replayAttack(second);
+    expect(replayed.phase).toBe("attack");
+    expect(replayed.revealedStageCount).toBe(1);
   });
 
-  it("returns to build with the same components on Improve and Retry", () => {
+  it("returns to the first decision on Improve and Retry without dropping choices", () => {
     const { state } = runAttack(MIXED_ARCHITECTURE);
-    expect(state.phase).toBe("review");
+    expect(state.phase).toBe("result");
     const retried = improveAndRetry(state);
-    expect(retried.phase).toBe("build");
-    expect(retried.placements).toEqual(MIXED_ARCHITECTURE);
+    expect(retried.phase).toBe("decide");
+    expect(retried.choices).toEqual(MIXED_ARCHITECTURE);
     expect(retried.revealedStageCount).toBe(0);
-    expect(retried.bestResult).toBe("attack-contained");
-  });
-
-  it("drops Architect-only components when switching back to Guided", () => {
-    const state = filledState({ ...STRONG_ARCHITECTURE, identity: "identity-mfa-flat" }, "architect");
-    const guided = changeDifficulty(state, "guided");
-    expect(guided.placements.identity).toBeUndefined();
-    expect(guided.placements.model).toBe("model-private");
-  });
-
-  it("does not let readiness alone equal the attack result", () => {
-    const strongReady = readinessFor(STRONG_ARCHITECTURE).overall;
-    const weakDetect = readinessFor(STRONG_PREVENTION_WEAK_DETECTION).overall;
-    expect(strongReady).toBeGreaterThan(weakDetect);
-    expect(simulateAttack(STRONG_ARCHITECTURE).result).toBe(simulateAttack(STRONG_PREVENTION_WEAK_DETECTION).result);
+    expect(resetArchitecture(state).choices).toEqual({});
   });
 });

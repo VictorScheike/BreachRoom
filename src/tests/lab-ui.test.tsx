@@ -1,11 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ArchitectureDefenceLabView } from "@/components/lab/ArchitectureDefenceLab";
-import { ComponentPalette } from "@/components/lab/ComponentPalette";
-import { AttackSimulator } from "@/components/lab/AttackSimulator";
-import { ArchitectureReview } from "@/components/lab/ArchitectureReview";
+import { DecisionScreen } from "@/components/lab/DecisionScreen";
+import { ArchitectureMap } from "@/components/lab/ArchitectureMap";
 import { MissionsLibrary } from "@/components/site/MissionsLibrary";
 import { ProgressDashboard } from "@/components/site/ProgressPage";
+import { LAB_MISSION } from "@/lib/lab/catalog";
 import { simulateAttack } from "@/lib/lab/engine";
 import { STRONG_ARCHITECTURE, WEAK_ARCHITECTURE } from "@/lib/lab/fixtures";
 import { EMPTY_LAB_STATE } from "@/lib/lab/store";
@@ -15,114 +15,131 @@ import type { LabPersistedState } from "@/lib/lab/types";
 const noop = () => undefined;
 
 describe("Architecture Defence Lab UI", () => {
-  it("renders Guided and Architect hardness controls and the three trust zones", () => {
+  it("starts with Guided and Challenge instead of a component palette", () => {
     const html = renderToStaticMarkup(
       <ArchitectureDefenceLabView state={EMPTY_LAB_STATE} onChange={noop} />,
     );
-    expect(html).toContain("Hardness lvl");
-    expect(html).toContain("Guided");
-    expect(html).toContain("Architect");
     expect(html).toContain("Architecture Defence Lab");
-    expect(html).toContain("Build it. Then let the attack loose.");
-    expect(html).toContain("User and Input Zone");
-    expect(html).toContain("AI Application Zone");
-    expect(html).toContain("Protected Systems Zone");
-    expect(html).toContain("Launch Attack");
+    expect(html).toContain("Guided");
+    expect(html).toContain("Challenge");
+    expect(html).toContain("Start the ten decisions");
     expect(html).toContain("Nordic Shield Insurance");
     expect(html).toContain("fictional");
-    expect(html).toContain("Phase 1 · Build");
+    expect(html).not.toContain("User and Input Zone");
+    expect(html).not.toContain("Launch Attack");
   });
 
-  it("hides Architect-only options and recommended labels according to difficulty", () => {
+  it("shows one decision at a time with a Recommended label only in Guided", () => {
+    const decision = LAB_MISSION.decisions[0]!;
     const guided = renderToStaticMarkup(
-      <ComponentPalette
+      <DecisionScreen
+        decision={decision}
         difficulty="guided"
-        selectedId={null}
-        locked={false}
+        choices={{}}
+        pendingOptionId={null}
         onSelect={noop}
-        onDragStart={noop}
-        onDragEnd={noop}
+        onContinue={noop}
+        onBack={noop}
+        canGoBack={false}
       />,
     );
-    const architect = renderToStaticMarkup(
-      <ComponentPalette
-        difficulty="architect"
-        selectedId={null}
-        locked={false}
+    const challenge = renderToStaticMarkup(
+      <DecisionScreen
+        decision={decision}
+        difficulty="challenge"
+        choices={{}}
+        pendingOptionId={null}
         onSelect={noop}
-        onDragStart={noop}
-        onDragEnd={noop}
+        onContinue={noop}
+        onBack={noop}
+        canGoBack={false}
       />,
     );
+    expect(guided).toContain("Decision 1 of 10");
     expect(guided).toContain("Recommended");
-    expect(guided).toContain("Stolen passwords fail");
-    expect(guided).not.toContain("MFA without clear roles");
-    expect(architect).toContain("MFA without clear roles");
-    expect(architect).not.toContain("Recommended");
-    expect(architect).toContain("Higher operational cost");
+    expect(guided).toContain("Slightly more friction during sign-in");
+    expect(challenge).not.toContain("Recommended");
+    expect(challenge).toContain("Select to see the trade-off");
+    expect(challenge).not.toContain("Slightly more friction during sign-in");
   });
 
-  it("explains missing slots instead of launching", () => {
-    const html = renderToStaticMarkup(
-      <AttackSimulator
-        phase="build"
-        difficulty="guided"
-        revealedStageCount={0}
-        simulation={null}
-        missingMessage="Place a component in Identity and access before launching the attack."
-        onLaunch={noop}
-        onNext={noop}
-        onReset={noop}
-      />,
-    );
-    expect(html).toContain("Place a component in Identity and access");
-    expect(html).toContain("Launch Attack");
-  });
-
-  it("locks the architecture copy during the attack and shows the first stage", () => {
+  it("renders the complete architecture after ten decisions", () => {
     const state: LabPersistedState = {
       ...EMPTY_LAB_STATE,
-      placements: STRONG_ARCHITECTURE,
+      choices: STRONG_ARCHITECTURE,
+      phase: "review",
+      currentDecisionIndex: 9,
+    };
+    const html = renderToStaticMarkup(<ArchitectureDefenceLabView state={state} onChange={noop} />);
+    expect(html).toContain("Architecture complete · 10/10");
+    expect(html).toContain("Run Red Team");
+    expect(html).toContain("Claims Portal");
+    expect(html).toContain("MFA + role access");
+    expect(html).toContain("File sandbox");
+    expect(html).toContain("Private enterprise LLM");
+    expect(html).toContain("Case-scoped RAG");
+    expect(html).toContain("Managed identity");
+    expect(html).toContain("Restricted Claims API");
+    expect(html).toContain("Human approval");
+    expect(html).toContain("Private segments");
+    expect(html).toContain("Signed builds");
+    expect(html).toContain("SIEM + playbook");
+    expect(html).toContain("Claims Database");
+  });
+
+  it("shows the first Red Team technique and next-step controls", () => {
+    const state: LabPersistedState = {
+      ...EMPTY_LAB_STATE,
+      choices: STRONG_ARCHITECTURE,
       phase: "attack",
       revealedStageCount: 1,
     };
     const html = renderToStaticMarkup(<ArchitectureDefenceLabView state={state} onChange={noop} />);
-    expect(html).toContain("Phase 2 · Under Attack");
-    expect(html).toContain("Next Attack Step");
-    expect(html).toContain("Components locked");
-    expect(html).toContain("Blocked");
-    expect(html).not.toContain("Launch Attack");
+    expect(html).toContain("Stolen credentials");
+    expect(html).toContain("Next attack step");
+    expect(html).toContain("Pause");
+    expect(html).toContain("Replay attack");
+    expect(html).not.toContain("Run Red Team");
   });
 
-  it("shows the review, Improve and Retry, and defence-in-depth copy after a run", () => {
-    const simulation = simulateAttack(STRONG_ARCHITECTURE);
-    const html = renderToStaticMarkup(
-      <ArchitectureReview
-        simulation={simulation}
-        difficulty="guided"
-        onReviewArchitecture={noop}
-        onRetry={noop}
+  it("shows Prevented or Breached from the actual architecture", () => {
+    const strong = renderToStaticMarkup(
+      <ArchitectureDefenceLabView
+        state={{
+          ...EMPTY_LAB_STATE,
+          choices: STRONG_ARCHITECTURE,
+          phase: "result",
+          revealedStageCount: 7,
+          lastResult: simulateAttack(STRONG_ARCHITECTURE).result,
+        }}
+        onChange={noop}
       />,
     );
-    expect(html).toContain("Architecture Holds");
-    expect(html).toContain("Improve and Retry");
-    expect(html).toContain("Review Architecture");
-    expect(html).toContain("End Mission");
-    expect(html).toContain("Defence in depth");
-    expect(html).toContain("NIST AI RMF");
-    expect(html).toContain("OWASP");
+    const weak = renderToStaticMarkup(
+      <ArchitectureDefenceLabView
+        state={{
+          ...EMPTY_LAB_STATE,
+          choices: WEAK_ARCHITECTURE,
+          phase: "result",
+          revealedStageCount: 7,
+          lastResult: simulateAttack(WEAK_ARCHITECTURE).result,
+        }}
+        onChange={noop}
+      />,
+    );
+    expect(strong).toContain("Prevented");
+    expect(weak).toContain("Breached");
+    expect(strong).toContain("Improve and retry");
+    expect(strong).not.toContain("Defence readiness");
   });
 
-  it("renders a different review headline for a weak architecture", () => {
+  it("keeps the map readable in a pannable board", () => {
     const html = renderToStaticMarkup(
-      <ArchitectureReview
-        simulation={simulateAttack(WEAK_ARCHITECTURE)}
-        difficulty="architect"
-        onReviewArchitecture={noop}
-        onRetry={noop}
-      />,
+      <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} />,
     );
-    expect(html).toContain("Architecture Breached");
+    expect(html).toContain("lab-map");
+    expect(html).toContain("Claims Portal");
+    expect(html).toContain("lab-map__grid");
   });
 });
 
@@ -133,14 +150,7 @@ describe("lab reachability from existing surfaces", () => {
     expect(html).toMatch(/href="\/lab\/?"/);
     expect(html).toContain("The Poisoned Claim");
     expect(html).toContain("Inbox Under Siege");
-    const labIntro = html.indexOf("Architecture Defence Lab is a different exercise");
-    const labCard = html.indexOf("The Poisoned Claim");
-    const mapHeading = html.indexOf("Map missions");
-    const mapIntro = html.indexOf("These maps exist so you can practise the hard calls");
-    expect(labIntro).toBeGreaterThan(-1);
-    expect(labIntro).toBeLessThan(labCard);
-    expect(mapHeading).toBeGreaterThan(labCard);
-    expect(mapIntro).toBeGreaterThan(mapHeading);
+    expect(html).toContain("GUIDED OR CHALLENGE");
   });
 
   it("lists a completed lab on My Progress with an Open lab link", () => {
@@ -156,9 +166,9 @@ describe("lab reachability from existing surfaces", () => {
               missionTitle: "The Poisoned Claim",
               seed: 0,
               questionIds: [],
-              questionsCompleted: 6,
-              questionsRequired: 6,
-              phaseLabel: "Architecture Holds",
+              questionsCompleted: 10,
+              questionsRequired: 10,
+              phaseLabel: "Prevented",
               completed: true,
               endedEarly: false,
               overall: 92,
@@ -170,7 +180,7 @@ describe("lab reachability from existing surfaces", () => {
               roleId: "security-architect",
               topics: ["ai-security", "secure-architecture"],
               audienceMode: "standard",
-              perspectiveLabel: "Guided · Hardness lvl",
+              perspectiveLabel: "Guided",
             },
           ],
         }}

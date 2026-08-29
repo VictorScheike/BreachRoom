@@ -1,56 +1,53 @@
-import type { LabPlacements } from "./types";
+import type { LabChoices } from "./types";
 
-export const STRONG_ARCHITECTURE: LabPlacements = {
-  identity: "identity-mfa-rbac",
+export const STRONG_ARCHITECTURE: LabChoices = {
+  identity: "identity-mfa",
+  input: "input-sandbox",
   model: "model-private",
-  guardrails: "guard-full",
-  "data-access": "data-api",
-  agency: "agency-human",
-  monitoring: "monitor-siem",
+  retrieval: "retrieval-case",
   secrets: "secrets-vault",
-  "supply-chain": "supply-protected",
+  "data-access": "api-restricted",
+  oversight: "oversight-human",
+  network: "network-segmented",
+  "supply-chain": "supply-signed",
+  detection: "detection-siem",
 };
 
-export const MIXED_ARCHITECTURE: LabPlacements = {
+export const MIXED_ARCHITECTURE: LabChoices = {
   identity: "identity-password",
+  input: "input-typecheck",
   model: "model-private",
-  guardrails: "guard-prompt-only",
-  "data-access": "data-api",
-  agency: "agency-human",
-  monitoring: "monitor-siem",
+  retrieval: "retrieval-case",
   secrets: "secrets-vault",
-  "supply-chain": "supply-protected",
+  "data-access": "api-restricted",
+  oversight: "oversight-human",
+  network: "network-segmented",
+  "supply-chain": "supply-signed",
+  detection: "detection-siem",
 };
 
-export const WEAK_ARCHITECTURE: LabPlacements = {
+export const WEAK_ARCHITECTURE: LabChoices = {
   identity: "identity-password",
+  input: "input-typecheck",
   model: "model-public",
-  guardrails: "guard-prompt-only",
-  "data-access": "data-direct",
-  agency: "agency-auto",
-  monitoring: "monitor-logs",
-  secrets: "secrets-config",
-  "supply-chain": "supply-open",
+  retrieval: "retrieval-index",
+  secrets: "secrets-key",
+  "data-access": "api-broad",
+  oversight: "oversight-auto",
+  network: "network-flat",
+  "supply-chain": "supply-latest",
+  detection: "detection-logs",
 };
 
-export const STRONG_PREVENTION_WEAK_DETECTION: LabPlacements = {
-  identity: "identity-mfa-rbac",
-  model: "model-private",
-  guardrails: "guard-full",
-  "data-access": "data-api",
-  agency: "agency-human",
-  monitoring: "monitor-logs",
-  secrets: "secrets-vault",
-  "supply-chain": "supply-protected",
+export const STRONG_PREVENTION_WEAK_DETECTION: LabChoices = {
+  ...STRONG_ARCHITECTURE,
+  detection: "detection-logs",
 };
 
-export const WEAK_PREVENTION_STRONG_CONTAINMENT: LabPlacements = {
-  identity: "identity-password",
-  model: "model-public",
-  guardrails: "guard-prompt-only",
-  "data-access": "data-api",
-  agency: "agency-human",
-  monitoring: "monitor-siem",
+export const WEAK_PREVENTION_STRONG_CONTAINMENT: LabChoices = {
+  ...WEAK_ARCHITECTURE,
+  oversight: "oversight-human",
+  "data-access": "api-restricted",
   secrets: "secrets-vault",
-  "supply-chain": "supply-protected",
+  detection: "detection-siem",
 };

@@ -1,5 +1,7 @@
+import { DECISION_IDS } from "./types";
 import { LAB_MISSION_ID } from "./catalog";
 import { resultLabel } from "./engine";
+import { chosenCount } from "./catalog";
 import type { FinalResultKind, LabDifficulty, LabPersistedState } from "./types";
 import { upsertProgressSession, type ProgressSession } from "@/lib/progress/store";
 
@@ -15,22 +17,25 @@ export function labResumeHref(): string {
 
 export function syncLabProgress(state: LabPersistedState, result: FinalResultKind | null, score: number | null): ProgressSession {
   const completed = state.bestResult !== null;
+  const decided = chosenCount(state.choices);
   const session: ProgressSession = {
     id: LAB_PROGRESS_SESSION_ID,
     kind: "lab",
     missionId: LAB_MISSION_ID,
     missionTitle: "The Poisoned Claim",
     seed: 0,
-    questionIds: ["initial-access", "poisoned-document", "prompt-injection", "model-data", "unsafe-action", "detection"],
-    questionsCompleted: completed ? 6 : Math.min(6, state.revealedStageCount),
-    questionsRequired: 6,
+    questionIds: [...DECISION_IDS],
+    questionsCompleted: completed ? 10 : Math.min(10, decided),
+    questionsRequired: 10,
     phaseLabel: result
       ? resultLabel(result)
       : state.bestResult
         ? resultLabel(state.bestResult)
         : state.phase === "attack"
-          ? "Under attack"
-          : "Build",
+          ? "Red Team running"
+          : state.phase === "review"
+            ? "Architecture complete"
+            : "Deciding",
     completed,
     endedEarly: false,
     overall: score ?? state.bestScore,
@@ -42,12 +47,12 @@ export function syncLabProgress(state: LabPersistedState, result: FinalResultKin
     roleId: "security-architect",
     topics: ["ai-security", "secure-architecture"],
     audienceMode: "standard",
-    perspectiveLabel: hardnessLabel(state.difficulty),
+    perspectiveLabel: difficultyLabel(state.difficulty),
   };
   upsertProgressSession(session);
   return session;
 }
 
-export function hardnessLabel(difficulty: LabDifficulty): string {
-  return difficulty === "architect" ? "Architect · Hardness lvl" : "Guided · Hardness lvl";
+export function difficultyLabel(difficulty: LabDifficulty): string {
+  return difficulty === "challenge" ? "Challenge" : "Guided";
 }

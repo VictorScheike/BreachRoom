@@ -58,7 +58,7 @@ export function MissionsLibrary() {
         <article className="mission-card lab-library-card">
           <div className="mission-card__body">
             <div className="mission-card__content">
-              <p className="mission-card__meta">ARCHITECTURE DEFENCE LAB · HARDNESS LVL · GUIDED OR ARCHITECT</p>
+              <p className="mission-card__meta">ARCHITECTURE DEFENCE LAB · GUIDED OR CHALLENGE</p>
               <h2 id="lab-library-heading" className="mission-card__title">
                 Architecture Defence Lab
               </h2>

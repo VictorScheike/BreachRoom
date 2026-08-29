@@ -62,7 +62,7 @@ describe("lab persistence", () => {
   it("round-trips lab state through JSON", () => {
     const parsed = parseLabState({
       difficulty: "architect",
-      placements: STRONG_ARCHITECTURE,
+      choices: STRONG_ARCHITECTURE,
       phase: "attack",
       revealedStageCount: 3,
       attempts: 2,
@@ -70,11 +70,13 @@ describe("lab persistence", () => {
       bestResult: "architecture-holds",
       bestScore: 92,
     });
-    expect(parsed.difficulty).toBe("architect");
-    expect(parsed.placements.identity).toBe("identity-mfa-rbac");
+    expect(parsed.difficulty).toBe("challenge");
+    expect(parsed.choices.identity).toBe("identity-mfa");
     expect(parsed.phase).toBe("attack");
     expect(parsed.revealedStageCount).toBe(3);
-    expect(parseLabState("nope").phase).toBe("build");
+    expect(parsed.lastResult).toBe("contained");
+    expect(parsed.bestResult).toBe("prevented");
+    expect(parseLabState("nope").phase).toBe("setup");
   });
 
   it("survives a refresh via localStorage", () => {
@@ -83,18 +85,18 @@ describe("lab persistence", () => {
       const simulation = simulateAttack(STRONG_ARCHITECTURE);
       saveLabState({
         ...EMPTY_LAB_STATE,
-        placements: STRONG_ARCHITECTURE,
-        phase: "review",
-        revealedStageCount: 6,
+        choices: STRONG_ARCHITECTURE,
+        phase: "result",
+        revealedStageCount: 7,
         attempts: 1,
         lastResult: simulation.result,
         bestResult: simulation.result,
         bestScore: simulation.score,
       });
       const loaded = loadLabState();
-      expect(loaded.placements).toEqual(STRONG_ARCHITECTURE);
-      expect(loaded.phase).toBe("review");
-      expect(loaded.bestResult).toBe("architecture-holds");
+      expect(loaded.choices).toEqual(STRONG_ARCHITECTURE);
+      expect(loaded.phase).toBe("result");
+      expect(loaded.bestResult).toBe("prevented");
       expect(globalThis.localStorage.getItem(LAB_STORAGE_KEY)).toContain("lab-poisoned-claim");
     } finally {
       restore();
@@ -128,9 +130,9 @@ describe("lab persistence", () => {
       const simulation = simulateAttack(STRONG_ARCHITECTURE);
       persistLab({
         ...EMPTY_LAB_STATE,
-        placements: STRONG_ARCHITECTURE,
-        phase: "review",
-        revealedStageCount: 6,
+        choices: STRONG_ARCHITECTURE,
+        phase: "result",
+        revealedStageCount: 7,
         attempts: 1,
         lastResult: simulation.result,
         bestResult: simulation.result,
@@ -199,12 +201,12 @@ describe("existing progress compatibility", () => {
     const session = syncLabProgress(
       {
         ...EMPTY_LAB_STATE,
-        bestResult: "architecture-holds",
-        lastResult: "architecture-holds",
+        bestResult: "prevented",
+        lastResult: "prevented",
         bestScore: 92,
-        phase: "review",
+        phase: "result",
       },
-      "architecture-holds",
+      "prevented",
       92,
     );
     expect(session.choices).toEqual([]);
