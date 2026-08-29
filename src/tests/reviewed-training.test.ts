@@ -156,7 +156,7 @@ describe("technology chooser regressions", () => {
         const topic = TRAINING_TOPICS.find((item) =>
           combinationReady({
             roleGroup,
-            topics: [item.id],
+            topicId: item.id,
             difficulty: "Beginner",
             technologies: [technology],
           }),

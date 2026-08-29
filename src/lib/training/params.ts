@@ -147,7 +147,7 @@ export function trainingPlayHref(params: TrainingPlayParams): string {
   if (params.contexts.length > 0) {
     search.set("context", params.contexts.join(","));
   }
-  return `/play/?${search.toString()}`;
+  return `/play/?${search.toString().replace(/%2C/gi, ",")}`;
 }
 
 export function searchParamsFromUnknown(

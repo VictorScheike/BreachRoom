@@ -127,6 +127,8 @@ function groupResults(
   }
   return [...groups.entries()].map(([label, value]) => ({ label, ...value }));
 }
+
+function interpretDimension(
   dimension: DimensionScore,
 ): string {
   if (dimension.percent >= 85) {

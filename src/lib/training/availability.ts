@@ -42,12 +42,13 @@ export const TECHNOLOGY_CHIPS: readonly TrainingChip[] = TECHNOLOGY_IDS.map((id)
   description: "At least 4 of your 8 questions will use this technology.",
 }));
 
-export const CONTEXT_CHIPS: readonly TrainingChip[] = CONTEXT_IDS.map((id) => ({
-  id,
-  kind: "context" as const,
-  label: CONTEXT_LABELS[id],
-  description: "At least 2 of your 8 questions will use this operating context.",
-}));
+export const CONTEXT_CHIPS: readonly { id: ContextId; kind: "context"; label: string; description: string }[] =
+  CONTEXT_IDS.map((id) => ({
+    id,
+    kind: "context" as const,
+    label: CONTEXT_LABELS[id],
+    description: "At least 2 of your 8 questions will use this operating context.",
+  }));
 
 export const TRAINING_CHIPS: readonly TrainingChip[] = [...TECHNOLOGY_CHIPS, ...CONTEXT_CHIPS];
 
