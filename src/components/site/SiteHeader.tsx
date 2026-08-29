@@ -33,7 +33,8 @@ export function SiteHeader() {
   const [hash, setHash] = useState("");
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const menuId = useId();
-  const onPlay = normalisePath(pathname) === "/play";
+  const currentPath = normalisePath(pathname);
+  const onPlay = currentPath === "/play" || currentPath === "/lab";
   const locationKey = `${pathname}#${hash}`;
   const menuOpen = menuFor === locationKey;
 

@@ -8,6 +8,7 @@ const TOPIC_LABELS: Record<string, string> = {
   ransomware: "Ransomware and incident response",
   "incident-response": "Incident response",
   "ai-security": "AI security",
+  "secure-architecture": "Secure architecture",
   "secure-development": "Secure software development",
   "supply-chain": "Supply chain security",
   "software-supply-chain": "Software supply chain security",

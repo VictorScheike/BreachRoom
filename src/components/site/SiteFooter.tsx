@@ -13,7 +13,8 @@ function normalisePath(path: string): string {
 
 export function SiteFooter() {
   const pathname = usePathname() ?? "/";
-  const onPlay = normalisePath(pathname) === "/play";
+  const currentPath = normalisePath(pathname);
+  const onPlay = currentPath === "/play" || currentPath === "/lab";
 
   return (
     <footer
@@ -34,6 +35,11 @@ export function SiteFooter() {
             <li>
               <Link href="/missions/" className="text-cyan underline underline-offset-4">
                 Missions
+              </Link>
+            </li>
+            <li>
+              <Link href="/lab/" className="text-cyan underline underline-offset-4">
+                Architecture Defence Lab
               </Link>
             </li>
             <li>

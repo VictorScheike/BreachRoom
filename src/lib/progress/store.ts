@@ -26,6 +26,7 @@ export interface ProgressSession {
   topics: readonly string[];
   audienceMode: MissionPerspective["mode"];
   perspectiveLabel: string;
+  kind?: "map" | "lab";
 }
 
 export interface ProgressStore {
@@ -179,6 +180,9 @@ function asSession(value: unknown): ProgressSession | null {
         : "standard",
     perspectiveLabel:
       typeof value.perspectiveLabel === "string" ? value.perspectiveLabel : "Standard mission",
+    kind: value.kind === "lab" || (typeof value.missionId === "string" && value.missionId.startsWith("lab-"))
+      ? "lab"
+      : "map",
   };
 }
 
@@ -238,8 +242,12 @@ export function progressSummary(store: ProgressStore): {
     "ai-forge",
     "dependency-depths",
   ];
-  const completedIds = new Set(completed.map((item) => item.missionId));
-  const overallCompletion = Math.round((completedIds.size / knownMissions.length) * 100);
+  const completedMapIds = new Set(
+    completed
+      .filter((item) => knownMissions.includes(item.missionId as MissionId))
+      .map((item) => item.missionId),
+  );
+  const overallCompletion = Math.round((completedMapIds.size / knownMissions.length) * 100);
   return {
     missionsCompleted: completed.length,
     questionsAnswered,
