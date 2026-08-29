@@ -250,7 +250,15 @@
   display: grid;
   gap: 0.9rem;
   min-width: 0;
+  grid-template-areas:
+    "copy"
+    "map"
+    "choices";
 }
+
+.lab-decision__copy { grid-area: copy; }
+.lab-decision__map { grid-area: map; min-width: 0; }
+.lab-decision__choices { grid-area: choices; }
 
 .lab-setup__choices button,
 .lab-option {
@@ -940,13 +948,48 @@
 
   .lab-decision {
     grid-template-columns: minmax(18rem, 0.38fr) minmax(0, 1fr);
+    grid-template-areas:
+      "copy map"
+      "choices map";
     flex: 1 1 auto;
     min-height: 0;
     align-items: start;
   }
 
+  .lab-decision__choices {
+    position: sticky;
+    bottom: 0.4rem;
+    align-self: end;
+  }
+
+  .lab-decision__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    padding-top: 0.45rem;
+    background: linear-gradient(transparent, var(--lab-bg) 40%);
+  }
+
   .lab-options {
     grid-template-columns: 1fr;
+  }
+
+  .lab-campaign--result {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+    align-items: start;
+  }
+
+  .lab-campaign--result .lab-campaign__map {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .lab-campaign--result .lab-final {
+    grid-column: 2;
+    grid-row: 1;
+    max-height: min(38.75rem, calc(100dvh - 9rem));
+    overflow: auto;
   }
 }
 

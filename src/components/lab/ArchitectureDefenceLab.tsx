@@ -187,7 +187,7 @@ export function ArchitectureDefenceLabView({
       ) : null}
 
       {campaignPhase ? (
-        <div className="lab-campaign">
+          <div className={["lab-campaign", state.phase === "result" ? "lab-campaign--result" : ""].filter(Boolean).join(" ")}>
           {state.phase === "review" ? (
             <div className="lab-launch lab-launch--banner">
               <div>

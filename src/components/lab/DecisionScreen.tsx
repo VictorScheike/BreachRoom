@@ -39,6 +39,13 @@ export function DecisionScreen({
           Decision {decision.number} of 10 · {subgraph.domain} · {lockedCount} of 10 controls selected
         </p>
         <h2 id="lab-decision-heading">{decision.question}</h2>
+      </div>
+      <div className="lab-decision__map">
+        <p className="lab-kicker">What this choice changes</p>
+        <LocalImpactGraph subgraph={subgraph} option={pending} outcome={outcome} />
+        <DecisionImpactStrip outcome={outcome} />
+      </div>
+      <div className="lab-decision__choices">
         <div className="lab-options" role="radiogroup" aria-label="Architecture options">
           {decision.options.map((option) => {
             const selected = pendingOptionId === option.id;
@@ -72,11 +79,6 @@ export function DecisionScreen({
             Lock choice and continue
           </button>
         </div>
-      </div>
-      <div className="lab-decision__map">
-        <p className="lab-kicker">What this choice changes</p>
-        <LocalImpactGraph subgraph={subgraph} option={pending} outcome={outcome} />
-        <DecisionImpactStrip outcome={outcome} />
       </div>
     </section>
   );
