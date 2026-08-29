@@ -16,10 +16,12 @@ import {
   improveAndRetry,
   launchAttack,
   nextAttackStep,
+  pauseAttack,
   replayAttack,
   resetArchitecture,
   selectOption,
 } from "@/lib/lab/play";
+import { beatsForStage, deriveBoardVisual } from "@/lib/lab/animation";
 import { EMPTY_LAB_STATE } from "@/lib/lab/store";
 import { DECISION_IDS, type LabChoices, type LabPersistedState } from "@/lib/lab/types";
 
@@ -165,15 +167,73 @@ describe("lab play session", () => {
     expect(result.state.phase).toBe("setup");
   });
 
-  it("walks the campaign one technique at a time and can replay", () => {
+  it("walks the campaign one event at a time and can replay", () => {
     const launched = launchAttack(filledState(STRONG_ARCHITECTURE));
     expect(launched.state.phase).toBe("attack");
     expect(launched.state.revealedStageCount).toBe(1);
+    expect(launched.state.attackBeat).toBe(0);
     const second = nextAttackStep(launched.state);
-    expect(second.revealedStageCount).toBe(2);
+    expect(second.revealedStageCount).toBe(1);
+    expect(second.attackBeat).toBe(1);
     const replayed = replayAttack(second);
     expect(replayed.phase).toBe("attack");
     expect(replayed.revealedStageCount).toBe(1);
+    expect(replayed.attackBeat).toBe(0);
+  });
+
+  it("pauses without advancing the attack beat", () => {
+    const launched = launchAttack(filledState(STRONG_ARCHITECTURE)).state;
+    const paused = pauseAttack(launched, true);
+    expect(paused.paused).toBe(true);
+    expect(paused.revealedStageCount).toBe(1);
+    expect(paused.attackBeat).toBe(0);
+    expect(pauseAttack(paused, false).paused).toBe(false);
+  });
+
+  it("resets every attack visual on replay", () => {
+    let state = launchAttack(filledState(STRONG_ARCHITECTURE)).state;
+    state = nextAttackStep(state);
+    state = nextAttackStep(state);
+    const replayed = replayAttack(state);
+    const visual = deriveBoardVisual({
+      choices: STRONG_ARCHITECTURE,
+      simulation: simulateAttack(STRONG_ARCHITECTURE),
+      revealedStageCount: replayed.revealedStageCount,
+      attackBeat: replayed.attackBeat,
+      phase: replayed.phase,
+    });
+    expect(replayed.revealedStageCount).toBe(1);
+    expect(replayed.attackBeat).toBe(0);
+    expect(visual.pivotBanner).toBe(false);
+    expect(visual.stopBadge).toBeNull();
+    expect(visual.markerNode).toBe("portal");
+  });
+
+  it("stops a blocked route at the holding node and starts the next technique as a pivot", () => {
+    const simulation = simulateAttack(STRONG_ARCHITECTURE);
+    const stolen = simulation.stages[0]!;
+    const resultBeat = beatsForStage(stolen).length - 1;
+    const blocked = deriveBoardVisual({
+      choices: STRONG_ARCHITECTURE,
+      simulation,
+      revealedStageCount: 1,
+      attackBeat: resultBeat,
+      phase: "attack",
+    });
+    expect(stolen.travelledPath.includes("app")).toBe(false);
+    expect(blocked.nodeStatus.identity).toBe("blocked");
+    expect(blocked.markerVisible).toBe(false);
+    expect(blocked.stopBadge).toEqual({ nodeId: "identity", label: "BLOCKED" });
+    const pivot = deriveBoardVisual({
+      choices: STRONG_ARCHITECTURE,
+      simulation,
+      revealedStageCount: 2,
+      attackBeat: 0,
+      phase: "attack",
+    });
+    expect(pivot.pivotBanner).toBe(true);
+    expect(pivot.markerVisible).toBe(false);
+    expect(pivot.edges.some((edge) => edge.kind === "pivot-live")).toBe(true);
   });
 
   it("returns to the first decision on Improve and Retry without dropping choices", () => {

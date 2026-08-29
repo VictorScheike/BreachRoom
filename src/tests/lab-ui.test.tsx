@@ -74,17 +74,19 @@ describe("Architecture Defence Lab UI", () => {
     expect(html).toContain("Architecture complete · 10/10");
     expect(html).toContain("Run Red Team");
     expect(html).toContain("Claims Portal");
-    expect(html).toContain("MFA + role access");
-    expect(html).toContain("File sandbox");
-    expect(html).toContain("Private enterprise LLM");
+    expect(html).toContain("MFA + RBAC");
+    expect(html).toContain("File Sandbox");
+    expect(html).toContain("Private LLM");
     expect(html).toContain("Case-scoped RAG");
-    expect(html).toContain("Managed identity");
-    expect(html).toContain("Restricted Claims API");
-    expect(html).toContain("Human approval");
-    expect(html).toContain("Private segments");
-    expect(html).toContain("Signed builds");
-    expect(html).toContain("SIEM + playbook");
+    expect(html).toContain("Managed Identity");
+    expect(html).toContain("Restricted API");
+    expect(html).toContain("Human Approval");
+    expect(html).toContain("Network Segmentation");
+    expect(html).toContain("Signed Builds");
+    expect(html).toContain("SIEM");
     expect(html).toContain("Claims Database");
+    expect(html).not.toContain("Stops stolen-password login");
+    expect(html).not.toContain("lab-map__grid");
   });
 
   it("shows the first Red Team technique and next-step controls", () => {
@@ -99,7 +101,10 @@ describe("Architecture Defence Lab UI", () => {
     expect(html).toContain("Next attack step");
     expect(html).toContain("Pause");
     expect(html).toContain("Replay attack");
+    expect(html).toContain("Red Team · Step 1 of 7");
     expect(html).not.toContain("Run Red Team");
+    expect(html).not.toContain("Current technique");
+    expect(html).not.toContain("Attack impact");
   });
 
   it("shows Prevented or Breached from the actual architecture", () => {
@@ -133,13 +138,25 @@ describe("Architecture Defence Lab UI", () => {
     expect(strong).not.toContain("Defence readiness");
   });
 
-  it("keeps the map readable in a pannable board", () => {
+  it("renders a connected network board instead of a card grid", () => {
     const html = renderToStaticMarkup(
-      <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} />,
+      <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} layout="desktop" />,
     );
     expect(html).toContain("lab-map");
+    expect(html).toContain("lab-map__edges");
     expect(html).toContain("Claims Portal");
-    expect(html).toContain("lab-map__grid");
+    expect(html).toContain("MFA + RBAC");
+    expect(html).not.toContain("lab-map__grid");
+    expect(html).not.toContain("Stops stolen-password login");
+  });
+
+  it("keeps a simplified vertical network on a mobile-sized board", () => {
+    const html = renderToStaticMarkup(
+      <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} layout="mobile" />,
+    );
+    expect(html).toContain("lab-map--mobile");
+    expect(html).toContain("Claims Database");
+    expect(html).toContain("lab-map__edge");
   });
 });
 

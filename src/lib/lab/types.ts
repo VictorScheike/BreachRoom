@@ -38,6 +38,12 @@ export type MapNodeId = (typeof MAP_NODE_IDS)[number];
 export const NODE_KINDS = ["core", "control", "asset"] as const;
 export type NodeKind = (typeof NODE_KINDS)[number];
 
+export const BOARD_ZONES = ["user-input", "ai-services", "protected", "secops"] as const;
+export type BoardZoneId = (typeof BOARD_ZONES)[number];
+
+export const ATTACK_BEAT_KINDS = ["pivot", "entry", "travel", "result"] as const;
+export type AttackBeatKind = (typeof ATTACK_BEAT_KINDS)[number];
+
 export const ATTACK_TECHNIQUE_IDS = [
   "stolen-credentials",
   "poisoned-document",
@@ -88,8 +94,12 @@ export interface MapNodeDefinition {
   kind: NodeKind;
   decisionId: DecisionId | null;
   description: string;
-  column: number;
-  row: number;
+  icon: string;
+  zone: BoardZoneId;
+  x: number;
+  y: number;
+  mobileX: number;
+  mobileY: number;
 }
 
 export interface MapEdgeDefinition {
@@ -181,6 +191,7 @@ export interface LabPersistedState {
   pendingOptionId: OptionId | null;
   phase: LabPhase;
   revealedStageCount: number;
+  attackBeat: number;
   paused: boolean;
   attempts: number;
   lastResult: FinalResultKind | null;

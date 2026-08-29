@@ -72,12 +72,12 @@ export function DecisionScreen({
         </div>
       </div>
       <div className="lab-decision__map">
-        <p className="lab-kicker">Architecture preview</p>
         <ArchitectureMap
           choices={choices}
           previewOptionId={pendingOptionId}
           compact
           inspectable={false}
+          phase="decide"
         />
       </div>
     </section>

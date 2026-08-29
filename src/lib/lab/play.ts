@@ -1,3 +1,4 @@
+import { beatsForStage } from "./animation";
 import { DECISION_COUNT, LAB_MISSION, TECHNIQUE_COUNT, isComplete, optionById } from "./catalog";
 import { simulateAttack } from "./engine";
 import { saveLabState, withAttemptResult } from "./store";
@@ -20,6 +21,7 @@ export function beginLab(state: LabPersistedState, difficulty: LabDifficulty): L
     currentDecisionIndex: 0,
     pendingOptionId: pendingForIndex(state.choices, 0),
     revealedStageCount: 0,
+    attackBeat: 0,
     paused: false,
   };
 }
@@ -97,6 +99,7 @@ export function launchAttack(state: LabPersistedState): { state: LabPersistedSta
       ...state,
       phase: "attack",
       revealedStageCount: 1,
+      attackBeat: 0,
       paused: false,
     },
     error: null,
@@ -107,15 +110,40 @@ export function nextAttackStep(state: LabPersistedState): LabPersistedState {
   if (state.phase !== "attack") {
     return state;
   }
-  if (state.revealedStageCount < TECHNIQUE_COUNT) {
-    return { ...state, revealedStageCount: state.revealedStageCount + 1, paused: false };
-  }
   const simulation = simulateAttack(state.choices);
+  const stage = simulation.stages[state.revealedStageCount - 1];
+  if (!stage) {
+    return withAttemptResult(
+      {
+        ...state,
+        phase: "result",
+        revealedStageCount: TECHNIQUE_COUNT,
+        attackBeat: 0,
+        paused: false,
+      },
+      simulation.result,
+      simulation.score,
+    );
+  }
+  const beats = beatsForStage(stage);
+  const beat = Math.max(0, state.attackBeat);
+  if (beat < beats.length - 1) {
+    return { ...state, attackBeat: beat + 1, paused: false };
+  }
+  if (state.revealedStageCount < TECHNIQUE_COUNT) {
+    return {
+      ...state,
+      revealedStageCount: state.revealedStageCount + 1,
+      attackBeat: 0,
+      paused: false,
+    };
+  }
   return withAttemptResult(
     {
       ...state,
       phase: "result",
       revealedStageCount: TECHNIQUE_COUNT,
+      attackBeat: beats.length - 1,
       paused: false,
     },
     simulation.result,
@@ -138,6 +166,7 @@ export function replayAttack(state: LabPersistedState): LabPersistedState {
     ...state,
     phase: "attack",
     revealedStageCount: 1,
+    attackBeat: 0,
     paused: false,
   };
 }
@@ -150,6 +179,7 @@ export function resetArchitecture(state: LabPersistedState): LabPersistedState {
     pendingOptionId: null,
     phase: "setup",
     revealedStageCount: 0,
+    attackBeat: 0,
     paused: false,
   };
 }
@@ -161,6 +191,7 @@ export function improveAndRetry(state: LabPersistedState): LabPersistedState {
     currentDecisionIndex: 0,
     pendingOptionId: pendingForIndex(state.choices, 0),
     revealedStageCount: 0,
+    attackBeat: 0,
     paused: false,
   };
 }

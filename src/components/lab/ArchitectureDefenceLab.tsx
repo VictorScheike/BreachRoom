@@ -5,10 +5,12 @@ import { ArchitectureMap } from "@/components/lab/ArchitectureMap";
 import { DecisionScreen } from "@/components/lab/DecisionScreen";
 import { DifficultySelect } from "@/components/lab/DifficultySelect";
 import { FinalReview } from "@/components/lab/FinalReview";
+import { GameHud } from "@/components/lab/GameHud";
 import { IncidentPanel } from "@/components/lab/IncidentPanel";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
-import { LAB_MISSION, decisionById, optionForChoice } from "@/lib/lab/catalog";
+import { LAB_MISSION, decisionById } from "@/lib/lab/catalog";
 import { DIFFICULTY_CAPTION } from "@/lib/lab/copy";
+import { ATTACK_STEP_MS, currentBeat, hudStatus, incidentLog } from "@/lib/lab/animation";
 import { simulateAttack } from "@/lib/lab/engine";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
 import {
@@ -53,19 +55,32 @@ export function ArchitectureDefenceLabView({
   );
   const revealed = state.phase === "attack" || state.phase === "result" ? state.revealedStageCount : 0;
   const activeStage = simulation && revealed > 0 ? simulation.stages[revealed - 1] ?? null : null;
+  const beat = currentBeat(activeStage, state.attackBeat);
   const currentDecision = decisionById(DECISION_IDS[state.currentDecisionIndex] ?? "identity");
+  const log = incidentLog({
+    simulation,
+    revealedStageCount: revealed,
+    attackBeat: state.attackBeat,
+    phase: state.phase,
+  });
+  const status = hudStatus({
+    phase: state.phase,
+    stage: activeStage,
+    beat,
+    resultLabel: simulation?.resultLabel,
+  });
 
   const update = (next: LabPersistedState) => {
     onChange(next);
   };
 
   useEffect(() => {
-    if (state.phase !== "attack" || state.paused || reducedMotion) {
+    if (state.phase !== "attack" || state.paused) {
       return undefined;
     }
     const timer = window.setTimeout(() => {
       onChange(nextAttackStep(state));
-    }, 1400);
+    }, ATTACK_STEP_MS);
     return () => window.clearTimeout(timer);
   }, [state, reducedMotion, onChange]);
 
@@ -73,69 +88,81 @@ export function ArchitectureDefenceLabView({
     update(changeDifficulty(state, difficulty));
   };
 
-  const inspectNode = inspectId ? LAB_MISSION.nodes.find((item) => item.id === inspectId) : null;
-  const inspectChoice = inspectNode?.decisionId ? optionForChoice(state.choices, inspectNode.decisionId) : null;
-  const inspectTechnique = inspectNode?.decisionId
-    ? LAB_MISSION.techniques.find((item) => item.checks.some((check) => check.decisionId === inspectNode.decisionId))
-    : null;
+  const inGame = state.phase !== "setup";
+  const boardPhase = state.phase === "decide" ? false : state.phase === "review" || state.phase === "attack" || state.phase === "result";
 
   return (
     <div
       className={["lab-shell", reducedMotion ? "is-reduced-motion" : "", `is-${state.phase}`].filter(Boolean).join(" ")}
       data-phase={state.phase}
       data-difficulty={state.difficulty}
+      data-beat={beat?.kind ?? ""}
     >
-      <header className="lab-top">
-        <div className="lab-brand">
-          <p>BreachRoom</p>
-          <h1>Architecture Defence Lab</h1>
-        </div>
-        {state.phase !== "setup" ? (
-          <div className="lab-hardness" role="group" aria-label={DIFFICULTY_CAPTION}>
-            <span className="lab-hardness__label">{DIFFICULTY_CAPTION}</span>
-            <button
-              type="button"
-              className={state.difficulty === "guided" ? "is-active" : ""}
-              aria-pressed={state.difficulty === "guided"}
-              disabled={state.phase === "attack" || state.phase === "result"}
-              onClick={() => handleDifficulty("guided")}
-            >
-              Guided
-            </button>
-            <button
-              type="button"
-              className={state.difficulty === "challenge" ? "is-active" : ""}
-              aria-pressed={state.difficulty === "challenge"}
-              disabled={state.phase === "attack" || state.phase === "result"}
-              onClick={() => handleDifficulty("challenge")}
-            >
-              Challenge
-            </button>
+      {state.phase === "setup" ? (
+        <header className="lab-top">
+          <div className="lab-brand">
+            <p>BreachRoom</p>
+            <h1>Architecture Defence Lab</h1>
           </div>
-        ) : null}
-      </header>
+        </header>
+      ) : null}
 
-      <div className="lab-mission-head">
-        <div>
-          <p className="lab-mission-head__kicker">
-            {LAB_MISSION.missionLabel} · {LAB_MISSION.title}
-          </p>
-          <p className="lab-mission-head__tagline">{LAB_MISSION.tagline}</p>
-          <p>{LAB_MISSION.scenario}</p>
-          <p className="lab-fictional">{LAB_MISSION.fictionalNote}</p>
-        </div>
-        <p className="lab-phase-pill">
-          {state.phase === "setup"
-            ? "Choose difficulty"
-            : state.phase === "decide"
+      {inGame ? (
+        <GameHud
+          kicker={`${LAB_MISSION.company} · ${state.difficulty === "guided" ? "Guided" : "Challenge"}`}
+          title={
+            state.phase === "decide"
               ? `Decision ${currentDecision.number} of 10`
               : state.phase === "review"
                 ? "Architecture complete · 10/10"
                 : state.phase === "attack"
-                  ? "Red Team campaign"
-                  : "Final assessment"}
-        </p>
-      </div>
+                  ? `Red Team · Step ${activeStage?.number ?? 1} of 7`
+                  : "Final assessment"
+          }
+          status={status}
+          paused={state.paused}
+          showAttackControls={state.phase === "attack"}
+          onPause={() => update(pauseAttack(state, !state.paused))}
+          onNext={() => update(nextAttackStep(state))}
+          onReplay={() => update(replayAttack(state))}
+        />
+      ) : null}
+
+      {inGame ? (
+        <div className="lab-hardness lab-hardness--hud" role="group" aria-label={DIFFICULTY_CAPTION}>
+          <button
+            type="button"
+            className={state.difficulty === "guided" ? "is-active" : ""}
+            aria-pressed={state.difficulty === "guided"}
+            disabled={state.phase === "attack" || state.phase === "result"}
+            onClick={() => handleDifficulty("guided")}
+          >
+            Guided
+          </button>
+          <button
+            type="button"
+            className={state.difficulty === "challenge" ? "is-active" : ""}
+            aria-pressed={state.difficulty === "challenge"}
+            disabled={state.phase === "attack" || state.phase === "result"}
+            onClick={() => handleDifficulty("challenge")}
+          >
+            Challenge
+          </button>
+        </div>
+      ) : null}
+
+      {state.phase === "setup" ? (
+        <div className="lab-mission-head">
+          <div>
+            <p className="lab-mission-head__kicker">
+              {LAB_MISSION.missionLabel} · {LAB_MISSION.title}
+            </p>
+            <p className="lab-mission-head__tagline">{LAB_MISSION.tagline}</p>
+            <p>{LAB_MISSION.scenario}</p>
+            <p className="lab-fictional">{LAB_MISSION.fictionalNote}</p>
+          </div>
+        </div>
+      ) : null}
 
       {state.phase === "setup" ? (
         <DifficultySelect
@@ -158,25 +185,31 @@ export function ArchitectureDefenceLabView({
         />
       ) : null}
 
-      {state.phase === "review" || state.phase === "attack" || state.phase === "result" ? (
+      {boardPhase ? (
         <div className="lab-board">
           <ArchitectureMap
             choices={state.choices}
             simulation={simulation}
             revealedStageCount={revealed}
+            attackBeat={state.attackBeat}
+            phase={state.phase}
             selectedNodeId={inspectId}
             onSelectNode={setInspectId}
           />
           <div className="lab-board__side">
-            {inspectNode ? (
-              <article className="lab-inspect">
-                <p className="lab-kicker">{inspectNode.name}</p>
-                <h2>{inspectChoice?.title ?? inspectNode.name}</h2>
-                <p>{inspectChoice?.tradeOff ?? inspectNode.description}</p>
-                {inspectTechnique ? <p>This control is tested by {inspectTechnique.name}.</p> : null}
-              </article>
+            {state.phase === "result" && simulation ? (
+              <FinalReview
+                simulation={simulation}
+                onRetry={() => update(improveAndRetry(state))}
+                onReplay={() => update(replayAttack(state))}
+              />
             ) : (
-              <IncidentPanel stage={state.phase === "review" ? null : activeStage} />
+              <IncidentPanel
+                stage={state.phase === "review" ? null : activeStage}
+                beat={state.phase === "attack" ? beat : null}
+                log={log}
+                readyMessage="The architecture is ready. Run the Red Team campaign to see how each defensive layer changes the attack."
+              />
             )}
             {state.phase === "review" ? (
               <div className="lab-attack-controls">
@@ -191,6 +224,7 @@ export function ArchitectureDefenceLabView({
                       return;
                     }
                     setMissingMessage(null);
+                    setInspectId(null);
                     update(result.state);
                   }}
                 >
@@ -201,31 +235,6 @@ export function ArchitectureDefenceLabView({
                 </button>
               </div>
             ) : null}
-            {state.phase === "attack" ? (
-              <div className="lab-attack-controls">
-                <button
-                  type="button"
-                  className="lab-secondary"
-                  onClick={() => update(pauseAttack(state, !state.paused))}
-                >
-                  {state.paused ? "Resume" : "Pause"}
-                </button>
-                <button type="button" className="lab-primary" onClick={() => update(nextAttackStep(state))}>
-                  Next attack step
-                </button>
-                <button type="button" className="lab-secondary" onClick={() => update(replayAttack(state))}>
-                  Replay attack
-                </button>
-              </div>
-            ) : null}
-            {state.phase === "result" && simulation ? (
-              <FinalReview
-                simulation={simulation}
-                difficulty={state.difficulty}
-                onRetry={() => update(improveAndRetry(state))}
-                onReplay={() => update(replayAttack(state))}
-              />
-            ) : null}
           </div>
         </div>
       ) : null}
@@ -234,9 +243,11 @@ export function ArchitectureDefenceLabView({
         <button type="button" className="lab-text" onClick={() => update(resetArchitecture(state))}>
           Reset architecture
         </button>
-        <p className="lab-company">
-          Fictional company: {LAB_MISSION.company}. {LAB_MISSION.fictionalNote}
-        </p>
+        {state.phase === "setup" ? (
+          <p className="lab-company">
+            Fictional company: {LAB_MISSION.company}. {LAB_MISSION.fictionalNote}
+          </p>
+        ) : null}
         <EducationalDisclaimer variant="short" className="lab-disclaimer" />
       </div>
     </div>

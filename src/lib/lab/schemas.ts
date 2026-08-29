@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ATTACK_TECHNIQUE_IDS,
+  BOARD_ZONES,
   DECISION_IDS,
   FINAL_RESULTS,
   LAB_DIFFICULTIES,
@@ -45,8 +46,12 @@ export const mapNodeSchema = z
     kind: z.enum(NODE_KINDS),
     decisionId: z.union([z.enum(DECISION_IDS), z.null()]),
     description: nonEmpty,
-    column: z.number().int().min(0).max(4),
-    row: z.number().int().min(0).max(2),
+    icon: nonEmpty,
+    zone: z.enum(BOARD_ZONES),
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+    mobileX: z.number().min(0).max(100),
+    mobileY: z.number().min(0).max(100),
   })
   .strict();
 
