@@ -1,9 +1,11 @@
 import Link from "next/link";
 import {
   ABOUT_BODY,
+  ABOUT_CLOSE,
   ABOUT_HEADLINE,
   ABOUT_INTRO,
   ABOUT_LINKS,
+  ABOUT_SECTIONS,
 } from "@/lib/site/copy";
 
 export function AboutPage() {
@@ -27,6 +29,17 @@ export function AboutPage() {
         </p>
       ))}
 
+      <div className="mt-10 grid gap-8 sm:grid-cols-2">
+        {ABOUT_SECTIONS.map((section) => (
+          <section key={section.title}>
+            <h2 className="text-lg font-semibold text-site-ink">{section.title}</h2>
+            <p className="mt-3 text-base leading-8 text-site-muted">{section.body}</p>
+          </section>
+        ))}
+      </div>
+
+      <p className="mt-8 text-base leading-8 text-site-muted">{ABOUT_CLOSE}</p>
+
       <ul className="mt-10 flex flex-col gap-3 text-sm sm:flex-row sm:gap-8">
         {ABOUT_LINKS.map((link) => (
           <li key={link.href}>
@@ -40,12 +53,20 @@ export function AboutPage() {
         ))}
       </ul>
 
-      <Link
-        href="/play/"
-        className="mt-8 inline-flex min-h-11 items-center justify-center rounded-md bg-cyan-strong px-5 py-3 text-sm font-semibold text-navy-950 hover:bg-cyan"
-      >
-        Play free
-      </Link>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link
+          href="/play/"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-cyan-strong px-5 py-3 text-sm font-semibold text-navy-950 hover:bg-cyan"
+        >
+          Play a mission
+        </Link>
+        <Link
+          href="/lab/"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-cyan px-5 py-3 text-sm font-semibold text-cyan hover:bg-navy-800"
+        >
+          Enter the lab
+        </Link>
+      </div>
     </main>
   );
 }
