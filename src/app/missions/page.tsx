@@ -13,12 +13,6 @@ export default function MissionsPage() {
       <main id="main-content" className="site-page home-wrap">
         <p className="home-eyebrow">Mission library</p>
         <h1>Choose a mission</h1>
-        <p className="training-lede missions-intro">
-          These maps exist so you can practise the hard calls before they land on your desk. Each
-          one is a different workplace under pressure — phishing, ransomware, a risky AI launch, a
-          poisoned build, a lockout. Walking the route and deciding at each checkpoint is how the
-          judgement sticks.
-        </p>
         <MissionsLibrary />
       </main>
     </div>

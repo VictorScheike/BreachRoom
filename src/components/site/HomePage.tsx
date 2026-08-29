@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { FeaturedMissionPreview } from "@/components/site/FeaturedMissionPreview";
 import { HowItWorks } from "@/components/site/HowItWorks";
 import { MissionCard } from "@/components/site/MissionCard";
 import { RoleTrainingCard } from "@/components/site/RoleTrainingCard";
@@ -36,10 +35,8 @@ export function HomePage() {
             <li>No account required</li>
             <li>Reviewed questions, not generated answers</li>
           </ul>
-          <FeaturedMissionPreview />
+          <HowItWorks className="how-section--in-hero" />
         </section>
-
-        <HowItWorks />
 
         <section className="home-section" aria-labelledby="playable-missions-heading">
           <h2 id="playable-missions-heading">Playable missions</h2>

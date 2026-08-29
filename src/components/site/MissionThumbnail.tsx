@@ -39,8 +39,6 @@ function layoutForMission(missionId: MissionId) {
     tiles,
     playerCol: sampleIndex(world.start.x, world.columns, COLS),
     playerRow: sampleIndex(world.start.y, world.rows, ROWS),
-    destCol: sampleIndex(world.destination.x, world.columns, COLS),
-    destRow: sampleIndex(world.destination.y, world.rows, ROWS),
   };
 }
 
@@ -56,14 +54,6 @@ export function MissionThumbnail({
   showLabel = true,
 }: MissionThumbnailProps) {
   const layout = layoutForMission(missionId);
-  const placement = [
-    "mission-thumb-hotspot",
-    layout.destRow <= 1 ? "mission-thumb-hotspot--below" : "mission-thumb-hotspot--above",
-    layout.destCol <= 1 ? "mission-thumb-hotspot--end" : "",
-    layout.destCol >= COLS - 4 ? "mission-thumb-hotspot--start" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   return (
     <div className={`mission-thumb mission-thumb-${missionId} world-${missionId}`} aria-hidden="true">
@@ -79,19 +69,9 @@ export function MissionThumbnail({
         ))}
       </div>
       {showLabel ? (
-        <span
-          className={placement}
-          style={{
-            left: `${(layout.destCol / COLS) * 100}%`,
-            top: `${(layout.destRow / ROWS) * 100}%`,
-            width: `${(1 / COLS) * 100}%`,
-            height: `${(1 / ROWS) * 100}%`,
-          }}
-        >
-          <span className="mission-thumb-mark">
-            <span className="mission-thumb-mark__kicker">Destination</span>
-            {label}
-          </span>
+        <span className="mission-thumb-label">
+          <span className="mission-thumb-mark__kicker">Destination</span>
+          {label}
         </span>
       ) : null}
       <div

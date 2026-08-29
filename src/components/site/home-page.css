@@ -12,7 +12,7 @@
     linear-gradient(#07111f, #0b1a30);
   background-repeat: no-repeat;
   background-position: top center;
-  background-size: 100% min(46rem, 92vh);
+  background-size: 100% min(72rem, 120vh);
 }
 
 .home-wrap {
@@ -560,12 +560,37 @@
   }
 }
 
+.lab-library {
+  margin-top: 2.75rem;
+}
+
+.lab-library-intro {
+  margin: 0 0 1.2rem;
+  max-width: 62ch;
+  color: #3b4d66;
+}
+
 .home-page .lab-library-card {
-  margin-bottom: 1.35rem;
+  margin: 0;
 }
 
 .home-page .lab-library-card .mission-card__body {
   padding: 1.1rem 1.15rem 1.2rem;
+}
+
+.map-missions-block {
+  margin-top: 3.25rem;
+  padding-top: 2.1rem;
+  border-top: 1px solid #d5e0ee;
+}
+
+.map-missions-block h2 {
+  margin: 0 0 0.7rem;
+  font-size: 1.55rem;
+}
+
+.map-missions-block .missions-intro {
+  margin: 0 0 0.4rem;
 }
 
 .home-page .mission-card {
@@ -574,7 +599,7 @@
   height: 100%;
   min-width: 0;
   padding: 0;
-  overflow: visible;
+  overflow: hidden;
   background: #fff;
   color: #102033;
   border: 1px solid #c9d6e5;
@@ -584,8 +609,8 @@
 .mission-card__media {
   width: 100%;
   aspect-ratio: 16 / 7;
-  overflow: visible;
-  padding: 3.4rem 0.85rem 1.1rem;
+  overflow: hidden;
+  padding: 0.75rem 0.75rem 0.85rem;
   box-sizing: border-box;
   background: #0b1220;
   border-radius: 1.2rem 1.2rem 0 0;
@@ -599,7 +624,7 @@
 
 .mission-thumb {
   position: relative;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .mission-thumb-grid {
@@ -608,64 +633,38 @@
   gap: 1px;
 }
 
-.mission-thumb-hotspot {
+.mission-thumb-label {
   position: absolute;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.mission-thumb-mark {
-  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
   z-index: 4;
-  left: 50%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 3px;
-  width: max-content;
-  min-width: 15rem;
-  max-width: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.45rem;
+  width: auto;
+  max-width: calc(100% - 1rem);
+  padding: 0.38rem 0.58rem;
+  border-radius: 0.4rem;
   background: #f0b429;
   color: #07111f;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: visible;
+  line-height: 1.2;
+  white-space: normal;
+  overflow: hidden;
   box-sizing: border-box;
-  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 8px 16px rgba(7, 17, 31, 0.28);
 }
 
 .mission-thumb-mark__kicker {
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   opacity: 0.85;
-}
-
-.mission-thumb-hotspot--above .mission-thumb-mark {
-  top: auto;
-  bottom: calc(100% + 6px);
-}
-
-.mission-thumb-hotspot--below .mission-thumb-mark {
-  bottom: auto;
-  top: calc(100% + 6px);
-}
-
-.mission-thumb-hotspot--start .mission-thumb-mark {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-
-.mission-thumb-hotspot--end .mission-thumb-mark {
-  left: 0;
-  transform: none;
 }
 
 .mission-thumb-player {
@@ -758,6 +757,11 @@
   box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.12);
 }
 
+.how-section--in-hero {
+  margin: 1.75rem 0 0;
+  padding: 1.35rem 1.15rem 1.45rem;
+}
+
 .how-section::before {
   content: "";
   display: none;
@@ -777,6 +781,20 @@
 .how-section h2 {
   max-width: 18ch;
   margin: 0.5rem 0 1.4rem;
+}
+
+.how-section--in-hero h2 {
+  margin: 0.4rem 0 1.05rem;
+  font-size: 1.45rem;
+}
+
+.how-section--in-hero .how-card {
+  min-height: 0;
+  padding: 1rem 1rem 1.1rem;
+}
+
+.how-section--in-hero .how-card__number {
+  font-size: 2rem;
 }
 
 .how-track {

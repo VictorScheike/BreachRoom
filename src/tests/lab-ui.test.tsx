@@ -133,6 +133,14 @@ describe("lab reachability from existing surfaces", () => {
     expect(html).toMatch(/href="\/lab\/?"/);
     expect(html).toContain("The Poisoned Claim");
     expect(html).toContain("Inbox Under Siege");
+    const labIntro = html.indexOf("Architecture Defence Lab is a different exercise");
+    const labCard = html.indexOf("The Poisoned Claim");
+    const mapHeading = html.indexOf("Map missions");
+    const mapIntro = html.indexOf("These maps exist so you can practise the hard calls");
+    expect(labIntro).toBeGreaterThan(-1);
+    expect(labIntro).toBeLessThan(labCard);
+    expect(mapHeading).toBeGreaterThan(labCard);
+    expect(mapIntro).toBeGreaterThan(mapHeading);
   });
 
   it("lists a completed lab on My Progress with an Open lab link", () => {

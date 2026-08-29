@@ -36,9 +36,13 @@ function ProcessArrow() {
   );
 }
 
-export function HowItWorks() {
+export function HowItWorks({ className }: { className?: string }) {
   return (
-    <section id="how-it-works" className="how-section" aria-labelledby="how-it-works-heading">
+    <section
+      id="how-it-works"
+      className={className ? `how-section ${className}` : "how-section"}
+      aria-labelledby="how-it-works-heading"
+    >
       <div className="how-section-inner">
         <p className="home-eyebrow">How it works</p>
         <h2 id="how-it-works-heading">Three steps from a role to a debrief.</h2>
