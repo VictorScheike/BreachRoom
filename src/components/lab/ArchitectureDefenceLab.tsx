@@ -5,7 +5,7 @@ import { ArchitectureMap } from "@/components/lab/ArchitectureMap";
 import { AttackIncidentStrip } from "@/components/lab/AttackIncidentStrip";
 import { DecisionScreen } from "@/components/lab/DecisionScreen";
 import { DifficultySelect } from "@/components/lab/DifficultySelect";
-import { FinalReview } from "@/components/lab/FinalReview";
+import { FinalReview, defaultFocusedStage } from "@/components/lab/FinalReview";
 import { GameHud } from "@/components/lab/GameHud";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { LAB_MISSION, decisionById } from "@/lib/lab/catalog";
@@ -17,6 +17,7 @@ import {
   beginLab,
   changeDifficulty,
   confirmDecision,
+  continueDecision,
   goToDecision,
   improveAndRetry,
   launchAttack,
@@ -91,6 +92,10 @@ export function ArchitectureDefenceLabView({
   const progressCurrent =
     state.phase === "attack" ? (activeStage?.number ?? 1) : state.phase === "decide" ? currentDecision.number : 10;
   const progressTotal = state.phase === "attack" || state.phase === "result" ? 7 : 10;
+  const resultFocusId =
+    state.phase === "result" && simulation
+      ? (focusedStageId ?? defaultFocusedStage(simulation)?.id ?? null)
+      : focusedStageId;
 
   return (
     <div
@@ -179,8 +184,10 @@ export function ArchitectureDefenceLabView({
           difficulty={state.difficulty}
           choices={state.choices}
           pendingOptionId={state.pendingOptionId}
+          revealed={state.showingDecisionFeedback}
           onSelect={(optionId) => update(selectOption(state, optionId))}
-          onContinue={() => update(confirmDecision(state))}
+          onLock={() => update(confirmDecision(state))}
+          onContinue={() => update(continueDecision(state))}
           onBack={() => update(goToDecision(state, state.currentDecisionIndex - 1))}
           canGoBack={state.currentDecisionIndex > 0}
         />
@@ -234,7 +241,7 @@ export function ArchitectureDefenceLabView({
               onSelectNode={setInspectId}
               reducedMotion={reducedMotion}
               paused={state.paused}
-              focusedStageId={state.phase === "result" ? focusedStageId : null}
+              focusedStageId={state.phase === "result" ? resultFocusId : null}
             />
           </section>
 
@@ -254,7 +261,7 @@ export function ArchitectureDefenceLabView({
           {state.phase === "result" && simulation ? (
             <FinalReview
               simulation={simulation}
-              focusedStageId={focusedStageId}
+              focusedStageId={resultFocusId}
               onFocusStage={setFocusedStageId}
               onRetry={() => update(improveAndRetry(state))}
               onReplay={() => {

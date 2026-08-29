@@ -14,6 +14,15 @@ import type { LabPersistedState } from "@/lib/lab/types";
 
 const noop = () => undefined;
 
+const decisionProps = {
+  onSelect: noop,
+  onLock: noop,
+  onContinue: noop,
+  onBack: noop,
+  canGoBack: false,
+  revealed: false,
+};
+
 describe("Architecture Defence Lab UI", () => {
   it("starts with Guided and Challenge instead of a component palette", () => {
     const html = renderToStaticMarkup(
@@ -37,10 +46,7 @@ describe("Architecture Defence Lab UI", () => {
         difficulty="guided"
         choices={{}}
         pendingOptionId={null}
-        onSelect={noop}
-        onContinue={noop}
-        onBack={noop}
-        canGoBack={false}
+        {...decisionProps}
       />,
     );
     const challenge = renderToStaticMarkup(
@@ -49,10 +55,7 @@ describe("Architecture Defence Lab UI", () => {
         difficulty="challenge"
         choices={{}}
         pendingOptionId={null}
-        onSelect={noop}
-        onContinue={noop}
-        onBack={noop}
-        canGoBack={false}
+        {...decisionProps}
       />,
     );
     expect(guided).toContain("Decision 1 of 10");
@@ -140,7 +143,11 @@ describe("Architecture Defence Lab UI", () => {
     expect(strong).not.toContain("What was protected");
     expect(strong).not.toContain("What was exposed");
     expect(strong).toContain("attack-timeline");
-    expect(strong).toContain("Improve this control");
+    expect(strong).toContain("Because you chose:");
+    expect(strong).toContain("What the attacker tried");
+    expect(strong).toContain("Where it ended");
+    expect(weak).toContain("Claims Database");
+    expect(weak).toContain("AI executes automatically");
   });
 
   it("renders a connected network board instead of a card grid", () => {
@@ -187,39 +194,48 @@ describe("Architecture Defence Lab UI", () => {
     expect(html).toContain("lab-map__edge");
   });
 
-  it("shows one local architecture slice and does not advance until the choice is locked", () => {
-    const selected = renderToStaticMarkup(
+  it("keeps the local path neutral until the choice is locked", () => {
+    const pending = renderToStaticMarkup(
       <DecisionScreen
         decision={LAB_MISSION.decisions[0]!}
         difficulty="guided"
         choices={{}}
         pendingOptionId="identity-mfa"
-        onSelect={noop}
-        onContinue={noop}
-        onBack={noop}
-        canGoBack={false}
+        {...decisionProps}
       />,
     );
-    expect(selected).toContain("Who should be allowed to access the claims application?");
-    expect(selected).toContain("Lock choice and continue");
-    expect(selected).toContain("Stolen credentials stop at Identity");
-    expect(selected).toContain("Not reached");
-    expect(selected).toContain("Blocked");
-    expect(selected).toContain('data-state="held"');
-    expect(selected).not.toContain("SIEM");
-    expect(selected).not.toContain("Signed Builds");
-    expect(selected).not.toContain("What happens to a claims file");
+    expect(pending).toContain("Lock choice");
+    expect(pending).toContain("Lock your choice to see whether this control holds");
+    expect(pending).not.toContain("Stolen credentials stop at Identity");
+    expect(pending).not.toContain('data-state="held"');
+    expect(pending).not.toContain("Not reached");
+
+    const locked = renderToStaticMarkup(
+      <DecisionScreen
+        decision={LAB_MISSION.decisions[0]!}
+        difficulty="guided"
+        choices={{ identity: "identity-mfa" }}
+        pendingOptionId="identity-mfa"
+        {...decisionProps}
+        revealed
+      />,
+    );
+    expect(locked).toContain("Continue");
+    expect(locked).toContain("Stolen credentials stop at Identity");
+    expect(locked).toContain("Not reached");
+    expect(locked).toContain("Blocked");
+    expect(locked).toContain('data-state="held"');
+    expect(locked).not.toContain("SIEM");
+    expect(locked).not.toContain("What happens to a claims file");
 
     const exposed = renderToStaticMarkup(
       <DecisionScreen
         decision={LAB_MISSION.decisions[0]!}
         difficulty="challenge"
-        choices={{}}
+        choices={{ identity: "identity-password" }}
         pendingOptionId="identity-password"
-        onSelect={noop}
-        onContinue={noop}
-        onBack={noop}
-        canGoBack={false}
+        {...decisionProps}
+        revealed
       />,
     );
     expect(exposed).toContain("Valid attacker session");
@@ -240,7 +256,7 @@ describe("Architecture Defence Lab UI", () => {
       />,
     );
     expect(deciding).toContain("Decision 1 of 10");
-    expect(deciding).toContain("Lock choice and continue");
+    expect(deciding).toContain("Lock choice");
     expect(deciding).toContain("local-impact");
     expect(deciding).not.toContain("lab-map");
     expect(deciding).not.toContain("Preview final attack");

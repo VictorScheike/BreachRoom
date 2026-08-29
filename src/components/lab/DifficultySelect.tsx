@@ -39,12 +39,19 @@ export function DifficultySelect({
         >
           <LabIcon name="scan" />
           <strong>Challenge</strong>
-          <span>Same architecture. No Recommended label. Consequences appear after you choose.</span>
+          <span>Same architecture. No Recommended label. Consequences appear after you lock a choice.</span>
         </button>
       </div>
-      <button type="button" className="lab-primary" onClick={onBegin}>
-        Start the ten decisions
-      </button>
+      <div className="lab-setup__start">
+        <p className="lab-kicker">Ready to begin</p>
+        <p className="lab-setup__start-copy">
+          Ten decisions. After each lock you will see whether that control held. Then the Red Team
+          tests the live path toward the Claims Database.
+        </p>
+        <button type="button" className="lab-primary lab-setup__start-button" onClick={onBegin}>
+          Start the ten decisions
+        </button>
+      </div>
     </section>
   );
 }

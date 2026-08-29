@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { decisionById, nodeById } from "@/lib/lab/catalog";
 import { OUTCOME_LABELS } from "@/lib/lab/copy";
-import type { AttackSimulation, AttackTechniqueId } from "@/lib/lab/types";
+import type { AttackSimulation, AttackTechniqueId, ResolvedStage } from "@/lib/lab/types";
 
 export function FinalReview({
   simulation,
@@ -20,17 +21,24 @@ export function FinalReview({
   onImproveControl?: () => void;
 }) {
   const review = simulation.review;
+  const focused =
+    simulation.stages.find((item) => item.id === focusedStageId) ??
+    defaultFocusedStage(simulation) ??
+    simulation.stages[0] ??
+    null;
+
   return (
     <section className="lab-final" aria-labelledby="lab-final-heading">
       <p className={`lab-final__result is-${simulation.result}`}>{simulation.resultLabel}</p>
       <h2 id="lab-final-heading">{simulation.resultSummary}</h2>
       <p className="lab-final__impact">{review.greatestImpact}</p>
+      {focused ? <StageExplanation stage={focused} /> : null}
       <ol className="attack-timeline" aria-label="Attack timeline">
         {simulation.stages.map((stage) => (
           <li key={stage.id}>
             <button
               type="button"
-              className={focusedStageId === stage.id ? "is-active" : ""}
+              className={focused?.id === stage.id ? "is-active" : ""}
               onClick={() => onFocusStage?.(stage.id)}
             >
               <span>
@@ -60,5 +68,55 @@ export function FinalReview({
         </Link>
       </div>
     </section>
+  );
+}
+
+function StageExplanation({ stage }: { stage: ResolvedStage }) {
+  const decision = decisionById(stage.testedDecisionId);
+  const stop = nodeById(stage.stopNode);
+  return (
+    <article className="lab-final__detail" aria-live="polite">
+      <p className="lab-kicker">
+        Attack step {stage.number} of 7 · {OUTCOME_LABELS[stage.outcome]}
+      </p>
+      <h3>{stage.name}</h3>
+      <p className="lab-final__choice">
+        <strong>Because you chose:</strong> {stage.choiceTitle}
+      </p>
+      <p className="lab-final__question">{decision.question}</p>
+      <dl className="lab-final__story">
+        <div>
+          <dt>What the attacker tried</dt>
+          <dd>{stage.attackerAction}</dd>
+        </div>
+        <div>
+          <dt>What happened</dt>
+          <dd>{stage.explanation}</dd>
+        </div>
+        <div>
+          <dt>How the control responded</dt>
+          <dd>{stage.controlResponse}</dd>
+        </div>
+        <div>
+          <dt>Where it ended</dt>
+          <dd>
+            {stop.name}. {stage.impact}
+          </dd>
+        </div>
+      </dl>
+    </article>
+  );
+}
+
+export function defaultFocusedStage(simulation: AttackSimulation): ResolvedStage | undefined {
+  if (simulation.result === "breached") {
+    return (
+      simulation.stages.find((item) => item.id === "payout-manipulation") ??
+      [...simulation.stages].reverse().find((item) => item.stopNode === "database")
+    );
+  }
+  return (
+    [...simulation.stages].reverse().find((item) => item.stopNode === "database" || item.travelledPath.includes("database")) ??
+    simulation.stages[simulation.stages.length - 1]
   );
 }

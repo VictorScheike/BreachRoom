@@ -48,9 +48,9 @@ export const ATTACK_TECHNIQUE_IDS = [
   "stolen-credentials",
   "poisoned-document",
   "prompt-injection",
+  "lateral-movement",
   "api-abuse",
   "payout-manipulation",
-  "lateral-movement",
   "detection",
 ] as const;
 export type AttackTechniqueId = (typeof ATTACK_TECHNIQUE_IDS)[number];
@@ -162,6 +162,9 @@ export interface ResolvedStage {
   blocked: boolean;
   isPivot: boolean;
   pivotLabel: string | null;
+  testedDecisionId: DecisionId;
+  choiceId: OptionId;
+  choiceTitle: string;
 }
 
 export interface ArchitectureReview {
@@ -194,6 +197,7 @@ export interface LabPersistedState {
   revealedStageCount: number;
   attackBeat: number;
   paused: boolean;
+  showingDecisionFeedback: boolean;
   attempts: number;
   lastResult: FinalResultKind | null;
   bestResult: FinalResultKind | null;

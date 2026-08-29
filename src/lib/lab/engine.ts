@@ -48,6 +48,7 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
       controlResponse: string;
       explanation: string;
       impact: string;
+      testedDecisionId: DecisionId;
     } | null = null;
 
     for (const check of technique.checks) {
@@ -59,11 +60,14 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
           controlResponse: check.controlResponse,
           explanation: check.explanation,
           impact: check.impact,
+          testedDecisionId: check.decisionId,
         };
         break;
       }
     }
 
+    const testedDecisionId = matched?.testedDecisionId ?? technique.checks[technique.checks.length - 1]?.decisionId ?? "detection";
+    const chosen = optionForChoice(choices, testedDecisionId);
     const blocked = matched !== null && matched.outcome !== "successful";
     const stopNode = matched?.stopNode ?? technique.path[technique.path.length - 1] ?? technique.entryNode;
     const travelledPath = matched ? pathUntil(technique.path, matched.stopNode) : [...technique.path];
@@ -83,6 +87,9 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
       blocked,
       isPivot,
       pivotLabel: isPivot ? "Blocked. Red Team changes technique." : null,
+      testedDecisionId,
+      choiceId: chosen?.id ?? "",
+      choiceTitle: chosen?.title ?? "No control selected",
     };
     stages.push(stage);
     previousBlocked = blocked && stage.outcome !== "detected";

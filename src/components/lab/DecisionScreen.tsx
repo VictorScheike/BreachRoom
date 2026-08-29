@@ -12,7 +12,9 @@ export function DecisionScreen({
   difficulty,
   choices,
   pendingOptionId,
+  revealed,
   onSelect,
+  onLock,
   onContinue,
   onBack,
   canGoBack,
@@ -21,7 +23,9 @@ export function DecisionScreen({
   difficulty: LabDifficulty;
   choices: LabChoices;
   pendingOptionId: OptionId | null;
+  revealed: boolean;
   onSelect: (optionId: OptionId) => void;
+  onLock: () => void;
   onContinue: () => void;
   onBack: () => void;
   canGoBack: boolean;
@@ -29,7 +33,7 @@ export function DecisionScreen({
   const guided = difficulty === "guided";
   const subgraph = subgraphFor(decision.id);
   const pending = decision.options.find((item) => item.id === pendingOptionId) ?? null;
-  const outcome = subgraphOutcome(subgraph, pendingOptionId, pending?.strength === "strong");
+  const outcome = revealed ? subgraphOutcome(subgraph, pendingOptionId, pending?.strength === "strong") : null;
   const lockedCount = chosenCount(choices);
 
   return (
@@ -43,13 +47,13 @@ export function DecisionScreen({
       <div className="lab-decision__map">
         <p className="lab-kicker">What this choice changes</p>
         <LocalImpactGraph subgraph={subgraph} option={pending} outcome={outcome} />
-        <DecisionImpactStrip outcome={outcome} />
+        <DecisionImpactStrip outcome={outcome} awaitingLock={Boolean(pending) && !revealed} />
       </div>
       <div className="lab-decision__choices">
         <div className="lab-options" role="radiogroup" aria-label="Architecture options">
           {decision.options.map((option) => {
             const selected = pendingOptionId === option.id;
-            const showTradeOff = guided || selected;
+            const showTradeOff = guided || (revealed && selected);
             const description = guided ? option.description : option.challengeDescription;
             return (
               <button
@@ -75,9 +79,15 @@ export function DecisionScreen({
           <button type="button" className="lab-secondary" onClick={onBack} disabled={!canGoBack}>
             Previous decision
           </button>
-          <button type="button" className="lab-primary" onClick={onContinue} disabled={!pendingOptionId}>
-            Lock choice and continue
-          </button>
+          {revealed ? (
+            <button type="button" className="lab-primary" onClick={onContinue}>
+              Continue
+            </button>
+          ) : (
+            <button type="button" className="lab-primary" onClick={onLock} disabled={!pendingOptionId}>
+              Lock choice
+            </button>
+          )}
         </div>
       </div>
     </section>

@@ -233,14 +233,55 @@
   min-height: 2.4rem;
 }
 
-.lab-setup,
+.lab-setup {
+  padding: 1.8rem 1.5rem 2.3rem;
+  border: 1px solid var(--architecture-line);
+  border-radius: 1.2rem;
+  background: color-mix(in srgb, var(--architecture-panel) 88%, transparent);
+  display: grid;
+  gap: 1.45rem;
+}
+
+.lab-setup__choices {
+  gap: 1rem;
+}
+
+.lab-setup__choices button {
+  min-height: 8.75rem;
+  padding: 1.35rem 1.25rem;
+}
+
+.lab-setup__start {
+  display: grid;
+  gap: 1.05rem;
+  margin-top: 0.35rem;
+  padding: 1.85rem 1.6rem 1.95rem;
+  border: 1px solid color-mix(in srgb, var(--architecture-purple) 55%, var(--architecture-line));
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--architecture-bg) 55%, var(--architecture-panel));
+}
+
+.lab-setup__start-copy {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 1.02rem;
+  line-height: 1.5;
+  color: var(--architecture-muted);
+}
+
+.lab-setup__start-button {
+  min-height: 3.9rem;
+  width: min(100%, 28rem);
+  font-size: 1.12rem;
+  padding: 0.95rem 1.45rem;
+}
+
 .lab-decision,
 .lab-campaign,
 .lab-final {
   margin-top: 0.35rem;
 }
 
-.lab-setup__choices,
 .lab-options {
   display: grid;
   gap: 0.8rem;
@@ -268,6 +309,16 @@
   gap: 0.4rem;
   padding: 1rem;
   text-align: left;
+}
+
+.lab-setup .lab-setup__choices {
+  display: grid;
+  gap: 1rem;
+}
+
+.lab-setup .lab-setup__choices button {
+  min-height: 8.75rem;
+  padding: 1.35rem 1.25rem;
 }
 
 .lab-option em {
@@ -690,10 +741,65 @@
   font-weight: 700;
 }
 
-.attack-strip__detail,
 .lab-final__impact {
-  margin: 0;
+  margin: 0 0 1rem;
+  font-size: 1.02rem;
+  line-height: 1.5;
   color: var(--architecture-muted);
+}
+
+.lab-final__detail {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1.05rem;
+  padding: 1.15rem 1.15rem 1.2rem;
+  border: 1px solid var(--architecture-line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--architecture-bg) 55%, var(--architecture-panel));
+}
+
+.lab-final__detail h3 {
+  margin: 0.1rem 0 0.15rem;
+  font-size: 1.22rem;
+  line-height: 1.25;
+}
+
+.lab-final__detail p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lab-final__choice {
+  font-size: 1.02rem;
+}
+
+.lab-final__question {
+  color: var(--architecture-muted);
+}
+
+.lab-final__story {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.35rem 0 0;
+}
+
+.lab-final__story div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.lab-final__story dt {
+  margin: 0;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  color: #9eb0c8;
+}
+
+.lab-final__story dd {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.5;
 }
 
 .attack-strip__controls {
@@ -976,8 +1082,9 @@
 
   .lab-campaign--result {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+    grid-template-columns: minmax(0, 1fr) minmax(26rem, 38rem);
     align-items: start;
+    gap: 1rem;
   }
 
   .lab-campaign--result .lab-campaign__map {
@@ -988,7 +1095,8 @@
   .lab-campaign--result .lab-final {
     grid-column: 2;
     grid-row: 1;
-    max-height: min(38.75rem, calc(100dvh - 9rem));
+    padding: 1.2rem 1.25rem 1.35rem;
+    max-height: min(48rem, calc(100dvh - 7rem));
     overflow: auto;
   }
 }

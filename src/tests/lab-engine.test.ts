@@ -12,6 +12,7 @@ import {
 import {
   beginLab,
   confirmDecision,
+  continueDecision,
   goToDecision,
   improveAndRetry,
   launchAttack,
@@ -73,7 +74,11 @@ describe("decision flow", () => {
       const strong = decision.options[0];
       state = selectOption(state, strong.id);
       expect(state.pendingOptionId).toBe(strong.id);
+      expect(state.showingDecisionFeedback).toBe(false);
       state = confirmDecision(state);
+      expect(state.currentDecisionIndex).toBe(decision.number - 1);
+      expect(state.showingDecisionFeedback).toBe(true);
+      state = continueDecision(state);
     }
     expect(state.phase).toBe("review");
     expect(isComplete(state.choices)).toBe(true);
@@ -88,11 +93,26 @@ describe("decision flow", () => {
     expect(state.phase).toBe("decide");
     expect(state.currentDecisionIndex).toBe(0);
     expect(state.pendingOptionId).toBe("identity-mfa");
+    expect(state.showingDecisionFeedback).toBe(true);
     expect(state.choices.oversight).toBe("oversight-human");
     state = selectOption(state, "identity-password");
     state = confirmDecision(state);
     expect(state.choices.identity).toBe("identity-password");
     expect(state.choices.input).toBe("input-sandbox");
+  });
+
+  it("keeps the path outcome hidden until the choice is locked, then waits for Continue", () => {
+    let state = beginLab(EMPTY_LAB_STATE, "guided");
+    state = selectOption(state, "identity-mfa");
+    expect(state.showingDecisionFeedback).toBe(false);
+    expect(state.currentDecisionIndex).toBe(0);
+    state = confirmDecision(state);
+    expect(state.showingDecisionFeedback).toBe(true);
+    expect(state.phase).toBe("decide");
+    expect(state.currentDecisionIndex).toBe(0);
+    state = continueDecision(state);
+    expect(state.currentDecisionIndex).toBe(1);
+    expect(state.showingDecisionFeedback).toBe(false);
   });
 });
 
@@ -119,15 +139,22 @@ describe("attack simulation", () => {
   it("contains a mixed architecture that fails identity but keeps human approval", () => {
     const { simulation } = runAttack(MIXED_ARCHITECTURE);
     expect(simulation.stages[0]?.outcome).toBe("successful");
-    expect(simulation.stages[4]?.id).toBe("payout-manipulation");
-    expect(simulation.stages[4]?.outcome).toBe("blocked");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("blocked");
     expect(simulation.result).toBe("contained");
   });
 
   it("breaches a weak architecture and still runs every technique", () => {
     const { simulation } = runAttack(WEAK_ARCHITECTURE);
     expect(simulation.stages).toHaveLength(7);
-    expect(simulation.stages[4]?.outcome).toBe("successful");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("successful");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.stopNode).toBe("database");
+    expect(simulation.stages.find((item) => item.id === "detection")?.stopNode).toBe("database");
+    expect(simulation.stages.at(-1)?.id).toBe("detection");
+    expect(simulation.stages.at(-1)?.travelledPath.at(-1)).toBe("database");
+    expect(simulation.stages.slice(-3).every((item) => item.stopNode === "database")).toBe(true);
+    expect(simulation.stages.map((item) => item.id).indexOf("lateral-movement")).toBeLessThan(
+      simulation.stages.map((item) => item.id).indexOf("payout-manipulation"),
+    );
     expect(simulation.result).toBe("breached");
   });
 
@@ -148,7 +175,7 @@ describe("attack simulation", () => {
   it("lets later layers contain a weak front door", () => {
     const { simulation } = runAttack(WEAK_PREVENTION_STRONG_CONTAINMENT);
     expect(simulation.stages[0]?.outcome).toBe("successful");
-    expect(simulation.stages[4]?.outcome).toBe("blocked");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("blocked");
     expect(simulation.result).not.toBe("breached");
   });
 

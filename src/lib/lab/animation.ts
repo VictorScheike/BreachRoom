@@ -279,8 +279,13 @@ export function deriveBoardVisual(args: {
           continue;
         }
         if (nodeId === current.stopNode && beat.kind === "result") {
-          nodeStatus[nodeId] =
-            current.outcome === "successful" ? "success" : current.outcome === "partial" ? "partial" : "blocked";
+          if (current.id === "detection" && current.outcome === "detected") {
+            nodeStatus[nodeId] = nodeStatus[nodeId] === "idle" ? "history-hit" : nodeStatus[nodeId];
+            nodeStatus.detection = "blocked";
+          } else {
+            nodeStatus[nodeId] =
+              current.outcome === "successful" ? "success" : current.outcome === "partial" ? "partial" : "blocked";
+          }
         } else if (nodeId === beat.markerNode) {
           nodeStatus[nodeId] = beat.kind === "entry" ? "entry" : "attack";
         } else if (nodeStatus[nodeId] === "idle") {
@@ -294,15 +299,26 @@ export function deriveBoardVisual(args: {
       }
       markerMoving = beat.kind === "travel";
       if (beat.showResult) {
-        stopBadge = { nodeId: current.stopNode, label: compactOutcome(current.outcome) };
+        const badgeNode = current.id === "detection" && current.outcome === "detected" ? "detection" : current.stopNode;
+        stopBadge = { nodeId: badgeNode, label: compactOutcome(current.outcome) };
       }
+      if (current.id === "detection" && current.outcome === "detected") {
+        nodeStatus.detection = beat.kind === "result" ? "blocked" : "attack";
+      }
+    }
+  }
+
+  for (const stage of history) {
+    if (stage.id === "detection" && stage.outcome === "detected") {
+      nodeStatus.detection = "history-block";
     }
   }
 
   if (args.phase === "result") {
     const last = stages[stages.length - 1];
     if (last) {
-      stopBadge = { nodeId: last.stopNode, label: compactOutcome(last.outcome) };
+      const badgeNode = last.id === "detection" && last.outcome === "detected" ? "detection" : last.stopNode;
+      stopBadge = { nodeId: badgeNode, label: compactOutcome(last.outcome) };
     }
   }
 
