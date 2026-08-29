@@ -51,12 +51,25 @@ export const EXERCISE_POINTS = [
 export const ABOUT_HEADLINE = "Who we are";
 
 export const ABOUT_INTRO =
-  "There is no agency behind this and no product team. BreachRoom is built by me, Victor Scheike, because cybersecurity still gets treated as a specialist corner instead of something every digital organisation has to be able to talk about.";
+  "There is no agency behind this and no product team. BreachRoom is built by me, Victor Scheike, because cybersecurity still gets treated as a specialist corner instead of something every digital organisation has to be able to talk about — and to build.";
 
 export const ABOUT_BODY = [
   "I studied a Master of Science in Digital Innovation & Management (Cand.it.) in Copenhagen. I built this because I want a bigger focus on what cybersecurity actually means: not a product you buy, not a policy on a shelf, and not only the people with security in their job title.",
-  "It means noticing when something is wrong, containing it before it spreads, telling the right people, keeping evidence, and keeping the organisation moving when the picture is still incomplete. Those are human decisions under pressure. BreachRoom is a short, open tabletop for practising them. If you want the usual vendor pitch, this is the wrong site.",
 ] as const;
+
+export const ABOUT_SECTIONS = [
+  {
+    title: "Practising the incident",
+    body: "It means noticing when something is wrong, containing it before it spreads, telling the right people, keeping evidence, and keeping the organisation moving when the picture is still incomplete. Those are human decisions under pressure. The map missions are a short, open tabletop for rehearsing that conversation — product, operations, communications, leadership, not only specialists.",
+  },
+  {
+    title: "Building resilient cybersecurity",
+    body: "It also means designing the system so that one stolen password or one poisoned document does not become the whole story. Resilient cybersecurity is built before the attack runs: identity, least privilege, how an AI reaches data, whether a person still has to approve an export, whether anyone is actually watching. Architecture Defence Lab is the other half of that idea. You assemble the controls. Then you let one coherent attack loose on what you actually chose.",
+  },
+] as const;
+
+export const ABOUT_CLOSE =
+  "If a control fails, the next layer still gets a chance. That is defence in depth, not a badge. If you want the usual vendor pitch, this is the wrong site.";
 
 export const ABOUT_LINKS = [
   {

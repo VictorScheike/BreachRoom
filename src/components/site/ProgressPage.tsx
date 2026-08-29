@@ -13,7 +13,7 @@ import {
 } from "@/lib/progress/store";
 import { answerSummaryLabel, reportFromProgressSession } from "@/lib/progress/report";
 import { topicLabel } from "@/lib/training/labels";
-import { playUrlForMission } from "@/lib/training/session";
+import { sessionResumeHref } from "@/lib/progress/urls";
 
 class ProgressErrorBoundary extends Component<
   { children: ReactNode },
@@ -64,7 +64,8 @@ function topicCounts(sessions: readonly ProgressSession[]): { id: string; label:
 }
 
 function CompletedSessionCard({ session }: { session: ProgressSession }) {
-  const report = reportFromProgressSession(session);
+  const isLab = session.kind === "lab" || session.missionId.startsWith("lab-");
+  const report = isLab ? null : reportFromProgressSession(session);
   const preview = report?.journey.slice(0, 8) ?? [];
   const extra = report ? Math.max(0, report.journey.length - preview.length) : 0;
   const score = report?.score.overall ?? session.overall;
@@ -75,6 +76,7 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
       <span>
         {session.perspectiveLabel}
         {score !== null ? ` · Score ${score}` : ""}
+        {isLab && session.phaseLabel ? ` · ${session.phaseLabel}` : ""}
       </span>
       {report ? (
         <>
@@ -90,6 +92,10 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
           </ol>
           {extra > 0 ? <p className="progress-answers__more">+ {extra} more on the score page</p> : null}
         </>
+      ) : isLab ? (
+        <p className="progress-answer-summary">
+          Architecture Defence Lab · The Poisoned Claim. Open the lab to review the build and rerun the attack.
+        </p>
       ) : (
         <p className="progress-answer-summary">
           This session was saved before answers were stored. Replay it to keep a full score next time.
@@ -103,8 +109,8 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
         ) : score !== null ? (
           <span className="progress-score-fallback">Score {score}</span>
         ) : null}
-        <Link className="btn-tertiary" href={playUrlForMission(session.missionId, session.roleId)}>
-          Replay
+        <Link className="btn-tertiary" href={sessionResumeHref(session)}>
+          {isLab ? "Open lab" : "Replay"}
         </Link>
       </div>
     </li>
@@ -163,7 +169,7 @@ export function ProgressDashboard({
 
       {unfinished ? (
         <p>
-          <Link className="btn-primary" href={playUrlForMission(unfinished.missionId, unfinished.roleId)}>
+          <Link className="btn-primary" href={sessionResumeHref(unfinished)}>
             Continue {unfinished.missionTitle}
           </Link>
         </p>
@@ -209,7 +215,7 @@ export function ProgressDashboard({
                   {session.perspectiveLabel} · {session.questionsCompleted}/{session.questionsRequired}{" "}
                   decisions · {session.endedEarly ? "Ended early" : "In progress"}
                 </span>
-                <Link href={playUrlForMission(session.missionId, session.roleId)}>Continue</Link>
+                <Link href={sessionResumeHref(session)}>Continue</Link>
               </li>
             ))}
           </ul>

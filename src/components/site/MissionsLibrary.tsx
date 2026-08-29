@@ -2,6 +2,7 @@
 
 import { MissionCard } from "@/components/site/MissionCard";
 import { MissionFilter } from "@/components/site/MissionFilter";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { publishedMissions } from "@/lib/missions/catalog";
 import type { DifficultyId } from "@/lib/missions/types";
@@ -48,6 +49,31 @@ export function MissionsLibrary() {
 
   return (
     <div>
+      <article className="mission-card lab-library-card">
+        <div className="mission-card__body">
+          <div className="mission-card__content">
+            <p className="mission-card__meta">ARCHITECTURE DEFENCE LAB · HARDNESS LVL · GUIDED OR ARCHITECT</p>
+            <h2 className="mission-card__title">Architecture Defence Lab</h2>
+            <p className="mission-card__destination">The Poisoned Claim</p>
+            <p className="mission-card__description mission-card__description--four">
+              Build a claims-handling architecture for fictional Nordic Shield Insurance, then watch
+              one coherent attack — stolen credentials plus a poisoned document — move through the
+              system you built.
+            </p>
+            <ul className="topic-chips">
+              <li>AI security</li>
+              <li>Secure architecture</li>
+              <li>Defence in depth</li>
+            </ul>
+            <p className="mission-card__destination">Build it. Then let the attack loose.</p>
+          </div>
+          <div className="mission-card__footer">
+            <Link className="btn-primary mission-card__action" href="/lab/">
+              Enter the lab
+            </Link>
+          </div>
+        </div>
+      </article>
       <section className="mission-filter-panel" aria-label="Mission filters">
         <div className="mission-filter-panel__meta">
           <p>

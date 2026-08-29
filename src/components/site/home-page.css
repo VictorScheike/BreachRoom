@@ -560,6 +560,14 @@
   }
 }
 
+.home-page .lab-library-card {
+  margin-bottom: 1.35rem;
+}
+
+.home-page .lab-library-card .mission-card__body {
+  padding: 1.1rem 1.15rem 1.2rem;
+}
+
 .home-page .mission-card {
   display: flex;
   flex-direction: column;
