@@ -17,7 +17,6 @@ import {
   beginLab,
   changeDifficulty,
   confirmDecision,
-  continueDecision,
   goToDecision,
   improveAndRetry,
   launchAttack,
@@ -184,10 +183,8 @@ export function ArchitectureDefenceLabView({
           difficulty={state.difficulty}
           choices={state.choices}
           pendingOptionId={state.pendingOptionId}
-          revealed={state.showingDecisionFeedback}
           onSelect={(optionId) => update(selectOption(state, optionId))}
-          onLock={() => update(confirmDecision(state))}
-          onContinue={() => update(continueDecision(state))}
+          onNext={() => update(confirmDecision(state))}
           onBack={() => update(goToDecision(state, state.currentDecisionIndex - 1))}
           canGoBack={state.currentDecisionIndex > 0}
         />

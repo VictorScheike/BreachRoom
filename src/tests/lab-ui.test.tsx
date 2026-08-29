@@ -16,11 +16,9 @@ const noop = () => undefined;
 
 const decisionProps = {
   onSelect: noop,
-  onLock: noop,
-  onContinue: noop,
+  onNext: noop,
   onBack: noop,
   canGoBack: false,
-  revealed: false,
 };
 
 describe("Architecture Defence Lab UI", () => {
@@ -61,6 +59,8 @@ describe("Architecture Defence Lab UI", () => {
     expect(guided).toContain("Decision 1 of 10");
     expect(guided).toContain("Recommended");
     expect(guided).toContain("Slightly more friction during sign-in");
+    expect(guided).toContain("MFA on new devices only");
+    expect(guided).toContain("Password-only access");
     expect(challenge).not.toContain("Recommended");
     expect(challenge).toContain("Select to see the trade-off");
     expect(challenge).not.toContain("Slightly more friction during sign-in");
@@ -138,6 +138,8 @@ describe("Architecture Defence Lab UI", () => {
     );
     expect(strong).toContain("Prevented");
     expect(weak).toContain("Breached");
+    expect(weak).toContain("EXPOSED");
+    expect(weak).not.toContain(">SUCCESS<");
     expect(strong).toContain("Improve and retry");
     expect(strong).not.toContain("Defence readiness");
     expect(strong).not.toContain("What was protected");
@@ -194,7 +196,7 @@ describe("Architecture Defence Lab UI", () => {
     expect(html).toContain("lab-map__edge");
   });
 
-  it("keeps the local path neutral until the choice is locked", () => {
+  it("keeps the local path neutral and offers three takes, with Next to continue", () => {
     const pending = renderToStaticMarkup(
       <DecisionScreen
         decision={LAB_MISSION.decisions[0]!}
@@ -204,44 +206,27 @@ describe("Architecture Defence Lab UI", () => {
         {...decisionProps}
       />,
     );
-    expect(pending).toContain("Lock choice");
-    expect(pending).toContain("Lock your choice to see whether this control holds");
+    expect(pending).toContain("Next");
+    expect(pending).not.toContain("Lock choice");
+    expect(pending).toContain("MFA on new devices only");
+    expect(pending).toContain("The path stays neutral");
     expect(pending).not.toContain("Stolen credentials stop at Identity");
     expect(pending).not.toContain('data-state="held"');
     expect(pending).not.toContain("Not reached");
 
-    const locked = renderToStaticMarkup(
-      <DecisionScreen
-        decision={LAB_MISSION.decisions[0]!}
-        difficulty="guided"
-        choices={{ identity: "identity-mfa" }}
-        pendingOptionId="identity-mfa"
-        {...decisionProps}
-        revealed
-      />,
-    );
-    expect(locked).toContain("Continue");
-    expect(locked).toContain("Stolen credentials stop at Identity");
-    expect(locked).toContain("Not reached");
-    expect(locked).toContain("Blocked");
-    expect(locked).toContain('data-state="held"');
-    expect(locked).not.toContain("SIEM");
-    expect(locked).not.toContain("What happens to a claims file");
-
-    const exposed = renderToStaticMarkup(
+    const password = renderToStaticMarkup(
       <DecisionScreen
         decision={LAB_MISSION.decisions[0]!}
         difficulty="challenge"
-        choices={{ identity: "identity-password" }}
+        choices={{}}
         pendingOptionId="identity-password"
         {...decisionProps}
-        revealed
       />,
     );
-    expect(exposed).toContain("Valid attacker session");
-    expect(exposed).toContain("Still reachable");
-    expect(exposed).toContain('data-state="active"');
-    expect(exposed).not.toContain("Recommended");
+    expect(password).toContain("Next");
+    expect(password).not.toContain("Recommended");
+    expect(password).not.toContain('data-state="held"');
+    expect(password).not.toContain("Valid attacker session");
   });
 
   it("hides the full architecture until all ten decisions are locked", () => {
@@ -256,7 +241,8 @@ describe("Architecture Defence Lab UI", () => {
       />,
     );
     expect(deciding).toContain("Decision 1 of 10");
-    expect(deciding).toContain("Lock choice");
+    expect(deciding).toContain("Next");
+    expect(deciding).not.toContain("Lock choice");
     expect(deciding).toContain("local-impact");
     expect(deciding).not.toContain("lab-map");
     expect(deciding).not.toContain("Preview final attack");

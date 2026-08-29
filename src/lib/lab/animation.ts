@@ -55,7 +55,7 @@ export interface BoardVisualState {
   markerNode: MapNodeId | null;
   markerVisible: boolean;
   markerMoving: boolean;
-  stopBadge: { nodeId: MapNodeId; label: "BLOCKED" | "PARTIAL" | "SUCCESS" } | null;
+  stopBadge: { nodeId: MapNodeId; label: "BLOCKED" | "PARTIAL" | "EXPOSED" } | null;
   pivotBanner: boolean;
   enteringNode: MapNodeId | null;
 }
@@ -149,9 +149,9 @@ export function hudStatus(args: {
   return "Attacking";
 }
 
-export function compactOutcome(outcome: StageOutcomeKind): "BLOCKED" | "PARTIAL" | "SUCCESS" {
+export function compactOutcome(outcome: StageOutcomeKind): "BLOCKED" | "PARTIAL" | "EXPOSED" {
   if (outcome === "successful") {
-    return "SUCCESS";
+    return "EXPOSED";
   }
   if (outcome === "partial") {
     return "PARTIAL";

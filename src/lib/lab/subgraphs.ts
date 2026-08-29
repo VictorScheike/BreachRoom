@@ -58,15 +58,15 @@ function edge(id: string, from: SubgraphNode, to: SubgraphNode): SubgraphEdge {
   return { id, from: from.id, to: to.id, path: curve(from.x, from.y, to.x, to.y) };
 }
 
-const identitySource = node("source", "Stolen password", "source", 90, 140);
-const identityControl = node("identity", "Identity", "control", 320, 140);
+const identitySource = node("source", "Stolen password", "source", 70, 140);
+const identityControl = node("identity", "Identity", "control", 300, 140);
 const identityPortal = node("portal", "Claims Portal", "core", 560, 140);
-const identityApp = node("app", "AI Claims App", "core", 820, 140);
+const identityApp = node("app", "AI Claims App", "core", 860, 140);
 
-const uploadSource = node("source", "Poisoned file", "source", 90, 140);
-const uploadControl = node("input", "Document upload", "control", 320, 140);
+const uploadSource = node("source", "Poisoned file", "source", 70, 140);
+const uploadControl = node("input", "Document upload", "control", 300, 140);
 const uploadApp = node("app", "AI Claims App", "core", 560, 140);
-const uploadModel = node("model", "AI model", "control", 820, 140);
+const uploadModel = node("model", "AI model", "control", 860, 140);
 
 const modelApp = node("app", "AI Claims App", "core", 160, 140);
 const modelControl = node("model", "AI model", "control", 430, 140);

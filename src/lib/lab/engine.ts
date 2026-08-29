@@ -1,4 +1,4 @@
-import { LAB_MISSION, optionById, optionForChoice } from "./catalog";
+import { LAB_MISSION, nodeById, optionById, optionForChoice } from "./catalog";
 import type {
   ArchitectureReview,
   AttackSimulation,
@@ -52,13 +52,27 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
     } | null = null;
 
     for (const check of technique.checks) {
-      if (choices[check.decisionId] === check.strongOptionId) {
+      const chosenForCheck = optionForChoice(choices, check.decisionId);
+      if (chosenForCheck?.id === check.strongOptionId) {
         matched = {
           outcome: check.outcome,
           stopNode: check.stopNode,
           attackerAction: check.attackerAction,
           controlResponse: check.controlResponse,
           explanation: check.explanation,
+          impact: check.impact,
+          testedDecisionId: check.decisionId,
+        };
+        break;
+      }
+      if (chosenForCheck?.strength === "medium") {
+        const stopName = nodeById(check.stopNode).name;
+        matched = {
+          outcome: "partial",
+          stopNode: check.stopNode,
+          attackerAction: check.attackerAction,
+          controlResponse: `${chosenForCheck.title} slows this path but does not close it.`,
+          explanation: `The control is incomplete. The technique still reaches ${stopName}.`,
           impact: check.impact,
           testedDecisionId: check.decisionId,
         };

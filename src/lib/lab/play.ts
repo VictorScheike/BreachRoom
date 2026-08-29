@@ -13,10 +13,6 @@ function pendingForIndex(choices: LabPersistedState["choices"], index: number): 
   return choices[decision.id] ?? null;
 }
 
-function hasLockedChoice(choices: LabPersistedState["choices"], index: number): boolean {
-  return pendingForIndex(choices, index) !== null;
-}
-
 export function beginLab(state: LabPersistedState, difficulty: LabDifficulty): LabPersistedState {
   return {
     ...state,
@@ -63,38 +59,29 @@ export function confirmDecision(state: LabPersistedState): LabPersistedState {
   if (!current || option.decisionId !== current.id) {
     return state;
   }
-  return {
-    ...state,
-    choices: { ...state.choices, [option.decisionId]: option.id },
-    showingDecisionFeedback: true,
-  };
-}
-
-export function continueDecision(state: LabPersistedState): LabPersistedState {
-  if (state.phase !== "decide" || !state.showingDecisionFeedback) {
-    return state;
-  }
-  const current = LAB_MISSION.decisions[state.currentDecisionIndex];
-  if (!current || !state.choices[current.id]) {
-    return state;
-  }
+  const choices = { ...state.choices, [option.decisionId]: option.id };
   const nextIndex = state.currentDecisionIndex + 1;
   if (nextIndex >= DECISION_COUNT) {
     return {
       ...state,
+      choices,
       pendingOptionId: null,
       showingDecisionFeedback: false,
       currentDecisionIndex: DECISION_COUNT - 1,
       phase: "review",
     };
   }
-  const nextPending = pendingForIndex(state.choices, nextIndex);
   return {
     ...state,
+    choices,
     currentDecisionIndex: nextIndex,
-    pendingOptionId: nextPending,
-    showingDecisionFeedback: hasLockedChoice(state.choices, nextIndex),
+    pendingOptionId: pendingForIndex(choices, nextIndex),
+    showingDecisionFeedback: false,
   };
+}
+
+export function continueDecision(state: LabPersistedState): LabPersistedState {
+  return confirmDecision(state);
 }
 
 export function goToDecision(state: LabPersistedState, index: number): LabPersistedState {
@@ -107,7 +94,7 @@ export function goToDecision(state: LabPersistedState, index: number): LabPersis
     phase: "decide",
     currentDecisionIndex: bounded,
     pendingOptionId: pendingForIndex(state.choices, bounded),
-    showingDecisionFeedback: hasLockedChoice(state.choices, bounded),
+    showingDecisionFeedback: false,
   };
 }
 

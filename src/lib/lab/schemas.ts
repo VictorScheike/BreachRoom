@@ -22,7 +22,7 @@ export const architectureOptionSchema = z
     tradeOff: nonEmpty,
     confirmation: nonEmpty,
     recommended: z.boolean(),
-    strength: z.enum(["strong", "weak"]),
+    strength: z.enum(["strong", "medium", "weak"]),
     icon: nonEmpty,
     mapTitle: nonEmpty,
     mapDetail: nonEmpty,
@@ -35,7 +35,7 @@ export const architectureDecisionSchema = z
     number: z.number().int().min(1).max(10),
     question: nonEmpty,
     nodeId: z.enum(MAP_NODE_IDS),
-    options: z.tuple([architectureOptionSchema, architectureOptionSchema]),
+    options: z.tuple([architectureOptionSchema, architectureOptionSchema, architectureOptionSchema]),
   })
   .strict();
 
@@ -116,11 +116,12 @@ export const labMissionSchema = z
     }
     const optionIds = new Set<string>();
     for (const decision of mission.decisions) {
-      if (decision.options[0].decisionId !== decision.id || decision.options[1].decisionId !== decision.id) {
+      const strengths = new Set(decision.options.map((item) => item.strength));
+      if (decision.options.some((item) => item.decisionId !== decision.id)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Option parent mismatch on ${decision.id}` });
       }
-      if (decision.options[0].strength === decision.options[1].strength) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${decision.id} needs one strong and one weak option` });
+      if (!strengths.has("strong") || !strengths.has("medium") || !strengths.has("weak")) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `${decision.id} needs a strong, medium and weak option` });
       }
       for (const option of decision.options) {
         if (optionIds.has(option.id)) {

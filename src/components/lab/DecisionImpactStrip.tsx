@@ -21,7 +21,7 @@ export function DecisionImpactStrip({
   if (awaitingLock) {
     return (
       <p className="decision-strip is-idle" role="status">
-        Lock your choice to see whether this control holds. The path stays neutral until then.
+        Next saves this control and moves on. The path stays neutral so the answer is not given away.
       </p>
     );
   }

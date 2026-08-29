@@ -5,7 +5,7 @@ export const OUTCOME_LABELS: Record<StageOutcomeKind, string> = {
   contained: "BLOCKED",
   partial: "PARTIAL",
   detected: "BLOCKED",
-  successful: "SUCCESS",
+  successful: "EXPOSED",
 };
 
 export const DIFFICULTY_CAPTION = "Difficulty";

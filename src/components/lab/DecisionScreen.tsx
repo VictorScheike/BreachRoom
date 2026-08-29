@@ -4,7 +4,7 @@ import { LocalImpactGraph } from "@/components/lab/LocalImpactGraph";
 import { DecisionImpactStrip } from "@/components/lab/DecisionImpactStrip";
 import { LabIcon } from "@/components/lab/LabIcon";
 import { chosenCount } from "@/lib/lab/catalog";
-import { subgraphFor, subgraphOutcome } from "@/lib/lab/subgraphs";
+import { subgraphFor } from "@/lib/lab/subgraphs";
 import type { ArchitectureDecision, LabChoices, LabDifficulty, OptionId } from "@/lib/lab/types";
 
 export function DecisionScreen({
@@ -12,10 +12,8 @@ export function DecisionScreen({
   difficulty,
   choices,
   pendingOptionId,
-  revealed,
   onSelect,
-  onLock,
-  onContinue,
+  onNext,
   onBack,
   canGoBack,
 }: {
@@ -23,17 +21,14 @@ export function DecisionScreen({
   difficulty: LabDifficulty;
   choices: LabChoices;
   pendingOptionId: OptionId | null;
-  revealed: boolean;
   onSelect: (optionId: OptionId) => void;
-  onLock: () => void;
-  onContinue: () => void;
+  onNext: () => void;
   onBack: () => void;
   canGoBack: boolean;
 }) {
   const guided = difficulty === "guided";
   const subgraph = subgraphFor(decision.id);
   const pending = decision.options.find((item) => item.id === pendingOptionId) ?? null;
-  const outcome = revealed ? subgraphOutcome(subgraph, pendingOptionId, pending?.strength === "strong") : null;
   const lockedCount = chosenCount(choices);
 
   return (
@@ -46,14 +41,14 @@ export function DecisionScreen({
       </div>
       <div className="lab-decision__map">
         <p className="lab-kicker">What this choice changes</p>
-        <LocalImpactGraph subgraph={subgraph} option={pending} outcome={outcome} />
-        <DecisionImpactStrip outcome={outcome} awaitingLock={Boolean(pending) && !revealed} />
+        <LocalImpactGraph subgraph={subgraph} option={pending} outcome={null} />
+        <DecisionImpactStrip outcome={null} awaitingLock={Boolean(pending)} />
       </div>
       <div className="lab-decision__choices">
         <div className="lab-options" role="radiogroup" aria-label="Architecture options">
           {decision.options.map((option) => {
             const selected = pendingOptionId === option.id;
-            const showTradeOff = guided || (revealed && selected);
+            const showTradeOff = guided || selected;
             const description = guided ? option.description : option.challengeDescription;
             return (
               <button
@@ -79,15 +74,9 @@ export function DecisionScreen({
           <button type="button" className="lab-secondary" onClick={onBack} disabled={!canGoBack}>
             Previous decision
           </button>
-          {revealed ? (
-            <button type="button" className="lab-primary" onClick={onContinue}>
-              Continue
-            </button>
-          ) : (
-            <button type="button" className="lab-primary" onClick={onLock} disabled={!pendingOptionId}>
-              Lock choice
-            </button>
-          )}
+          <button type="button" className="lab-primary" onClick={onNext} disabled={!pendingOptionId}>
+            Next
+          </button>
         </div>
       </div>
     </section>

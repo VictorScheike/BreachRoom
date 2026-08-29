@@ -12,7 +12,6 @@ import {
 import {
   beginLab,
   confirmDecision,
-  continueDecision,
   goToDecision,
   improveAndRetry,
   launchAttack,
@@ -57,11 +56,14 @@ describe("Architecture Defence Lab catalog", () => {
     expect(DECISION_IDS).toHaveLength(10);
   });
 
-  it("keeps Recommended only on the stronger option", () => {
+  it("keeps Recommended only on the stronger option and offers three takes", () => {
     for (const decision of LAB_MISSION.decisions) {
+      expect(decision.options).toHaveLength(3);
       expect(decision.options.filter((item) => item.recommended)).toHaveLength(1);
       expect(decision.options[0]?.recommended).toBe(true);
       expect(optionById(decision.options[0]!.id).strength).toBe("strong");
+      expect(decision.options.some((item) => item.strength === "medium")).toBe(true);
+      expect(decision.options.some((item) => item.strength === "weak")).toBe(true);
     }
   });
 });
@@ -76,9 +78,6 @@ describe("decision flow", () => {
       expect(state.pendingOptionId).toBe(strong.id);
       expect(state.showingDecisionFeedback).toBe(false);
       state = confirmDecision(state);
-      expect(state.currentDecisionIndex).toBe(decision.number - 1);
-      expect(state.showingDecisionFeedback).toBe(true);
-      state = continueDecision(state);
     }
     expect(state.phase).toBe("review");
     expect(isComplete(state.choices)).toBe(true);
@@ -93,7 +92,7 @@ describe("decision flow", () => {
     expect(state.phase).toBe("decide");
     expect(state.currentDecisionIndex).toBe(0);
     expect(state.pendingOptionId).toBe("identity-mfa");
-    expect(state.showingDecisionFeedback).toBe(true);
+    expect(state.showingDecisionFeedback).toBe(false);
     expect(state.choices.oversight).toBe("oversight-human");
     state = selectOption(state, "identity-password");
     state = confirmDecision(state);
@@ -101,18 +100,16 @@ describe("decision flow", () => {
     expect(state.choices.input).toBe("input-sandbox");
   });
 
-  it("keeps the path outcome hidden until the choice is locked, then waits for Continue", () => {
+  it("advances on Next without revealing the path on the decision screen", () => {
     let state = beginLab(EMPTY_LAB_STATE, "guided");
     state = selectOption(state, "identity-mfa");
     expect(state.showingDecisionFeedback).toBe(false);
     expect(state.currentDecisionIndex).toBe(0);
     state = confirmDecision(state);
-    expect(state.showingDecisionFeedback).toBe(true);
-    expect(state.phase).toBe("decide");
-    expect(state.currentDecisionIndex).toBe(0);
-    state = continueDecision(state);
-    expect(state.currentDecisionIndex).toBe(1);
     expect(state.showingDecisionFeedback).toBe(false);
+    expect(state.phase).toBe("decide");
+    expect(state.currentDecisionIndex).toBe(1);
+    expect(state.choices.identity).toBe("identity-mfa");
   });
 });
 
@@ -156,6 +153,12 @@ describe("attack simulation", () => {
       simulation.stages.map((item) => item.id).indexOf("payout-manipulation"),
     );
     expect(simulation.result).toBe("breached");
+  });
+
+  it("treats a middle identity choice as partial, not a full hold", () => {
+    const simulation = simulateAttack({ ...STRONG_ARCHITECTURE, identity: "identity-device-mfa" });
+    expect(simulation.stages[0]?.outcome).toBe("partial");
+    expect(simulation.stages[0]?.choiceTitle).toBe("MFA on new devices only");
   });
 
   it("gives different histories to different architectures", () => {

@@ -122,6 +122,7 @@ export function ArchitectureMap({
   const motionPath = liveFrom && liveTo ? edgePath(liveFrom, liveTo, layout) : null;
 
   return (
+    <div className="lab-map-wrap">
     <div
       className={["lab-map", "architecture-canvas", compact ? "lab-map--compact" : "", `lab-map--${layout}`].filter(Boolean).join(" ")}
       aria-label="Nordic Shield claims AI architecture"
@@ -239,8 +240,9 @@ export function ArchitectureMap({
           Blocked — Red Team changes technique
         </p>
       ) : null}
+    </div>
       {inspectNode && inspectable ? (
-        <article className="lab-node-pop" aria-live="polite">
+        <article className="lab-node-pop lab-node-pop--below" aria-live="polite">
           <p className="lab-kicker">{inspectNode.name}</p>
           <h2>{inspectChoice?.title ?? inspectNode.name}</h2>
           <p>{inspectChoice?.tradeOff ?? inspectNode.description}</p>

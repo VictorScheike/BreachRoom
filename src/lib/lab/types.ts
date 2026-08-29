@@ -74,7 +74,7 @@ export interface ArchitectureOption {
   tradeOff: string;
   confirmation: string;
   recommended: boolean;
-  strength: "strong" | "weak";
+  strength: "strong" | "medium" | "weak";
   icon: string;
   mapTitle: string;
   mapDetail: string;
@@ -85,7 +85,7 @@ export interface ArchitectureDecision {
   number: number;
   question: string;
   nodeId: MapNodeId;
-  options: readonly [ArchitectureOption, ArchitectureOption];
+  options: readonly [ArchitectureOption, ArchitectureOption, ArchitectureOption];
 }
 
 export interface MapNodeDefinition {
