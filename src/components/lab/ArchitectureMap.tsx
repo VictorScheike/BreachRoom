@@ -110,9 +110,13 @@ export function ArchitectureMap({
         const choice = node.decisionId ? optionForChoice(choices, node.decisionId) : null;
         const point = nodePoint(node, layout);
         const status = visual.nodeStatus[node.id];
-        const weak = choice?.strength === "weak";
-        const label = nodeLabel(choices, node.id);
-        const icon = choice?.icon ?? node.icon;
+        const previewOption =
+          visual.enteringNode === node.id && previewOptionId
+            ? LAB_MISSION.decisions.flatMap((item) => [...item.options]).find((item) => item.id === previewOptionId)
+            : null;
+        const weak = (previewOption ?? choice)?.strength === "weak";
+        const label = nodeLabel(choices, node.id, previewOptionId);
+        const icon = previewOption?.icon ?? choice?.icon ?? node.icon;
         const className = [
           "lab-node",
           `lab-node--${node.kind}`,

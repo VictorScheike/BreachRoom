@@ -414,10 +414,20 @@ function logText(stage: ResolvedStage): string {
   return `${stage.name} blocked`;
 }
 
-export function nodeLabel(choices: LabChoices, nodeId: MapNodeId): string {
+export function nodeLabel(choices: LabChoices, nodeId: MapNodeId, previewOptionId?: OptionId | null): string {
   const node = nodeById(nodeId);
   if (!node.decisionId) {
     return node.name;
   }
-  return optionForChoice(choices, node.decisionId)?.mapTitle ?? node.name;
+  const chosen = optionForChoice(choices, node.decisionId);
+  if (chosen) {
+    return chosen.mapTitle;
+  }
+  if (previewOptionId) {
+    const preview = LAB_MISSION.decisions.flatMap((item) => [...item.options]).find((item) => item.id === previewOptionId);
+    if (preview?.decisionId === node.decisionId) {
+      return preview.mapTitle;
+    }
+  }
+  return node.name;
 }

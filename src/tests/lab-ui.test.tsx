@@ -150,6 +150,29 @@ describe("Architecture Defence Lab UI", () => {
     expect(html).not.toContain("Stops stolen-password login");
   });
 
+  it("grows the preview from three core nodes instead of showing every control at once", () => {
+    const empty = renderToStaticMarkup(
+      <ArchitectureMap choices={{}} inspectable={false} layout="desktop" />,
+    );
+    expect(empty).toContain("Claims Portal");
+    expect(empty).toContain("AI Claims App");
+    expect(empty).toContain("Claims Database");
+    expect(empty).not.toContain("MFA + RBAC");
+    expect(empty).not.toContain("File Sandbox");
+    expect(empty).not.toContain("SIEM");
+    const preview = renderToStaticMarkup(
+      <ArchitectureMap
+        choices={{}}
+        previewOptionId="identity-mfa"
+        inspectable={false}
+        layout="desktop"
+      />,
+    );
+    expect(preview).toContain("MFA + RBAC");
+    expect(preview).not.toContain("File Sandbox");
+    expect(preview).not.toContain("Private LLM");
+  });
+
   it("keeps a simplified vertical network on a mobile-sized board", () => {
     const html = renderToStaticMarkup(
       <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} layout="mobile" />,
