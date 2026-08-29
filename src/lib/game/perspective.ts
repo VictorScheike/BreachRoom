@@ -11,16 +11,8 @@ export interface MissionPerspective {
   chipLabel: string;
 }
 
-const GROUP_DISPLAY: Record<RoleGroupId, string> = {
-  "general-employees": "General employee",
-  "finance-hr": "Finance & HR",
-  "developers-devops": "Developer & DevOps",
-  "it-security": "IT & Security",
-  "leaders-risk": "Leaders, Risk & Governance",
-};
-
 export function displayNameForRoleGroup(id: RoleGroupId): string {
-  return GROUP_DISPLAY[id] ?? ROLE_GROUPS.find((group) => group.id === id)?.name ?? id;
+  return ROLE_GROUPS.find((group) => group.id === id)?.name ?? id;
 }
 
 export function focusForRoleGroup(id: RoleGroupId): string {

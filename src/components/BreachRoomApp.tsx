@@ -10,7 +10,7 @@ import { createInitialGameState, gameReducer } from "@/lib/game/engine";
 import { requireMission } from "@/lib/missions/catalog";
 import { buildMissionReport } from "@/lib/missions/report";
 import type { MissionId, RoleId } from "@/lib/missions/types";
-import { loadTrainingSession, rememberQuestionIds } from "@/lib/training/session";
+import { loadTrainingFromSearch, loadTrainingSession, rememberQuestionIds } from "@/lib/training/session";
 import { missionPerspective } from "@/lib/game/perspective";
 import { sessionIdFor, upsertProgressSession } from "@/lib/progress/store";
 
@@ -65,12 +65,13 @@ function PlayApp() {
     const seed = Math.floor(Math.random() * 1_000_000_000);
 
     if (training) {
-      const config = loadTrainingSession();
+      const fromUrl = loadTrainingFromSearch(params);
+      const config = fromUrl ?? loadTrainingSession();
       if (config && (!missionId || config.mapId === missionId)) {
         rememberQuestionIds(config.questionIds);
         dispatch({ type: "START_TRAINING", config });
-        return;
       }
+      return;
     }
     if (missionId && roleId) {
       dispatch({ type: "START_DIRECT", missionId, roleId, seed });

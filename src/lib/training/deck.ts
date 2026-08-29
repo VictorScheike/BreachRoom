@@ -1,13 +1,16 @@
 import { PLAYTHROUGH_LENGTH, type Question } from "@/lib/missions/types";
-import { createSeededRandom, shuffleInPlace } from "@/lib/missions/random";
 import { requireMission } from "@/lib/missions/catalog";
-import type { BankQuestion } from "@/lib/training/bank";
+import { toBankQuestion, type BankQuestion, type TrainingPhase, reviewedById } from "@/lib/training/bank";
 import { hashSeed, type TrainingConfig } from "@/lib/training/config";
 import { requireRoleGroup, type RoleGroupId } from "@/lib/training/groups";
+import { isContextId, isTechnologyId, type ContextId, type TechnologyId } from "@/lib/training/ids";
 import { roleGroupLabel, topicLabel } from "@/lib/training/labels";
-import { rankQuestions, type MatchQuery } from "@/lib/training/match";
+import type { MatchQuery } from "@/lib/training/match";
+import { toPlayableQuestion } from "@/lib/training/reviewed/convert";
+import { selectReviewedQuestions } from "@/lib/training/selector";
 import { requireTrainingTopic } from "@/lib/training/topics";
-import type { TrainingPhase } from "@/lib/training/bank";
+import { technologyQuotas } from "@/lib/training/availability";
+import { technologyLabel, contextLabel } from "@/lib/training/ids";
 
 export interface DeckSuccess {
   ok: true;
@@ -26,77 +29,22 @@ export interface DeckFallback {
 
 export type DeckResult = DeckSuccess | DeckFallback;
 
-const PHASE_ORDER: readonly TrainingPhase[] = [
-  "recognise",
-  "assess",
-  "respond",
-  "escalate",
-  "recover",
-  "reflect",
-];
-
-const PHASE_TARGETS: Record<TrainingPhase, number> = {
-  recognise: 1,
-  assess: 1,
-  respond: 2,
-  escalate: 2,
-  recover: 1,
-  reflect: 1,
-};
-
-function pickFromBucket(
-  bucket: BankQuestion[],
-  count: number,
-  random: () => number,
-  used: Set<string>,
-): BankQuestion[] {
-  const available = bucket.filter((question) => !used.has(question.id));
-  const windowSize = Math.min(available.length, Math.max(count * 3, count));
-  const window = available.slice(0, windowSize);
-  shuffleInPlace(window, random);
-  const picked = window.slice(0, count);
-  for (const question of picked) {
-    used.add(question.id);
-  }
-  return picked;
+function asTechnologies(values: readonly string[] | undefined): TechnologyId[] {
+  return (values ?? []).filter(isTechnologyId);
 }
 
-function buildOrderedDeck(
-  ranked: BankQuestion[],
-  seed: string,
-  avoidIds: ReadonlySet<string>,
-): BankQuestion[] {
-  const random = createSeededRandom(hashSeed(seed));
-  const unusedRecent = ranked.filter((question) => !avoidIds.has(question.id));
-  const pool = unusedRecent.length >= PLAYTHROUGH_LENGTH ? unusedRecent : ranked;
-  const used = new Set<string>();
-  const selected: BankQuestion[] = [];
+function asContexts(values: readonly string[] | undefined): ContextId[] {
+  return (values ?? []).filter(isContextId);
+}
 
-  for (const phase of PHASE_ORDER) {
-    const target = PHASE_TARGETS[phase];
-    const bucket = pool.filter((question) => question.trainingPhase === phase);
-    selected.push(...pickFromBucket(bucket, target, random, used));
-  }
-
-  if (selected.length < PLAYTHROUGH_LENGTH) {
-    const remaining = pool.filter((question) => !used.has(question.id));
-    for (const question of remaining) {
-      if (selected.length >= PLAYTHROUGH_LENGTH) {
-        break;
-      }
-      selected.push(question);
-      used.add(question.id);
-    }
-  }
-
-  const byPhase = new Map<TrainingPhase, BankQuestion[]>();
-  for (const phase of PHASE_ORDER) {
-    byPhase.set(phase, []);
-  }
-  for (const question of selected.slice(0, PLAYTHROUGH_LENGTH)) {
-    byPhase.get(question.trainingPhase)?.push(question);
-  }
-  return PHASE_ORDER.flatMap((phase) => byPhase.get(phase) ?? []).slice(0, PLAYTHROUGH_LENGTH);
+export function coverageSummary(config: TrainingConfig): string {
+  const quotas = technologyQuotas(config.technologies.length);
+  const tech = config.technologies.map((id, index) => {
+    const quota = quotas[index] ?? 4;
+    return `${technologyLabel(id)}: at least ${quota} questions`;
+  });
+  const ctx = config.contexts.map((id) => `${contextLabel(id)}: at least 2 questions`);
+  return [...tech, ...ctx].join(" · ");
 }
 
 function trainingTitle(query: MatchQuery): string {
@@ -104,7 +52,7 @@ function trainingTitle(query: MatchQuery): string {
   const topic = topicLabel(query.topics[0] ?? "phishing");
   const tech = query.technologies?.[0];
   if (tech) {
-    return `${group} ${topic.toLowerCase()} in ${tech}`;
+    return `${group}: ${topic} · ${technologyLabel(tech)}`;
   }
   return `${group}: ${topic}`;
 }
@@ -114,37 +62,43 @@ export function generateDeck(
   options: { avoidQuestionIds?: readonly string[]; seed?: string } = {},
 ): DeckResult {
   const topic = requireTrainingTopic(query.topics[0] ?? "");
-  const mapId = query.mapId || topic.mapId;
-  const resolved: MatchQuery = { ...query, mapId, topics: query.topics };
-  const ranked = rankQuestions(resolved);
-  const matchCount = ranked.length;
+  const mapId = query.mapId ?? topic.mapId;
+  const difficulty = query.difficulty ?? "Beginner";
+  const technologies = asTechnologies(query.technologies);
+  const contexts = asContexts(query.contexts);
+  const seed = options.seed ?? `deck-${query.roleGroup}-${query.topics.join("-")}-0`;
+  const selected = selectReviewedQuestions(
+    {
+      roleGroup: query.roleGroup,
+      topics: query.topics,
+      technologies,
+      contexts,
+      difficulty,
+    },
+    seed,
+  );
 
-  if (matchCount < PLAYTHROUGH_LENGTH) {
+  if (!selected.ok) {
     return {
       ok: false,
-      matchCount,
-      message: "There are not yet enough reviewed questions for this exact combination.",
-      broaderTopicId: topic.id === "data-privacy" || topic.id === "business-continuity"
-        ? topic.mapId === "inbox-under-siege"
-          ? "phishing"
-          : "ransomware"
-        : null,
+      matchCount: selected.matchCount,
+      message: selected.message,
+      broaderTopicId:
+        topic.id === "data-privacy" || topic.id === "business-continuity"
+          ? topic.mapId === "inbox-under-siege"
+            ? "phishing"
+            : "ransomware"
+          : null,
       closestRoleGroup: query.roleGroup,
     };
   }
 
-  const seed = options.seed ?? `deck-${query.roleGroup}-${query.topics.join("-")}-0`;
-  const questions = buildOrderedDeck(
-    ranked.map((item) => item.question),
-    seed,
-    new Set(options.avoidQuestionIds ?? []),
-  );
-
+  const questions = selected.questions.map((item, index) => toBankQuestion(item, mapId, index));
   if (questions.length !== PLAYTHROUGH_LENGTH || new Set(questions.map((item) => item.id)).size !== PLAYTHROUGH_LENGTH) {
     return {
       ok: false,
-      matchCount,
-      message: "There are not yet enough reviewed questions for this exact combination.",
+      matchCount: selected.matchCount,
+      message: "Not enough reviewed questions yet",
       broaderTopicId: null,
       closestRoleGroup: query.roleGroup,
     };
@@ -155,26 +109,25 @@ export function generateDeck(
     roleGroup: query.roleGroup,
     specificRole: query.specificRole ?? group.defaultRole,
     topics: [...query.topics],
-    technologies: [...(query.technologies ?? [])],
-    contexts: [...(query.contexts ?? [])],
-    difficulty: query.difficulty ?? requireMission(mapId).difficulty,
+    technologies,
+    contexts,
+    difficulty,
     mapId,
     seed,
     questionIds: questions.map((question) => question.id),
-    title: trainingTitle(resolved),
+    title: trainingTitle({ ...query, mapId, technologies, difficulty }),
   };
 
-  return { ok: true, config, questions, matchCount };
+  return { ok: true, config, questions, matchCount: selected.matchCount };
 }
 
 export function questionsFromConfig(config: TrainingConfig): Question[] {
-  const mission = requireMission(config.mapId);
-  return config.questionIds.map((id) => {
-    const question = mission.questions.find((item) => item.id === id);
-    if (!question) {
-      throw new Error(`Training question ${id} is not in map ${config.mapId}`);
+  return config.questionIds.map((id, index) => {
+    const reviewed = reviewedById(id);
+    if (!reviewed) {
+      throw new Error(`Training question ${id} is not in the reviewed bank`);
     }
-    return question;
+    return toPlayableQuestion(reviewed, config.mapId, index);
   });
 }
 
@@ -194,9 +147,11 @@ export function phaseCoverage(questions: readonly BankQuestion[]): Record<Traini
 }
 
 export function hasCoherentPhases(questions: readonly BankQuestion[]): boolean {
-  const counts = phaseCoverage(questions);
-  const opening = counts.recognise + counts.assess;
-  const middle = counts.respond + counts.escalate;
-  const closing = counts.recover + counts.reflect;
-  return opening >= 1 && middle >= 2 && closing >= 1;
+  return questions.length === PLAYTHROUGH_LENGTH;
 }
+
+export function requireMap(config: TrainingConfig) {
+  return requireMission(config.mapId);
+}
+
+export { hashSeed };

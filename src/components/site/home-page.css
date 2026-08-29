@@ -1153,6 +1153,28 @@
   color: #07111f;
 }
 
+.wizard-option.is-disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.wizard-option.is-disabled:hover {
+  transform: none;
+}
+
+.wizard-option__disabled-label {
+  margin-top: auto;
+  padding-top: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #8a3b2a;
+}
+
+.training-coverage {
+  font-weight: 700;
+}
+
 .wizard-option__category {
   margin-bottom: 0.35rem;
   font-size: 0.7rem;

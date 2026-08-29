@@ -1,12 +1,13 @@
-import { formatCoverageMatrix, publicCombinations, topicFamilyCounts } from "../src/lib/training/coverage";
+import { formatCoverageMatrix, publicCombinations, shownTrainingCombinations, topicFamilyCounts } from "../src/lib/training/coverage";
 import { generateDeck } from "../src/lib/training/deck";
 
 console.log(formatCoverageMatrix());
 console.log("\nPublic combinations:");
 for (const row of publicCombinations()) {
-  console.log(`- ${row.roleGroup} / ${row.topicId}: ${row.eligible} questions on ${row.maps.join(", ")}`);
+  console.log(`- ${row.roleGroup} / ${row.topicId} / ${row.difficulty}: ${row.technologies.join(", ") || "no tech"}`);
 }
-console.log("\nTopic family sizes:", topicFamilyCounts());
+console.log("\nShown combinations:", shownTrainingCombinations().length);
+console.log("Topic family sizes:", topicFamilyCounts());
 
 const examples = [
   {
@@ -15,19 +16,21 @@ const examples = [
       roleGroup: "finance-hr" as const,
       specificRole: "finance" as const,
       topics: ["phishing"],
-      technologies: ["Microsoft 365"],
-      contexts: ["Third-party technology providers"],
+      technologies: ["microsoft-365"],
+      contexts: ["third-party-providers"],
       mapId: "inbox-under-siege" as const,
+      difficulty: "Beginner" as const,
     },
   },
   {
-    name: "Developer supply chain",
+    name: "Developer cloud security AWS",
     query: {
       roleGroup: "developers-devops" as const,
       specificRole: "developer" as const,
-      topics: ["supply-chain"],
-      technologies: ["GitHub", "CI/CD pipelines"],
+      topics: ["cloud-security"],
+      technologies: ["aws"],
       mapId: "dependency-depths" as const,
+      difficulty: "Beginner" as const,
     },
   },
   {
@@ -36,6 +39,7 @@ const examples = [
       roleGroup: "it-security" as const,
       topics: ["ransomware"],
       mapId: "locked-out" as const,
+      difficulty: "Beginner" as const,
     },
   },
 ];

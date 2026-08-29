@@ -9,6 +9,7 @@ interface DecisionDockProps {
   title: string;
   body: string;
   npcLine?: string;
+  prompt?: string;
   options?: readonly AnswerOption[];
   letters?: readonly ("A" | "B" | "C")[];
   selected?: AnswerOption | null;
@@ -28,6 +29,7 @@ export function DecisionDock({
   title,
   body,
   npcLine,
+  prompt,
   options,
   letters,
   selected,
@@ -76,7 +78,7 @@ export function DecisionDock({
           <h2 className="dock-title">{title}</h2>
           <p className="dock-copy">{body}</p>
           {npcLine ? <p className="npc-bubble">{npcLine}</p> : null}
-          <p className="game-panel-question">What do you do now?</p>
+          <p className="game-panel-question">{prompt || "What do you do now?"}</p>
           <div className="dock-choices">
             {options.map((option, index) => {
               const letter = letters[index];

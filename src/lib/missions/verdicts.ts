@@ -50,7 +50,10 @@ export function classifyScore(average: number): VerdictId {
   return "incorrect";
 }
 
-export function classifyOption(option: AnswerOption): Verdict {
+export function classifyOption(option: AnswerOption, correctOptionId?: string): Verdict {
+  if (correctOptionId) {
+    return option.id === correctOptionId ? VERDICTS.correct : VERDICTS.incorrect;
+  }
   return VERDICTS[classifyScore(averageOptionScore(option))];
 }
 

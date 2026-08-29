@@ -96,6 +96,12 @@ export function GameReport({
           </p>
           <h1 className="game-panel-title">{report.outcomeHeadline}</h1>
           <p className="report-perspective">{report.perspectiveLine}</p>
+          {report.training ? (
+            <p className="game-panel-copy">
+              This is a practice score for this session. It is not an official maturity or compliance
+              rating.
+            </p>
+          ) : null}
           {endedEarly ? (
             <p className="game-panel-copy">
               This mission ended early. It is not recorded as complete. The scores below cover only
@@ -113,6 +119,12 @@ export function GameReport({
                   <strong>Topic:</strong> {report.training.topicLabel}
                 </li>
                 <li>
+                  <strong>Level:</strong> {report.training.difficultyLabel}
+                </li>
+                <li>
+                  <strong>Coverage:</strong> {report.training.coverageLabel || "Role and topic only"}
+                </li>
+                <li>
                   <strong>Context:</strong> {report.training.contextLabel}
                 </li>
                 <li>
@@ -121,6 +133,43 @@ export function GameReport({
                 <li>
                   <strong>Questions completed:</strong> {report.training.questionCount}
                 </li>
+              </ul>
+              <p className="game-panel-copy">{report.training.frameworkNote}</p>
+              {report.training.topicResults.length > 0 ? (
+                <>
+                  <h3 className="report-h3">Results by topic</h3>
+                  <ul>
+                    {report.training.topicResults.map((item) => (
+                      <li key={item.label}>
+                        {item.label}: {item.correct} of {item.total} correct
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              {report.training.technologyResults.length > 0 ? (
+                <>
+                  <h3 className="report-h3">Results by technology</h3>
+                  <ul>
+                    {report.training.technologyResults.map((item) => (
+                      <li key={item.label}>
+                        {item.label}: {item.correct} of {item.total} correct
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              <h3 className="report-h3">Improvement areas</h3>
+              <ul>
+                {report.training.improvementAreas.length === 0 ? (
+                  <li>No high-priority gaps in this run.</li>
+                ) : (
+                  report.training.improvementAreas.map((item) => (
+                    <li key={item.title}>
+                      {item.title} — {item.guidance}
+                    </li>
+                  ))
+                )}
               </ul>
             </section>
           ) : null}

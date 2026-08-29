@@ -21,6 +21,7 @@ export interface PlaythroughOptions {
   roleId?: RoleId | null;
   avoidScenarioId?: string | null;
   questionIds?: readonly string[];
+  questions?: readonly Question[];
   avoidQuestionIds?: readonly string[];
 }
 
@@ -177,8 +178,10 @@ export function preparePlaythrough(
   const roleId = options.roleId ?? null;
   const needed = playthroughLength(mission);
 
-  if (options.questionIds && options.questionIds.length > 0) {
-    const questions = orderedQuestions(mission, options.questionIds);
+  if ((options.questions && options.questions.length > 0) || (options.questionIds && options.questionIds.length > 0)) {
+    const questions = options.questions && options.questions.length > 0
+      ? [...options.questions]
+      : orderedQuestions(mission, options.questionIds ?? []);
     if (questions.length !== needed) {
       throw new Error(`Playthrough must contain ${needed} questions`);
     }

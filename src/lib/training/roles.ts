@@ -1,5 +1,7 @@
 import type { RoleId } from "@/lib/missions/types";
 
+/** Canonical training roles live in `ROLE_GROUPS`. PLAY_ROLES labels individual mission perspectives. */
+
 export interface TrainingRole {
   id: RoleId;
   name: string;

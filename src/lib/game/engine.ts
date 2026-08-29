@@ -19,6 +19,8 @@ import {
 } from "@/lib/missions/types";
 import type { TrainingConfig } from "@/lib/training/config";
 import { hashSeed } from "@/lib/training/config";
+import { questionsFromConfig } from "@/lib/training/deck";
+import { technologyLabel } from "@/lib/training/ids";
 import { isMovementLocked } from "@/lib/game/player";
 
 export type GameScreen =
@@ -45,6 +47,10 @@ export interface GameState {
     title: string;
     consequence: string;
     quality: AnswerQuality;
+    verdictLabel?: string;
+    guidance?: string;
+    framework?: string;
+    technology?: string;
   } | null;
   muted: boolean;
   trainingConfig: TrainingConfig | null;
@@ -122,6 +128,7 @@ function startMission(
   const playthrough = preparePlaythrough(mission, seed, {
     roleId,
     questionIds: trainingConfig?.questionIds,
+    questions: trainingConfig ? questionsFromConfig(trainingConfig) : undefined,
   });
   const world = worldForMission(missionId);
   return {
@@ -238,8 +245,19 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ],
         lastFeedback: {
           title: chosen.title,
-          consequence: chosen.consequence,
+          consequence: question.questionConsequence ?? chosen.consequence,
           quality: chosen.quality,
+          verdictLabel:
+            question.correctOptionId
+              ? chosen.id === question.correctOptionId
+                ? "Correct"
+                : "Not quite"
+              : undefined,
+          guidance: question.guidance,
+          framework: question.frameworks[0],
+          technology: question.technologyTags?.[0]
+            ? technologyLabel(question.technologyTags[0])
+            : undefined,
         },
         screen: "exploring",
       };

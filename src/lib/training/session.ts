@@ -1,5 +1,12 @@
 import type { TrainingConfig } from "@/lib/training/config";
 import { isTrainingConfig, SEEN_QUESTIONS_KEY, TRAINING_SESSION_KEY } from "@/lib/training/config";
+import { generateDeck } from "@/lib/training/deck";
+import {
+  parseTrainingSearchParams,
+  playParamsFromConfig,
+  searchParamsFromUnknown,
+  trainingPlayHref,
+} from "@/lib/training/params";
 
 export function saveTrainingSession(config: TrainingConfig): void {
   if (typeof window === "undefined") {
@@ -56,8 +63,7 @@ export function rememberQuestionIds(ids: readonly string[]): void {
 }
 
 export function playUrlForConfig(config: TrainingConfig): string {
-  const role = config.specificRole ?? "";
-  return `/play/?mission=${encodeURIComponent(config.mapId)}&role=${encodeURIComponent(role)}&training=1`;
+  return trainingPlayHref(playParamsFromConfig(config));
 }
 
 export function playUrlForMission(missionId: string, roleId?: string | null): string {
@@ -65,4 +71,27 @@ export function playUrlForMission(missionId: string, roleId?: string | null): st
     return `/play/?mission=${encodeURIComponent(missionId)}&role=${encodeURIComponent(roleId)}`;
   }
   return `/play/?mission=${encodeURIComponent(missionId)}`;
+}
+
+export function loadTrainingFromSearch(
+  search: URLSearchParams | { toString(): string } | Record<string, string | null>,
+): TrainingConfig | null {
+  const parsed = parseTrainingSearchParams(searchParamsFromUnknown(search));
+  if (!parsed.ok) {
+    return null;
+  }
+  const params = parsed.params;
+  const deck = generateDeck(
+    {
+      roleGroup: params.roleGroup,
+      specificRole: params.roleId,
+      topics: [params.topicId],
+      technologies: params.technologies,
+      contexts: params.contexts,
+      difficulty: params.difficulty,
+      mapId: params.missionId,
+    },
+    { seed: params.seed },
+  );
+  return deck.ok ? deck.config : null;
 }

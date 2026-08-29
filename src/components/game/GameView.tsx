@@ -312,6 +312,7 @@ export function GameView({
         title={question.title}
         body={question.situation}
         npcLine={question.npcLine}
+        prompt={question.prompt}
         options={displayed}
         letters={letters}
         roleChip={
@@ -545,7 +546,17 @@ export function GameView({
               className={`decision-toast decision-toast-${state.lastFeedback.quality}`}
               role="status"
             >
+              {state.lastFeedback.verdictLabel ? (
+                <strong>{state.lastFeedback.verdictLabel}. </strong>
+              ) : null}
+              {state.lastFeedback.guidance ? `${state.lastFeedback.guidance} ` : null}
               {state.lastFeedback.consequence}
+              {state.lastFeedback.framework
+                ? ` Educational mapping: ${state.lastFeedback.framework} — not proof of compliance.`
+                : ""}
+              {state.lastFeedback.technology
+                ? ` Technology: ${state.lastFeedback.technology}.`
+                : ""}
             </p>
           ) : null}
           {state.screen !== "briefing" ? dock : null}

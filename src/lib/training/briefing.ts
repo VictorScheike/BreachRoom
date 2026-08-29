@@ -1,6 +1,12 @@
 import { requireMission } from "@/lib/missions/catalog";
 import type { TrainingConfig } from "@/lib/training/config";
+import { coverageSummary } from "@/lib/training/deck";
+import { contextLabel, technologyLabel } from "@/lib/training/ids";
 import { roleGroupLabel, roleLabel, topicLabel } from "@/lib/training/labels";
+import { displayDifficulty } from "@/lib/training/reviewed/convert";
+
+export const FRAMEWORK_EDUCATIONAL_NOTE =
+  "Framework labels are educational mappings, not proof of compliance or certification.";
 
 export function trainingObjective(config: TrainingConfig): string {
   switch (config.mapId) {
@@ -21,10 +27,15 @@ export function trainingIntro(config: TrainingConfig): string {
   const role = config.specificRole ? roleLabel(config.specificRole) : roleGroupLabel(config.roleGroup);
   const topic = topicLabel(config.topics[0] ?? "phishing");
   const map = requireMission(config.mapId);
-  return `${config.title}. You are practising as ${role} on ${topic}. Eight reviewed decisions wait on the ${map.title} map.`;
+  const coverage = coverageSummary(config);
+  const coverageLine = coverage ? ` Coverage: ${coverage}.` : "";
+  return `${config.title}. You are practising as ${role} on ${topic} at ${displayDifficulty(config.difficulty)}. Eight reviewed decisions wait on the ${map.title} map.${coverageLine}`;
 }
 
 export function trainingContextLine(config: TrainingConfig): string {
-  const parts = [...config.technologies, ...config.contexts];
+  const parts = [
+    ...config.technologies.map((id) => technologyLabel(id)),
+    ...config.contexts.map((id) => contextLabel(id)),
+  ];
   return parts.length > 0 ? parts.join(", ") : "No extra environment selected";
 }

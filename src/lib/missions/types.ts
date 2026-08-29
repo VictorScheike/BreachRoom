@@ -100,6 +100,15 @@ export interface Question {
   toolIds?: readonly string[];
   learningObjectiveIds?: readonly string[];
   difficulty?: DifficultyId;
+  prompt?: string;
+  correctOptionId?: string;
+  guidance?: string;
+  questionConsequence?: string;
+  sourceUrls?: readonly string[];
+  topicTags?: readonly string[];
+  technologyTags?: readonly string[];
+  contextTags?: readonly string[];
+  eligiblePerspectives?: readonly RoleId[];
 }
 
 export interface ScenarioVariant {

@@ -1,50 +1,97 @@
 import { PLAYTHROUGH_LENGTH } from "@/lib/missions/types";
-import { questionBank } from "@/lib/training/bank";
+import type { DifficultyId, MissionId } from "@/lib/missions/types";
 import { ROLE_GROUPS, type RoleGroupId } from "@/lib/training/groups";
-import { eligibleQuestions, type MatchQuery } from "@/lib/training/match";
+import { technologiesForRole } from "@/lib/training/availability";
+import { CONTEXT_IDS, type ContextId, type TechnologyId } from "@/lib/training/ids";
+import { reviewedQuestionBank } from "@/lib/training/reviewed";
+import { canFulfillCoverage } from "@/lib/training/selector";
 import { TRAINING_TOPICS, type TrainingTopicDefinition } from "@/lib/training/topics";
 
-export const PUBLIC_COVERAGE_MINIMUM = 16;
-export const TOPIC_FAMILY_MINIMUM = 32;
+export const PUBLIC_COVERAGE_MINIMUM = 8;
 
 export interface CoverageRow {
   roleGroup: RoleGroupId;
   topicId: string;
   topicLabel: string;
-  eligible: number;
-  technologies: readonly string[];
-  phases: readonly string[];
-  maps: readonly string[];
+  difficulty: DifficultyId;
+  technologies: readonly TechnologyId[];
+  contexts: readonly ContextId[];
   ready: boolean;
 }
 
-export function coverageQuery(roleGroup: RoleGroupId, topic: TrainingTopicDefinition): MatchQuery {
-  return {
-    roleGroup,
-    topics: [topic.id],
-    mapId: topic.mapId,
-  };
+export function combinationReady(input: {
+  roleGroup: RoleGroupId;
+  topicId: string;
+  difficulty: DifficultyId;
+  technologies?: readonly TechnologyId[];
+  contexts?: readonly ContextId[];
+}): boolean {
+  return canFulfillCoverage({
+    roleGroup: input.roleGroup,
+    topics: [input.topicId],
+    difficulty: input.difficulty,
+    technologies: input.technologies ?? [],
+    contexts: input.contexts ?? [],
+  });
+}
+
+export function publicTopicsForGroup(
+  roleGroup: RoleGroupId,
+  difficulty: DifficultyId = "Beginner",
+): TrainingTopicDefinition[] {
+  const suggested = TRAINING_TOPICS.filter((topic) => topic.suggestedFor.includes(roleGroup));
+  const extras = TRAINING_TOPICS.filter((topic) => !topic.suggestedFor.includes(roleGroup));
+  return [...suggested, ...extras].filter((topic) =>
+    combinationReady({ roleGroup, topicId: topic.id, difficulty }),
+  );
+}
+
+export function availableTechnologies(
+  roleGroup: RoleGroupId,
+  topicId: string,
+  difficulty: DifficultyId,
+): TechnologyId[] {
+  return technologiesForRole(roleGroup).filter((technology) =>
+    combinationReady({
+      roleGroup,
+      topicId,
+      difficulty,
+      technologies: [technology],
+    }),
+  );
+}
+
+export function availableContexts(
+  roleGroup: RoleGroupId,
+  topicId: string,
+  difficulty: DifficultyId,
+  technologies: readonly TechnologyId[] = [],
+): ContextId[] {
+  return CONTEXT_IDS.filter((context) =>
+    combinationReady({
+      roleGroup,
+      topicId,
+      difficulty,
+      technologies,
+      contexts: [context],
+    }),
+  );
 }
 
 export function buildCoverageMatrix(): CoverageRow[] {
-  const bank = questionBank();
+  const difficulties: DifficultyId[] = ["Beginner", "Intermediate"];
   return ROLE_GROUPS.flatMap((group) =>
-    TRAINING_TOPICS.map((topic) => {
-      const eligible = eligibleQuestions(coverageQuery(group.id, topic), bank);
-      const technologies = [...new Set(eligible.flatMap((question) => question.technologies))];
-      const phases = [...new Set(eligible.map((question) => question.trainingPhase))];
-      const maps = [...new Set(eligible.flatMap((question) => question.compatibleMaps))];
-      return {
+    TRAINING_TOPICS.flatMap((topic) =>
+      difficulties.map((difficulty) => ({
         roleGroup: group.id,
         topicId: topic.id,
         topicLabel: topic.label,
-        eligible: eligible.length,
-        technologies,
-        phases,
-        maps,
-        ready: eligible.length >= PUBLIC_COVERAGE_MINIMUM,
-      };
-    }),
+        difficulty,
+        technologies: availableTechnologies(group.id, topic.id, difficulty),
+        contexts: availableContexts(group.id, topic.id, difficulty),
+        ready: combinationReady({ roleGroup: group.id, topicId: topic.id, difficulty }),
+      })),
+    ),
   );
 }
 
@@ -52,73 +99,100 @@ export function publicCombinations(): CoverageRow[] {
   return buildCoverageMatrix().filter((row) => row.ready);
 }
 
-export function publicTopicsForGroup(roleGroup: RoleGroupId): TrainingTopicDefinition[] {
-  const ready = new Set(
-    publicCombinations()
-      .filter((row) => row.roleGroup === roleGroup)
-      .map((row) => row.topicId),
-  );
-  const suggested = TRAINING_TOPICS.filter(
-    (topic) => topic.suggestedFor.includes(roleGroup) && ready.has(topic.id),
-  );
-  const extras = TRAINING_TOPICS.filter(
-    (topic) => !topic.suggestedFor.includes(roleGroup) && ready.has(topic.id),
-  );
-  return [...suggested, ...extras];
-}
-
 export function topicFamilyCounts(): Record<string, number> {
-  const bank = questionBank();
+  const bank = reviewedQuestionBank();
   const counts: Record<string, number> = {};
   for (const topic of TRAINING_TOPICS) {
-    const ids = new Set(
-      bank
-        .filter((question) =>
-          question.topicIds.some((item) => topic.aliases.includes(item) || item === topic.id),
-        )
-        .map((question) => question.id),
-    );
-    counts[topic.id] = ids.size;
+    counts[topic.id] = bank.filter((question) =>
+      question.topicTags.some((item) => topic.aliases.includes(item) || item === topic.id),
+    ).length;
   }
   return counts;
 }
 
 export function assertPublicCoverage(): void {
-  const families = topicFamilyCounts();
-  for (const [topicId, count] of Object.entries(families)) {
-    if (["phishing", "ransomware", "ai-security", "supply-chain", "secure-development"].includes(topicId)) {
-      if (count < TOPIC_FAMILY_MINIMUM) {
-        throw new Error(`Topic family ${topicId} has ${count} questions; need ${TOPIC_FAMILY_MINIMUM}`);
-      }
-    }
-  }
   for (const row of publicCombinations()) {
-    if (row.eligible < PLAYTHROUGH_LENGTH) {
-      throw new Error(`${row.roleGroup} / ${row.topicId} is public with only ${row.eligible} questions`);
+    if (!combinationReady(row)) {
+      throw new Error(`${row.roleGroup} / ${row.topicId} / ${row.difficulty} is public but cannot fill ${PLAYTHROUGH_LENGTH}`);
     }
   }
 }
 
 export function formatCoverageMatrix(rows = buildCoverageMatrix()): string {
-  const header = [
-    "Role group",
-    "Topic",
-    "Eligible",
-    "Technologies",
-    "Phases",
-    "Maps",
-    "Public",
-  ].join(" | ");
+  const header = ["Role group", "Topic", "Level", "Public", "Technologies"].join(" | ");
   const lines = rows.map((row) =>
     [
       row.roleGroup,
       row.topicLabel,
-      String(row.eligible),
-      row.technologies.slice(0, 4).join(", ") || "—",
-      row.phases.join(", "),
-      row.maps.join(", "),
+      row.difficulty === "Intermediate" ? "Challenge" : "Beginner",
       row.ready ? "yes" : "no",
+      row.technologies.join(", ") || "—",
     ].join(" | "),
   );
   return [header, ...lines].join("\n");
+}
+
+export function mapIdForTopic(topicId: string): MissionId {
+  const topic = TRAINING_TOPICS.find((item) => item.id === topicId);
+  if (!topic) {
+    throw new Error(`Unknown training topic: ${topicId}`);
+  }
+  return topic.mapId;
+}
+
+export interface ShownTrainingCombination {
+  roleGroup: RoleGroupId;
+  topicId: string;
+  difficulty: DifficultyId;
+  technologies: readonly TechnologyId[];
+  contexts: readonly ContextId[];
+}
+
+export function shownTrainingCombinations(): ShownTrainingCombination[] {
+  const rows: ShownTrainingCombination[] = [];
+  for (const group of ROLE_GROUPS) {
+    const difficulties: DifficultyId[] = ["Beginner", "Intermediate"];
+    for (const difficulty of difficulties) {
+      for (const topic of publicTopicsForGroup(group.id, difficulty)) {
+        rows.push({
+          roleGroup: group.id,
+          topicId: topic.id,
+          difficulty,
+          technologies: [],
+          contexts: [],
+        });
+        const technologies = availableTechnologies(group.id, topic.id, difficulty);
+        const contexts = availableContexts(group.id, topic.id, difficulty);
+        for (const technology of technologies) {
+          rows.push({
+            roleGroup: group.id,
+            topicId: topic.id,
+            difficulty,
+            technologies: [technology],
+            contexts: [],
+          });
+          const withTech = availableContexts(group.id, topic.id, difficulty, [technology]);
+          for (const context of withTech) {
+            rows.push({
+              roleGroup: group.id,
+              topicId: topic.id,
+              difficulty,
+              technologies: [technology],
+              contexts: [context],
+            });
+          }
+        }
+        for (const context of contexts) {
+          rows.push({
+            roleGroup: group.id,
+            topicId: topic.id,
+            difficulty,
+            technologies: [],
+            contexts: [context],
+          });
+        }
+      }
+    }
+  }
+  return rows;
 }

@@ -3,32 +3,33 @@ import { gameReducer, createInitialGameState } from "@/lib/game/engine";
 import { buildMissionReport } from "@/lib/missions/report";
 import { requireMission } from "@/lib/missions/catalog";
 import { preparePlaythrough } from "@/lib/missions/playthrough";
-import { questionBank } from "@/lib/training/bank";
+import { generateDeck, hasCoherentPhases, questionsFromConfig } from "@/lib/training/deck";
 import {
   assertPublicCoverage,
   formatCoverageMatrix,
   publicCombinations,
-  topicFamilyCounts,
+  shownTrainingCombinations,
 } from "@/lib/training/coverage";
-import { generateDeck, hasCoherentPhases, phaseCoverage, questionsFromConfig } from "@/lib/training/deck";
-import { eligibleQuestions, questionMatchesTopic, rankQuestions } from "@/lib/training/match";
-import { requireTrainingTopic } from "@/lib/training/topics";
+import { displayDifficulty } from "@/lib/training/reviewed/convert";
+import { playUrlForConfig } from "@/lib/training/session";
 
 const FINANCE_PHISHING = {
   roleGroup: "finance-hr" as const,
   specificRole: "finance" as const,
   topics: ["phishing"],
-  technologies: ["Microsoft 365", "SaaS platforms"],
-  contexts: ["Third-party technology providers"],
+  technologies: ["microsoft-365"],
+  contexts: [] as const,
   mapId: "inbox-under-siege" as const,
+  difficulty: "Beginner" as const,
 };
 
 const DEV_SUPPLY = {
   roleGroup: "developers-devops" as const,
   specificRole: "developer" as const,
   topics: ["supply-chain"],
-  technologies: ["GitHub", "CI/CD pipelines"],
+  technologies: ["github"],
   mapId: "dependency-depths" as const,
+  difficulty: "Beginner" as const,
 };
 
 describe("training deck matching", () => {
@@ -38,38 +39,22 @@ describe("training deck matching", () => {
     if (!deck.ok) {
       return;
     }
-    expect(deck.questions.every((question) => question.missionId === "inbox-under-siege")).toBe(true);
-    expect(deck.questions.filter((question) => question.roleIds.includes("finance")).length).toBeGreaterThanOrEqual(3);
-    expect(deck.questions.some((question) => question.missionId === "dependency-depths")).toBe(false);
+    expect(deck.questions.every((question) => question.roleGroups.includes("finance-hr"))).toBe(true);
     expect(
       deck.questions.every((question) => !/kubernetes|container|lockfile|SBOM/i.test(question.title)),
     ).toBe(true);
   });
 
-  it("prioritises pipeline questions for developer CI/CD supply-chain training", () => {
-    const ranked = rankQuestions(DEV_SUPPLY);
-    expect(ranked.length).toBeGreaterThanOrEqual(16);
-    const topIds = ranked.slice(0, 8).map((item) => item.question.id);
-    const topText = ranked.slice(0, 8).map((item) => `${item.question.title} ${item.question.situation}`).join(" ");
-    expect(topText).toMatch(/pipeline|CI|secret|package|GitHub|lockfile|provenance|SBOM/i);
-    expect(topIds.every((id) => id.startsWith("dd-") || id.startsWith("dep-"))).toBe(true);
-  });
-
-  it("requires a topic match", () => {
-    const bank = questionBank();
-    const withoutTopic = eligibleQuestions({ ...FINANCE_PHISHING, topics: [] }, bank);
-    expect(withoutTopic).toHaveLength(0);
-    expect(questionMatchesTopic(bank[0]!, [])).toBe(false);
-    const phishingOnly = bank.filter((question) => questionMatchesTopic(question, ["phishing"]));
-    expect(phishingOnly.every((question) => question.missionId === "inbox-under-siege")).toBe(true);
-  });
-
-  it("uses technology and context to rank rather than to empty the pool", () => {
-    const base = rankQuestions({ ...FINANCE_PHISHING, technologies: [], contexts: [] });
-    const ranked = rankQuestions(FINANCE_PHISHING);
-    expect(ranked.length).toBe(base.length);
-    expect(ranked.length).toBeGreaterThanOrEqual(16);
-    expect(ranked[0]!.score).toBeGreaterThanOrEqual(base[0]!.score);
+  it("keeps GitHub questions for developer supply-chain training", () => {
+    const deck = generateDeck(DEV_SUPPLY, { seed: "dev-github-1" });
+    expect(deck.ok).toBe(true);
+    if (!deck.ok) {
+      return;
+    }
+    const githubCount = deck.questions.filter((question) =>
+      question.technologyTags?.includes("github"),
+    ).length;
+    expect(githubCount).toBeGreaterThanOrEqual(4);
   });
 
   it("builds unique eight-question decks that are reproducible by seed", () => {
@@ -84,23 +69,18 @@ describe("training deck matching", () => {
     expect(new Set(first.config.questionIds).size).toBe(8);
     expect(first.config.questionIds).not.toEqual(third.config.questionIds);
     expect(hasCoherentPhases(first.questions)).toBe(true);
-    const phases = phaseCoverage(first.questions);
-    expect(phases.recognise + phases.assess).toBeGreaterThanOrEqual(1);
-    expect(phases.respond + phases.escalate).toBeGreaterThanOrEqual(2);
-    expect(phases.recover + phases.reflect).toBeGreaterThanOrEqual(1);
   });
 
   it("returns a clear fallback instead of unrelated questions", () => {
     const result = generateDeck({
-      roleGroup: "developers-devops",
-      topics: ["business-continuity"],
-      mapId: "locked-out",
+      roleGroup: "general-employees",
+      topics: ["supply-chain"],
+      mapId: "dependency-depths",
+      difficulty: "Beginner",
     });
-    if (result.ok) {
-      expect(result.questions.every((question) => question.missionId === "locked-out")).toBe(true);
-    } else {
-      expect(result.message).toContain("not yet enough reviewed questions");
-      expect(result.matchCount).toBeLessThan(8);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toMatch(/not enough reviewed questions/i);
     }
   });
 
@@ -116,14 +96,15 @@ describe("training deck matching", () => {
     const mission = requireMission(deck.config.mapId);
     const play = preparePlaythrough(mission, 99, {
       roleId: "finance",
-      questionIds: deck.config.questionIds,
+      questions: questionsFromConfig(deck.config),
     });
     expect(play.optionOrder[play.questions[0]!.id]).toHaveLength(3);
     const strongChoices = play.questions.map((question) => {
-      const strong = question.options.find((option) => option.quality === "strong");
+      const correctId = question.correctOptionId;
+      const option = question.options.find((item) => item.id === correctId);
       return {
         questionId: question.id,
-        optionId: strong!.id,
+        optionId: option!.id,
         displayLetter: "A" as const,
       };
     });
@@ -136,9 +117,11 @@ describe("training deck matching", () => {
     );
     expect(report.training?.roleLabel).toBe("Finance");
     expect(report.training?.topicLabel).toMatch(/Phishing/);
+    expect(report.training?.difficultyLabel).toBe(displayDifficulty("Beginner"));
     expect(report.journey).toHaveLength(8);
     expect(report.journey.every((item) => deck.config.questionIds.includes(item.question.id))).toBe(true);
     expect(report.score.overall).toBeGreaterThanOrEqual(80);
+    expect(report.training?.frameworkNote).toMatch(/educational/i);
   });
 
   it("starts the game from a training config", () => {
@@ -147,6 +130,10 @@ describe("training deck matching", () => {
     if (!deck.ok) {
       return;
     }
+    const href = playUrlForConfig(deck.config);
+    expect(href).toContain("tech=github");
+    expect(href).toContain("topic=supply-chain");
+    expect(href).toContain("training=1");
     const next = gameReducer(createInitialGameState(), { type: "START_TRAINING", config: deck.config });
     expect(next.screen).toBe("briefing");
     expect(next.missionId).toBe("dependency-depths");
@@ -163,16 +150,14 @@ describe("training deck matching", () => {
       const deck = generateDeck({
         roleGroup: row.roleGroup,
         topics: [row.topicId],
-        mapId: requireTrainingTopic(row.topicId).mapId,
+        difficulty: row.difficulty,
+        mapId: row.topicId === "cloud-security" || row.topicId === "supply-chain" || row.topicId === "secure-development"
+          ? "dependency-depths"
+          : undefined,
       });
-      expect(deck.ok, `${row.roleGroup} ${row.topicId}`).toBe(true);
+      expect(deck.ok, `${row.roleGroup} ${row.topicId} ${row.difficulty}`).toBe(true);
     }
-    const families = topicFamilyCounts();
-    expect(families.phishing).toBeGreaterThanOrEqual(32);
-    expect(families.ransomware).toBeGreaterThanOrEqual(32);
-    expect(families["ai-security"]).toBeGreaterThanOrEqual(32);
-    expect(families["supply-chain"]).toBeGreaterThanOrEqual(32);
-    expect(families["secure-development"]).toBeGreaterThanOrEqual(32);
+    expect(shownTrainingCombinations().length).toBeGreaterThan(0);
     expect(formatCoverageMatrix().includes("Role group")).toBe(true);
   });
 });

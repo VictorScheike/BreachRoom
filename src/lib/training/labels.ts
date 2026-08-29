@@ -31,6 +31,8 @@ export function topicLabel(topicId: string): string {
   return TOPIC_LABELS[topicId] ?? topicId.replace(/-/g, " ");
 }
 
+export { displayDifficulty } from "@/lib/training/reviewed/convert";
+
 export function humanRoleList(roleIds: readonly RoleId[]): string {
   return roleIds.map(roleLabel).join(" · ");
 }

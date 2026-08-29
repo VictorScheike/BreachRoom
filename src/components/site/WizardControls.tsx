@@ -9,6 +9,8 @@ interface WizardOptionCardProps {
   onSelect: () => void;
   marker?: string;
   category?: string;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 export function WizardOptionCard({
@@ -18,13 +20,23 @@ export function WizardOptionCard({
   onSelect,
   marker = "◆",
   category,
+  disabled = false,
+  disabledReason,
 }: WizardOptionCardProps) {
+  const className = [
+    "wizard-option",
+    selected ? "is-selected" : "",
+    disabled ? "is-disabled" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <button
       type="button"
-      className={selected ? "wizard-option is-selected" : "wizard-option"}
+      className={className}
       onClick={onSelect}
       aria-pressed={selected}
+      disabled={disabled}
     >
       <span className="wizard-option__marker" aria-hidden="true">
         {marker}
@@ -35,6 +47,9 @@ export function WizardOptionCard({
       {category ? <span className="wizard-option__category">{category}</span> : null}
       <strong className="wizard-option__title">{title}</strong>
       <span className="wizard-option__copy">{description}</span>
+      {disabled && disabledReason ? (
+        <span className="wizard-option__disabled-label">{disabledReason}</span>
+      ) : null}
       {selected ? <span className="wizard-option__selected-label">Selected</span> : null}
     </button>
   );
@@ -58,8 +73,10 @@ export function WizardStep({ title, supporting, children }: WizardStepProps) {
   );
 }
 
+export type WizardStepId = 1 | 2 | 3 | 4 | "result";
+
 interface WizardActionsProps {
-  step: 1 | 2 | 3 | "result";
+  step: WizardStepId;
   continueLabel: string;
   continueDisabled?: boolean;
   onContinue: () => void;

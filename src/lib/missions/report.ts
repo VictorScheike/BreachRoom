@@ -17,7 +17,10 @@ import type {
 import type { TrainingConfig } from "@/lib/training/config";
 import { missionPerspective } from "@/lib/game/perspective";
 import { roleGroupLabel, roleLabel, topicLabel } from "@/lib/training/labels";
-import { trainingContextLine } from "@/lib/training/briefing";
+import { FRAMEWORK_EDUCATIONAL_NOTE, trainingContextLine } from "@/lib/training/briefing";
+import { coverageSummary } from "@/lib/training/deck";
+import { technologyLabel } from "@/lib/training/ids";
+import { displayDifficulty } from "@/lib/training/reviewed/convert";
 import { classifyOption, outcomeSentence, type Verdict } from "@/lib/missions/verdicts";
 
 export { SCORING_EXPLAINER };
@@ -70,8 +73,14 @@ export interface MissionReport {
     roleLabel: string;
     topicLabel: string;
     contextLabel: string;
+    coverageLabel: string;
+    difficultyLabel: string;
     mapTitle: string;
     questionCount: number;
+    topicResults: readonly { label: string; correct: number; total: number }[];
+    technologyResults: readonly { label: string; correct: number; total: number }[];
+    improvementAreas: readonly { title: string; guidance: string }[];
+    frameworkNote: string;
   } | null;
 }
 
@@ -84,6 +93,12 @@ function findOption(question: Question, optionId: string): AnswerOption {
 }
 
 function recommendedOption(question: Question): AnswerOption {
+  if (question.correctOptionId) {
+    const exact = question.options.find((item) => item.id === question.correctOptionId);
+    if (exact) {
+      return exact;
+    }
+  }
   const strong = question.options.find((item) => item.quality === "strong");
   if (strong) {
     return strong;
@@ -93,7 +108,25 @@ function recommendedOption(question: Question): AnswerOption {
   )[0]!;
 }
 
-function interpretDimension(
+function groupResults(
+  journey: readonly DecisionDebrief[],
+  labelsFor: (item: DecisionDebrief) => readonly string[],
+): { label: string; correct: number; total: number }[] {
+  const groups = new Map<string, { correct: number; total: number }>();
+  for (const item of journey) {
+    const labels = labelsFor(item);
+    const keys = labels.length > 0 ? labels : ["General"];
+    for (const label of keys) {
+      const current = groups.get(label) ?? { correct: 0, total: 0 };
+      current.total += 1;
+      if (item.verdict.id === "correct") {
+        current.correct += 1;
+      }
+      groups.set(label, current);
+    }
+  }
+  return [...groups.entries()].map(([label, value]) => ({ label, ...value }));
+}
   dimension: DimensionScore,
 ): string {
   if (dimension.percent >= 85) {
@@ -219,7 +252,7 @@ export function buildMissionReport(
       selected,
       displayLetter: choice.displayLetter,
       quality: selected.quality,
-      verdict: classifyOption(selected),
+      verdict: classifyOption(selected, question.correctOptionId),
       recommended,
       dimensionDeltas: mission.dimensions.map((dimension) => ({
         id: dimension.id,
@@ -240,8 +273,8 @@ export function buildMissionReport(
       optionPoints(left.selected.scores) - optionPoints(right.selected.scores),
   )[0];
   const lesson = worst
-    ? `Your most important lesson: ${worst.selected.learningPoint}`
-    : "Your most important lesson: write the decision down while the coffee is still bad.";
+    ? `Your most important lesson: ${worst.question.guidance ?? worst.selected.learningPoint}`
+    : "Your most important lesson: verify unusual requests on a channel you already trust.";
 
   const dimensions: DimensionInsight[] = score.dimensions.map((dimension) => {
     const ranked = [...journey].sort((left, right) => {
@@ -342,8 +375,21 @@ export function buildMissionReport(
             : roleGroupLabel(training.roleGroup),
           topicLabel: topicLabel(training.topics[0] ?? "phishing"),
           contextLabel: trainingContextLine(training),
+          coverageLabel: coverageSummary(training),
+          difficultyLabel: displayDifficulty(training.difficulty),
           mapTitle: mission.title,
           questionCount: questions.length,
+          topicResults: groupResults(journey, (item) =>
+            (item.question.topicTags ?? item.question.topicIds ?? []).map((topic) => topicLabel(topic)),
+          ),
+          technologyResults: groupResults(journey, (item) =>
+            (item.question.technologyTags ?? []).map((tech) => technologyLabel(tech)),
+          ),
+          improvementAreas: needsImprovement.slice(0, 3).map((item) => ({
+            title: item.question.title,
+            guidance: item.question.guidance ?? item.recommended.title,
+          })),
+          frameworkNote: FRAMEWORK_EDUCATIONAL_NOTE,
         }
       : null,
   };

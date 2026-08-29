@@ -9,6 +9,7 @@ import { preparePlaythrough } from "@/lib/missions/playthrough";
 import { buildMissionReport } from "@/lib/missions/report";
 import { buildEmailReportText } from "@/lib/missions/email-report";
 import type { TrainingConfig } from "@/lib/training/config";
+import { generateDeck } from "@/lib/training/deck";
 import type { MoveDirection } from "@/lib/game/world";
 
 const noop = () => undefined;
@@ -70,36 +71,41 @@ describe("mission role indicator", () => {
     });
     const mission = requireMission("dependency-depths");
     const perspective = missionPerspective(mission, null, "developer");
-    expect(perspective.playingAs).toBe("Developer & DevOps");
-    expect(perspective.reportLine).toBe("Played as: Developer & DevOps");
+    expect(perspective.playingAs).toBe("Developers & DevOps");
+    expect(perspective.reportLine).toBe("Played as: Developers & DevOps");
     const html = renderGame(state);
     expect(html).toContain("You’re playing as");
-    expect(html).toContain("Developer &amp; DevOps");
+    expect(html).toContain("Developers &amp; DevOps");
     expect(html).toContain("code, pipelines, secrets and secure releases");
   });
 
   it("keeps the training wizard role after a resumed session", () => {
-    const config: TrainingConfig = {
-      roleGroup: "developers-devops",
-      specificRole: "developer",
-      topics: ["supply-chain"],
-      technologies: ["GitHub"],
-      contexts: [],
-      difficulty: "Intermediate",
-      mapId: "dependency-depths",
-      seed: "resume-seed",
-      questionIds: requireMission("dependency-depths").questions.slice(0, 8).map((item) => item.id),
-      title: "Developer supply chain training",
-    };
+    const deck = generateDeck(
+      {
+        roleGroup: "developers-devops",
+        specificRole: "developer",
+        topics: ["supply-chain"],
+        technologies: ["github"],
+        contexts: [],
+        difficulty: "Intermediate",
+        mapId: "dependency-depths",
+      },
+      { seed: "resume-seed" },
+    );
+    expect(deck.ok).toBe(true);
+    if (!deck.ok) {
+      return;
+    }
+    const config: TrainingConfig = deck.config;
     let state = createInitialGameState();
     state = gameReducer(state, { type: "START_TRAINING", config });
     expect(missionPerspective(requireMission("dependency-depths"), state.trainingConfig, state.roleId).playingAs).toBe(
-      "Developer & DevOps",
+      "Developers & DevOps",
     );
     const replayed = gameReducer(state, { type: "REPLAY_MISSION" });
     expect(
       missionPerspective(requireMission("dependency-depths"), replayed.trainingConfig, replayed.roleId).playingAs,
-    ).toBe("Developer & DevOps");
+    ).toBe("Developers & DevOps");
   });
 
   it("shows a compact ROLE chip on an active decision", () => {
@@ -113,19 +119,19 @@ describe("mission role indicator", () => {
     state = gameReducer(state, { type: "BEGIN_MISSION" });
     const encounter = walkToEncounter(state);
     const html = renderGame(encounter);
-    expect(html).toContain("ROLE · DEVELOPER &amp; DEVOPS");
+    expect(html).toContain("ROLE · DEVELOPERS &amp; DEVOPS");
   });
 
   it("includes the same role on the report and in email", () => {
     const mission = requireMission("dependency-depths");
     const play = preparePlaythrough(mission, 9, { roleId: "developer" });
     const report = buildMissionReport(mission, play.scenarioId, [], play.questions, null, "developer");
-    expect(report.perspectiveLine).toBe("Played as: Developer & DevOps");
+    expect(report.perspectiveLine).toBe("Played as: Developers & DevOps");
     const html = renderToStaticMarkup(
       <GameReport report={report} onReplay={noop} onNewScenario={noop} onOtherMission={noop} />,
     );
-    expect(html).toContain("Played as: Developer &amp; DevOps");
-    expect(buildEmailReportText(report)).toContain("Played as: Developer & DevOps");
+    expect(html).toContain("Played as: Developers &amp; DevOps");
+    expect(buildEmailReportText(report)).toContain("Played as: Developers & DevOps");
   });
 
   it("shows organisation-wide context for Northstar: Zero Hour", () => {
