@@ -63,8 +63,11 @@ function nodeCaption(status: NodeVisualStatus | undefined, kind: NodeKind): { st
   if (status === "entry" || status === "attack") {
     return { state: "active", caption: "Active attack" };
   }
-  if (status === "success" || status === "history-hit") {
+  if (status === "success") {
     return { state: "exposed", caption: "Exposed" };
+  }
+  if (status === "history-hit") {
+    return { state: "exposed", caption: "On path" };
   }
   if (status === "partial" || status === "history-partial") {
     return { state: "limited", caption: "Limited" };
