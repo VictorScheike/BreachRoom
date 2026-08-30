@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { HowItWorks } from "@/components/site/HowItWorks";
+import { LabMissionCard } from "@/components/site/LabMissionCard";
 import { MissionCard } from "@/components/site/MissionCard";
 import { RoleTrainingCard } from "@/components/site/RoleTrainingCard";
 import { RoleTrainingGrid } from "@/components/site/RoleTrainingGrid";
+import { LAB_HOME_INTRO } from "@/lib/lab/copy";
 import { publishedMissions } from "@/lib/missions/catalog";
 import { ROLE_GROUPS } from "@/lib/training/groups";
 import "./home-page.css";
@@ -40,13 +42,9 @@ export function HomePage() {
 
         <section className="home-section" aria-labelledby="playable-missions-heading">
           <h2 id="playable-missions-heading">Playable missions</h2>
-          <p className="section-lede missions-intro">
-            These maps exist so you can practise the hard calls before they land on your desk.
-            Each one is a different workplace under pressure — phishing, ransomware, a risky AI
-            launch, a poisoned build, a lockout. Walking the route and deciding at each checkpoint
-            is how the judgement sticks.
-          </p>
+          <p className="section-lede missions-intro">{LAB_HOME_INTRO}</p>
           <div className="mission-grid">
+            <LabMissionCard />
             {missions.map((mission) => (
               <MissionCard key={mission.id} mission={mission} />
             ))}

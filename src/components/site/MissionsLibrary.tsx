@@ -1,8 +1,8 @@
 "use client";
 
+import { LabMissionCard } from "@/components/site/LabMissionCard";
 import { MissionCard } from "@/components/site/MissionCard";
 import { MissionFilter } from "@/components/site/MissionFilter";
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { publishedMissions } from "@/lib/missions/catalog";
 import type { DifficultyId } from "@/lib/missions/types";
@@ -55,32 +55,7 @@ export function MissionsLibrary() {
           architecture questions — front door, AI, and customer data — then watch one attack test
           the system you actually built.
         </p>
-        <article className="mission-card lab-library-card">
-          <div className="mission-card__body">
-            <div className="mission-card__content">
-              <p className="mission-card__meta">ARCHITECTURE DEFENCE LAB · BEGINNER OR CHALLENGING</p>
-              <h2 id="lab-library-heading" className="mission-card__title">
-                Architecture Defence Lab
-              </h2>
-              <p className="mission-card__destination">The Poisoned Claim</p>
-              <p className="mission-card__description mission-card__description--four">
-                You are the architect. Ten questions add controls to a claims system — front door,
-                AI, and customer data. Then one attack walks the path you built.
-              </p>
-              <ul className="topic-chips">
-                <li>AI security</li>
-                <li>Secure architecture</li>
-                <li>Defence in depth</li>
-              </ul>
-              <p className="mission-card__destination">Build it. Then let the attack loose.</p>
-            </div>
-            <div className="mission-card__footer">
-              <Link className="btn-primary mission-card__action" href="/lab/">
-                Enter the lab
-              </Link>
-            </div>
-          </div>
-        </article>
+        <LabMissionCard titleAs="h2" descriptionLines={4} headingId="lab-library-heading" />
       </section>
       <section className="map-missions-block" aria-labelledby="map-missions-heading">
         <h2 id="map-missions-heading">Map missions</h2>

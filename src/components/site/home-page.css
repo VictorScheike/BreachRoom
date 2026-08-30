@@ -681,6 +681,75 @@
   object-fit: contain;
 }
 
+.lab-mission-thumb {
+  display: flex;
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgba(233, 139, 36, 0.08), transparent 42%),
+    linear-gradient(180deg, #1a2223 0%, #121718 100%);
+}
+
+.lab-mission-thumb__chain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.55rem 0.45rem 1.75rem;
+  box-sizing: border-box;
+}
+
+.lab-mission-thumb__item {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.lab-mission-thumb__arrow {
+  flex: 0 0 0.38rem;
+  height: 2px;
+  margin-right: 0.15rem;
+  background: #e98b24;
+}
+
+.lab-mission-thumb__node {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.42rem 0.18rem;
+  border: 1px solid #46524d;
+  border-radius: 0.32rem;
+  background: #242f30;
+  color: #f2d3a0;
+  font-size: clamp(0.42rem, 1.1vw, 0.62rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lab-mission-thumb__item:last-child .lab-mission-thumb__node {
+  border-color: #e98b24;
+}
+
+.mission-select-thumb .lab-mission-thumb,
+.mission-select-thumb .lab-mission-thumb__chain {
+  height: 100%;
+}
+
+.mission-select-thumb .lab-mission-thumb__chain {
+  padding: 0.2rem 0.15rem 1.45rem;
+}
+
+.mission-select-thumb .lab-mission-thumb__node {
+  padding: 0.28rem 0.1rem;
+  font-size: 0.48rem;
+}
+
 .mission-card__body {
   display: flex;
   flex: 1;
