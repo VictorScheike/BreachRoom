@@ -222,10 +222,12 @@ function assetReached(stages: readonly ResolvedStage[]): string {
   return "Authenticated employee session";
 }
 
-function stoppingControl(stages: readonly ResolvedStage[]): string {
+function stoppingControl(choices: LabChoices, stages: readonly ResolvedStage[]): string {
   const blocked = stages.find((item) => item.role === "offensive" && item.outcome === "blocked");
   if (blocked) {
-    return `${blocked.choiceTitle} stopped the offensive path at ${blocked.name}.`;
+    const option = optionForChoice(choices, blocked.testedDecisionId);
+    const name = option?.mapTitle ?? blocked.choiceTitle;
+    return `${name} stopped the offensive path at ${blocked.name}.`;
   }
   const limited = [...stages].reverse().find((item) => item.role === "offensive" && item.outcome === "limited");
   if (limited) {
@@ -322,7 +324,7 @@ function buildReview(
     pillars: buildPillars(choices, stages, impact, recover?.outcome === "recovered"),
     protectedItems: protectedItems.slice(0, 8),
     exposedItems: exposedItems.slice(0, 8),
-    greatestImpact: stoppingControl(stages),
+    greatestImpact: stoppingControl(choices, stages),
     defenceInDepth:
       result === "contained"
         ? "A blocked offensive step ended that path. Dependent later steps were not reached. Detection and containment ran only on activity that actually occurred."
@@ -341,7 +343,7 @@ function buildReview(
     improvements,
     compromisedSystems: compromisedSystems(stages),
     neverReached: neverReachedAssets(stages),
-    stoppingControl: stoppingControl(stages),
+    stoppingControl: stoppingControl(choices, stages),
     endedAt: endedAt(stages),
     detectionOccurred,
     recoveryRequired: impact,
