@@ -14,6 +14,13 @@ import type { LabPersistedState } from "@/lib/lab/types";
 
 const noop = () => undefined;
 
+const decisionProps = {
+  onSelect: noop,
+  onNext: noop,
+  onBack: noop,
+  canGoBack: false,
+};
+
 describe("Architecture Defence Lab UI", () => {
   it("starts with Guided and Challenge instead of a component palette", () => {
     const html = renderToStaticMarkup(
@@ -37,10 +44,7 @@ describe("Architecture Defence Lab UI", () => {
         difficulty="guided"
         choices={{}}
         pendingOptionId={null}
-        onSelect={noop}
-        onContinue={noop}
-        onBack={noop}
-        canGoBack={false}
+        {...decisionProps}
       />,
     );
     const challenge = renderToStaticMarkup(
@@ -49,15 +53,14 @@ describe("Architecture Defence Lab UI", () => {
         difficulty="challenge"
         choices={{}}
         pendingOptionId={null}
-        onSelect={noop}
-        onContinue={noop}
-        onBack={noop}
-        canGoBack={false}
+        {...decisionProps}
       />,
     );
     expect(guided).toContain("Decision 1 of 10");
     expect(guided).toContain("Recommended");
     expect(guided).toContain("Slightly more friction during sign-in");
+    expect(guided).toContain("MFA on new devices only");
+    expect(guided).toContain("Password-only access");
     expect(challenge).not.toContain("Recommended");
     expect(challenge).toContain("Select to see the trade-off");
     expect(challenge).not.toContain("Slightly more friction during sign-in");
@@ -72,19 +75,21 @@ describe("Architecture Defence Lab UI", () => {
     };
     const html = renderToStaticMarkup(<ArchitectureDefenceLabView state={state} onChange={noop} />);
     expect(html).toContain("Architecture complete · 10/10");
-    expect(html).toContain("Run Red Team");
+    expect(html).toContain("Preview final attack");
     expect(html).toContain("Claims Portal");
-    expect(html).toContain("MFA + role access");
-    expect(html).toContain("File sandbox");
-    expect(html).toContain("Private enterprise LLM");
+    expect(html).toContain("MFA + RBAC");
+    expect(html).toContain("File Sandbox");
+    expect(html).toContain("Private LLM");
     expect(html).toContain("Case-scoped RAG");
-    expect(html).toContain("Managed identity");
-    expect(html).toContain("Restricted Claims API");
-    expect(html).toContain("Human approval");
-    expect(html).toContain("Private segments");
-    expect(html).toContain("Signed builds");
-    expect(html).toContain("SIEM + playbook");
+    expect(html).toContain("Managed Identity");
+    expect(html).toContain("Restricted API");
+    expect(html).toContain("Human Approval");
+    expect(html).toContain("Network Segmentation");
+    expect(html).toContain("Signed Builds");
+    expect(html).toContain("SIEM");
     expect(html).toContain("Claims Database");
+    expect(html).not.toContain("Stops stolen-password login");
+    expect(html).not.toContain("lab-map__grid");
   });
 
   it("shows the first Red Team technique and next-step controls", () => {
@@ -99,7 +104,11 @@ describe("Architecture Defence Lab UI", () => {
     expect(html).toContain("Next attack step");
     expect(html).toContain("Pause");
     expect(html).toContain("Replay attack");
+    expect(html).toContain("Red Team · Step 1 of 7");
     expect(html).not.toContain("Run Red Team");
+    expect(html).toContain("Previous");
+    expect(html).not.toContain("Current technique");
+    expect(html).not.toContain("Attack impact");
   });
 
   it("shows Prevented or Breached from the actual architecture", () => {
@@ -129,17 +138,168 @@ describe("Architecture Defence Lab UI", () => {
     );
     expect(strong).toContain("Prevented");
     expect(weak).toContain("Breached");
+    expect(weak).toContain("EXPOSED");
+    expect(weak).not.toContain(">SUCCESS<");
     expect(strong).toContain("Improve and retry");
     expect(strong).not.toContain("Defence readiness");
+    expect(strong).not.toContain("What was protected");
+    expect(strong).not.toContain("What was exposed");
+    expect(strong).toContain("attack-timeline");
+    expect(strong).toContain("Because you chose:");
+    expect(strong).toContain("What the attacker tried");
+    expect(strong).toContain("Where it ended");
+    expect(weak).toContain("Claims Database");
+    expect(weak).toContain("AI executes automatically");
   });
 
-  it("keeps the map readable in a pannable board", () => {
+  it("renders a connected network board instead of a card grid", () => {
     const html = renderToStaticMarkup(
-      <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} />,
+      <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} layout="desktop" />,
     );
     expect(html).toContain("lab-map");
+    expect(html).toContain("lab-map__edges");
     expect(html).toContain("Claims Portal");
-    expect(html).toContain("lab-map__grid");
+    expect(html).toContain("MFA + RBAC");
+    expect(html).not.toContain("lab-map__grid");
+    expect(html).not.toContain("Stops stolen-password login");
+  });
+
+  it("grows the preview from three core nodes instead of showing every control at once", () => {
+    const empty = renderToStaticMarkup(
+      <ArchitectureMap choices={{}} inspectable={false} layout="desktop" />,
+    );
+    expect(empty).toContain("Claims Portal");
+    expect(empty).toContain("AI Claims App");
+    expect(empty).toContain("Claims Database");
+    expect(empty).not.toContain("MFA + RBAC");
+    expect(empty).not.toContain("File Sandbox");
+    expect(empty).not.toContain("SIEM");
+    const preview = renderToStaticMarkup(
+      <ArchitectureMap
+        choices={{}}
+        previewOptionId="identity-mfa"
+        inspectable={false}
+        layout="desktop"
+      />,
+    );
+    expect(preview).toContain("MFA + RBAC");
+    expect(preview).not.toContain("File Sandbox");
+    expect(preview).not.toContain("Private LLM");
+  });
+
+  it("keeps a simplified vertical network on a mobile-sized board", () => {
+    const html = renderToStaticMarkup(
+      <ArchitectureMap choices={STRONG_ARCHITECTURE} inspectable={false} layout="mobile" />,
+    );
+    expect(html).toContain("lab-map--mobile");
+    expect(html).toContain("Claims Database");
+    expect(html).toContain("lab-map__edge");
+  });
+
+  it("keeps the local path neutral and offers three takes, with Next to continue", () => {
+    const pending = renderToStaticMarkup(
+      <DecisionScreen
+        decision={LAB_MISSION.decisions[0]!}
+        difficulty="guided"
+        choices={{}}
+        pendingOptionId="identity-mfa"
+        {...decisionProps}
+      />,
+    );
+    expect(pending).toContain("Next");
+    expect(pending).not.toContain("Lock choice");
+    expect(pending).toContain("MFA on new devices only");
+    expect(pending).toContain("The path stays neutral");
+    expect(pending).not.toContain("Stolen credentials stop at Identity");
+    expect(pending).not.toContain('data-state="held"');
+    expect(pending).not.toContain("Not reached");
+
+    const password = renderToStaticMarkup(
+      <DecisionScreen
+        decision={LAB_MISSION.decisions[0]!}
+        difficulty="challenge"
+        choices={{}}
+        pendingOptionId="identity-password"
+        {...decisionProps}
+      />,
+    );
+    expect(password).toContain("Next");
+    expect(password).not.toContain("Recommended");
+    expect(password).not.toContain('data-state="held"');
+    expect(password).not.toContain("Valid attacker session");
+  });
+
+  it("hides the full architecture until all ten decisions are locked", () => {
+    const deciding = renderToStaticMarkup(
+      <ArchitectureDefenceLabView
+        state={{
+          ...EMPTY_LAB_STATE,
+          phase: "decide",
+          pendingOptionId: "identity-mfa",
+        }}
+        onChange={noop}
+      />,
+    );
+    expect(deciding).toContain("Decision 1 of 10");
+    expect(deciding).toContain("Next");
+    expect(deciding).not.toContain("Lock choice");
+    expect(deciding).toContain("local-impact");
+    expect(deciding).not.toContain("lab-map");
+    expect(deciding).not.toContain("Preview final attack");
+    expect(deciding).not.toContain("SIEM");
+  });
+
+  it("marks held edges green and live attack edges red, with text labels", () => {
+    const simulation = simulateAttack(STRONG_ARCHITECTURE);
+    const resultBeat = simulation.stages[0] ? simulation.stages[0].travelledPath.length : 1;
+    const blocked = renderToStaticMarkup(
+      <ArchitectureMap
+        choices={STRONG_ARCHITECTURE}
+        simulation={simulation}
+        revealedStageCount={1}
+        attackBeat={resultBeat}
+        phase="attack"
+        inspectable={false}
+        layout="desktop"
+      />,
+    );
+    expect(blocked).toContain('data-state="held"');
+    expect(blocked).toContain("Blocked");
+    expect(blocked).toContain("MFA + RBAC");
+
+    const live = renderToStaticMarkup(
+      <ArchitectureMap
+        choices={WEAK_ARCHITECTURE}
+        simulation={simulateAttack(WEAK_ARCHITECTURE)}
+        revealedStageCount={1}
+        attackBeat={1}
+        phase="attack"
+        inspectable={false}
+        layout="desktop"
+        reducedMotion
+      />,
+    );
+    expect(live).toContain('data-state="active"');
+    expect(live).toContain("Active attack");
+    expect(live).not.toContain("animateMotion");
+  });
+
+  it("highlights the selected timeline path on the final architecture", () => {
+    const simulation = simulateAttack(STRONG_ARCHITECTURE);
+    const html = renderToStaticMarkup(
+      <ArchitectureMap
+        choices={STRONG_ARCHITECTURE}
+        simulation={simulation}
+        revealedStageCount={7}
+        phase="result"
+        focusedStageId="stolen-credentials"
+        inspectable={false}
+        layout="desktop"
+      />,
+    );
+    expect(html).toContain('data-node-id="identity"');
+    expect(html).toContain("is-dimmed");
+    expect(html).toContain("Blocked");
   });
 });
 

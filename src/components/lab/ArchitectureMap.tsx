@@ -1,167 +1,254 @@
 "use client";
 
-import { optionForChoice } from "@/lib/lab/catalog";
-import { LAB_MISSION } from "@/lib/lab/catalog";
+import { useEffect, useState } from "react";
+import { LabIcon } from "@/components/lab/LabIcon";
+import { LAB_MISSION, optionForChoice } from "@/lib/lab/catalog";
+import { deriveBoardVisual, nodeLabel, type NodeVisualStatus } from "@/lib/lab/animation";
+import { LAB_ZONE_LABELS, edgePath, nodePoint, type BoardLayout } from "@/lib/lab/map-layout";
 import type {
   AttackSimulation,
   LabChoices,
+  LabPhase,
   MapNodeId,
   OptionId,
 } from "@/lib/lab/types";
 
-function nodeCenter(column: number, row: number): { x: number; y: number } {
-  return { x: 100 + column * 200, y: 90 + row * 180 };
+function useBoardLayout(): BoardLayout {
+  const [layout, setLayout] = useState<BoardLayout>("desktop");
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 719px)");
+    const update = () => setLayout(media.matches ? "mobile" : "desktop");
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  return layout;
+}
+
+function edgeState(kind: string): string {
+  if (kind === "live" || kind === "pivot-live") {
+    return "active";
+  }
+  if (kind === "history-block") {
+    return "held";
+  }
+  if (kind === "history") {
+    return "exposed";
+  }
+  if (kind === "pivot") {
+    return "pivot";
+  }
+  return "idle";
+}
+
+function pathHasHop(path: readonly MapNodeId[], from: MapNodeId, to: MapNodeId): boolean {
+  for (let index = 1; index < path.length; index += 1) {
+    const a = path[index - 1];
+    const b = path[index];
+    if ((a === from && b === to) || (a === to && b === from)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function nodeCaption(status: NodeVisualStatus | undefined, fallback: string): { state: string; caption: string } {
+  if (status === "blocked" || status === "history-block") {
+    return { state: "held", caption: "Blocked" };
+  }
+  if (status === "entry" || status === "attack") {
+    return { state: "active", caption: "Active attack" };
+  }
+  if (status === "success" || status === "history-hit") {
+    return { state: "exposed", caption: "Exposed" };
+  }
+  if (status === "partial" || status === "history-partial") {
+    return { state: "limited", caption: "Limited" };
+  }
+  return { state: "idle", caption: fallback };
 }
 
 export function ArchitectureMap({
   choices,
   previewOptionId,
   simulation,
-  revealedStageCount,
+  revealedStageCount = 0,
+  attackBeat = 0,
+  phase = "review",
   selectedNodeId,
   onSelectNode,
   compact = false,
   inspectable = true,
+  layout: layoutProp,
+  focusedStageId,
+  reducedMotion = false,
+  paused = false,
 }: {
   choices: LabChoices;
   previewOptionId?: OptionId | null;
   simulation?: AttackSimulation | null;
   revealedStageCount?: number;
+  attackBeat?: number;
+  phase?: LabPhase;
   selectedNodeId?: MapNodeId | null;
   onSelectNode?: (id: MapNodeId) => void;
   compact?: boolean;
   inspectable?: boolean;
+  layout?: BoardLayout;
+  focusedStageId?: string | null;
+  reducedMotion?: boolean;
+  paused?: boolean;
 }) {
-  const revealed = simulation && revealedStageCount && revealedStageCount > 0
-    ? simulation.stages.slice(0, revealedStageCount)
-    : [];
-  const active = revealed[revealed.length - 1] ?? null;
-  const preview = previewOptionId ? previewOptionId : null;
-
-  const visible = new Set<MapNodeId>(["portal", "app", "database"]);
-  for (const node of LAB_MISSION.nodes) {
-    if (node.decisionId && choices[node.decisionId]) {
-      visible.add(node.id);
-    }
-  }
-  if (preview) {
-    const option = LAB_MISSION.decisions.flatMap((item) => [...item.options]).find((item) => item.id === preview);
-    if (option) {
-      const node = LAB_MISSION.nodes.find((item) => item.decisionId === option.decisionId);
-      if (node) {
-        visible.add(node.id);
-      }
-    }
-  }
-
-  const nodeStatus = (id: MapNodeId): string => {
-    if (!active) {
-      return "";
-    }
-    if (active.stopNode === id && active.blocked) {
-      if (active.outcome === "partial") {
-        return "is-partial";
-      }
-      if (active.outcome === "detected") {
-        return "is-held";
-      }
-      return "is-held";
-    }
-    if (active.stopNode === id && !active.blocked) {
-      return "is-attack";
-    }
-    if (active.travelledPath.includes(id) && active.travelledPath[active.travelledPath.length - 1] !== id) {
-      return active.blocked ? "is-route" : "is-route-hit";
-    }
-    return "";
-  };
+  const detected = useBoardLayout();
+  const layout = layoutProp ?? detected;
+  const visual = deriveBoardVisual({
+    choices,
+    previewOptionId,
+    simulation: simulation ?? null,
+    revealedStageCount,
+    attackBeat,
+    phase,
+  });
+  const visible = new Set(visual.visible);
+  const focused = focusedStageId ? simulation?.stages.find((item) => item.id === focusedStageId) : null;
+  const inspectNode = selectedNodeId ? LAB_MISSION.nodes.find((item) => item.id === selectedNodeId) : null;
+  const inspectChoice = inspectNode?.decisionId ? optionForChoice(choices, inspectNode.decisionId) : null;
+  const inspectTechnique = inspectNode?.decisionId
+    ? LAB_MISSION.techniques.find((item) => item.checks.some((check) => check.decisionId === inspectNode.decisionId))
+    : null;
+  const liveEdge = visual.edges.find((item) => item.kind === "live");
+  const liveFrom = liveEdge ? LAB_MISSION.nodes.find((item) => item.id === liveEdge.from) : null;
+  const liveTo = liveEdge ? LAB_MISSION.nodes.find((item) => item.id === liveEdge.to) : null;
+  const motionPath = liveFrom && liveTo ? edgePath(liveFrom, liveTo, layout) : null;
 
   return (
-    <div className={compact ? "lab-map lab-map--compact" : "lab-map"} aria-label="Nordic Shield claims AI architecture">
-      <svg className="lab-map__edges" viewBox="0 0 1000 560" role="presentation">
-        {LAB_MISSION.edges.map((edge) => {
-          if (!visible.has(edge.from) || !visible.has(edge.to)) {
-            return null;
-          }
+    <div className="lab-map-wrap">
+    <div
+      className={["lab-map", "architecture-canvas", compact ? "lab-map--compact" : "", `lab-map--${layout}`].filter(Boolean).join(" ")}
+      aria-label="Nordic Shield claims AI architecture"
+    >
+      <div className="lab-map__zones" aria-hidden="true">
+        {LAB_ZONE_LABELS.map((zone) => (
+          <span key={zone.id} className={`lab-zone lab-zone--${zone.id}`}>
+            {zone.label}
+          </span>
+        ))}
+      </div>
+      <svg className="lab-map__edges architecture-edges" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
+        {visual.edges.map((edge) => {
           const from = LAB_MISSION.nodes.find((item) => item.id === edge.from);
           const to = LAB_MISSION.nodes.find((item) => item.id === edge.to);
           if (!from || !to) {
             return null;
           }
-          const a = nodeCenter(from.column, from.row);
-          const b = nodeCenter(to.column, to.row);
-          const live = Boolean(
-            active &&
-              active.travelledPath.includes(edge.from) &&
-              active.travelledPath.includes(edge.to),
-          );
-          const pivot = Boolean(active?.isPivot && live);
+          const focusedEdge = focused ? pathHasHop(focused.travelledPath, edge.from, edge.to) : false;
+          const state = focused && !focusedEdge ? "idle" : edgeState(edge.kind);
           return (
-            <line
+            <path
               key={edge.id}
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              className={["lab-map__edge", live ? "is-live" : "", pivot ? "is-pivot" : ""].filter(Boolean).join(" ")}
+              data-edge-id={edge.id}
+              data-state={state}
+              d={edgePath(from, to, layout)}
+              className={["lab-map__edge", "architecture-edge", `is-${edge.kind}`].join(" ")}
             />
           );
         })}
+        {motionPath && visual.markerMoving && !paused && !reducedMotion ? (
+          <circle r="7" className="lab-signal-svg" data-testid="lab-signal">
+            <animateMotion key={liveEdge?.id ?? motionPath} dur="1.1s" fill="freeze" path={motionPath} />
+          </circle>
+        ) : null}
       </svg>
-      <div className="lab-map__grid">
-        {LAB_MISSION.nodes.map((node) => {
-          if (!visible.has(node.id)) {
-            return <div key={node.id} className="lab-map__cell" style={{ gridColumn: node.column + 1, gridRow: node.row + 1 }} />;
-          }
-          const choice = node.decisionId ? optionForChoice(choices, node.decisionId) : null;
-          const entering = preview && choice === null && node.decisionId
-            ? LAB_MISSION.decisions.find((item) => item.id === node.decisionId)?.options.some((item) => item.id === preview)
-            : false;
-          const previewOption = entering
-            ? LAB_MISSION.decisions.flatMap((item) => [...item.options]).find((item) => item.id === preview)
+      {LAB_MISSION.nodes.map((node) => {
+        if (!visible.has(node.id)) {
+          return null;
+        }
+        const choice = node.decisionId ? optionForChoice(choices, node.decisionId) : null;
+        const point = nodePoint(node, layout);
+        const status = visual.nodeStatus[node.id];
+        const previewOption =
+          visual.enteringNode === node.id && previewOptionId
+            ? LAB_MISSION.decisions.flatMap((item) => [...item.options]).find((item) => item.id === previewOptionId)
             : null;
-          const status = nodeStatus(node.id);
-          const weak = choice?.strength === "weak";
-          const title = previewOption?.mapTitle ?? choice?.mapTitle ?? node.name;
-          const detail = previewOption?.mapDetail ?? choice?.mapDetail ?? node.description;
-          const className = [
-            "lab-node",
-            `lab-node--${node.kind}`,
-            weak ? "is-weak" : "",
-            entering ? "is-entering" : "",
-            selectedNodeId === node.id ? "is-selected" : "",
-            status,
-          ]
-            .filter(Boolean)
-            .join(" ");
-          const body = (
-            <>
-              <span className="lab-node__kind">
-                {node.kind === "asset" ? "Protected asset" : node.kind === "core" ? "Core system" : "Control"}
-              </span>
-              <strong>{node.name}</strong>
-              <span className="lab-node__choice">{title}</span>
-              <span className="lab-node__detail">{detail}</span>
-            </>
-          );
+        const weak = (previewOption ?? choice)?.strength === "weak";
+        const label = nodeLabel(choices, node.id, previewOptionId);
+        const icon = previewOption?.icon ?? choice?.icon ?? node.icon;
+        const mapped = nodeCaption(status, node.kind === "asset" ? "Protected asset" : node.kind === "core" ? "Core system" : "Control");
+        const dimmed = focused ? !focused.travelledPath.includes(node.id) && focused.stopNode !== node.id : false;
+        const nodeState = dimmed ? "idle" : mapped.state;
+        const className = [
+          "lab-node",
+          "architecture-node",
+          `lab-node--${node.kind}`,
+          `architecture-node--${node.kind}`,
+          weak ? "is-weak" : "",
+          visual.enteringNode === node.id ? "is-entering" : "",
+          selectedNodeId === node.id ? "is-selected" : "",
+          dimmed ? "is-dimmed" : "",
+          nodeState !== "idle" ? `is-${nodeState}` : "",
+          status && status !== "idle" ? `is-${status}` : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const body = (
+          <>
+            <span className="architecture-node__domain">{node.kind === "control" ? node.name : mapped.caption}</span>
+            <LabIcon name={icon} />
+            <strong>{label}</strong>
+            <span className="architecture-node__caption">{mapped.caption}</span>
+          </>
+        );
+        const style = { left: `${point.x}%`, top: `${point.y}%` };
+        if (inspectable && onSelectNode) {
           return (
-            <div key={node.id} className="lab-map__cell" style={{ gridColumn: node.column + 1, gridRow: node.row + 1 }}>
-              {inspectable && onSelectNode ? (
-                <button
-                  type="button"
-                  className={className}
-                  aria-label={`${node.name}. ${title}. ${detail}`}
-                  onClick={() => onSelectNode(node.id)}
-                >
-                  {body}
-                </button>
-              ) : (
-                <div className={className}>{body}</div>
-              )}
-            </div>
+            <button
+              key={node.id}
+              type="button"
+              className={className}
+              data-node-id={node.id}
+              data-state={nodeState}
+              style={style}
+              aria-label={`${label}. ${mapped.caption}. ${choice?.tradeOff ?? node.description}`}
+              onClick={() => onSelectNode(node.id)}
+            >
+              {body}
+            </button>
           );
-        })}
-      </div>
+        }
+        return (
+          <div key={node.id} className={className} data-node-id={node.id} data-state={nodeState} style={style}>
+            {body}
+          </div>
+        );
+      })}
+      {visual.stopBadge
+        ? (() => {
+            const stop = LAB_MISSION.nodes.find((item) => item.id === visual.stopBadge?.nodeId);
+            if (!stop || !visual.stopBadge) {
+              return null;
+            }
+            const point = nodePoint(stop, layout);
+            return (
+              <span className={`lab-stop is-${visual.stopBadge.label.toLowerCase()}`} style={{ left: `${point.x}%`, top: `${point.y}%` }}>
+                {visual.stopBadge.label}
+              </span>
+            );
+          })()
+        : null}
+      {visual.pivotBanner ? (
+        <p className="lab-pivot-banner" role="status">
+          Blocked — Red Team changes technique
+        </p>
+      ) : null}
+    </div>
+      {inspectNode && inspectable ? (
+        <article className="lab-node-pop lab-node-pop--below" aria-live="polite">
+          <p className="lab-kicker">{inspectNode.name}</p>
+          <h2>{inspectChoice?.title ?? inspectNode.name}</h2>
+          <p>{inspectChoice?.tradeOff ?? inspectNode.description}</p>
+          {inspectTechnique ? <p>Tested by {inspectTechnique.name}.</p> : null}
+        </article>
+      ) : null}
     </div>
   );
 }

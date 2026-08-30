@@ -1,7 +1,8 @@
-import { LAB_MISSION, optionById, optionForChoice } from "./catalog";
+import { LAB_MISSION, nodeById, optionById, optionForChoice } from "./catalog";
 import type {
   ArchitectureReview,
   AttackSimulation,
+  DecisionId,
   FinalResultKind,
   LabChoices,
   MapNodeId,
@@ -47,10 +48,12 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
       controlResponse: string;
       explanation: string;
       impact: string;
+      testedDecisionId: DecisionId;
     } | null = null;
 
     for (const check of technique.checks) {
-      if (choices[check.decisionId] === check.strongOptionId) {
+      const chosenForCheck = optionForChoice(choices, check.decisionId);
+      if (chosenForCheck?.id === check.strongOptionId) {
         matched = {
           outcome: check.outcome,
           stopNode: check.stopNode,
@@ -58,11 +61,27 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
           controlResponse: check.controlResponse,
           explanation: check.explanation,
           impact: check.impact,
+          testedDecisionId: check.decisionId,
+        };
+        break;
+      }
+      if (chosenForCheck?.strength === "medium") {
+        const stopName = nodeById(check.stopNode).name;
+        matched = {
+          outcome: "partial",
+          stopNode: check.stopNode,
+          attackerAction: check.attackerAction,
+          controlResponse: `${chosenForCheck.title} slows this path but does not close it.`,
+          explanation: `The control is incomplete. The technique still reaches ${stopName}.`,
+          impact: check.impact,
+          testedDecisionId: check.decisionId,
         };
         break;
       }
     }
 
+    const testedDecisionId = matched?.testedDecisionId ?? technique.checks[technique.checks.length - 1]?.decisionId ?? "detection";
+    const chosen = optionForChoice(choices, testedDecisionId);
     const blocked = matched !== null && matched.outcome !== "successful";
     const stopNode = matched?.stopNode ?? technique.path[technique.path.length - 1] ?? technique.entryNode;
     const travelledPath = matched ? pathUntil(technique.path, matched.stopNode) : [...technique.path];
@@ -82,6 +101,9 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
       blocked,
       isPivot,
       pivotLabel: isPivot ? "Blocked. Red Team changes technique." : null,
+      testedDecisionId,
+      choiceId: chosen?.id ?? "",
+      choiceTitle: chosen?.title ?? "No control selected",
     };
     stages.push(stage);
     previousBlocked = blocked && stage.outcome !== "detected";
@@ -198,6 +220,7 @@ function buildReview(
         ? `${upload?.title ?? "The sandbox"} stopped the poisoned file.`
         : `${api?.title ?? "API permissions"} decided how far a manipulated workflow could read.`;
 
+  const recommended = recommendedControl(flags);
   const improvement = !flags.payoutHeld
     ? "Require human approval before payout changes and customer-facing actions."
     : !flags.uploadHeld
@@ -219,12 +242,38 @@ function buildReview(
         ? "A blocked technique ended at that node. The next attempt was a new pivot, not a magical continuation past the control that already held."
         : "When several neighbouring choices were thin — identity, uploads, API reach and approval — the campaign had a clear run.",
     recommendedImprovement: improvement,
+    recommendedDecisionId: recommended,
     dataExposed: flags.apiHeld
       ? flags.payoutHeld
         ? "No customer dataset was shown to have left through payout or bulk API access."
         : "Payout was exposed even though bulk API reads were limited."
       : "Additional claims data was reachable through the service path.",
   };
+}
+
+function recommendedControl(flags: {
+  identityHeld: boolean;
+  uploadHeld: boolean;
+  apiHeld: boolean;
+  payoutHeld: boolean;
+  detected: boolean;
+}): DecisionId {
+  if (!flags.payoutHeld) {
+    return "oversight";
+  }
+  if (!flags.uploadHeld) {
+    return "input";
+  }
+  if (!flags.identityHeld) {
+    return "identity";
+  }
+  if (!flags.apiHeld) {
+    return "data-access";
+  }
+  if (!flags.detected) {
+    return "detection";
+  }
+  return "model";
 }
 
 export function compareResults(left: FinalResultKind | null, right: FinalResultKind): FinalResultKind {

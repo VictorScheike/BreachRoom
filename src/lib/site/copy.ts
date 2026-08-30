@@ -64,7 +64,7 @@ export const ABOUT_SECTIONS = [
   },
   {
     title: "Building resilient cybersecurity",
-    body: "It also means designing the system so that one stolen password or one poisoned document does not become the whole story. Resilient cybersecurity is built before the attack runs: identity, least privilege, how an AI reaches data, whether a person still has to approve an export, whether anyone is actually watching. Architecture Defence Lab is the other half of that idea. You assemble the controls. Then you let one coherent attack loose on what you actually chose.",
+    body: "It also means designing the system so that one stolen password or one poisoned document does not become the whole story. Resilient cybersecurity is built before the attack runs: identity, least privilege, how an AI reaches data, whether a person still has to approve an export, whether anyone is actually watching. Architecture Defence Lab is the other half of that idea. You take ten decisions, one layer at a time, without being told whether a control held. Then one campaign tests the path you actually built — toward the records, not a scorecard.",
   },
 ] as const;
 

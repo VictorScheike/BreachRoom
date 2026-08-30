@@ -16,10 +16,14 @@ import {
   improveAndRetry,
   launchAttack,
   nextAttackStep,
+  pauseAttack,
+  previousAttackStep,
   replayAttack,
   resetArchitecture,
   selectOption,
 } from "@/lib/lab/play";
+import { beatsForStage, deriveBoardVisual } from "@/lib/lab/animation";
+import { subgraphFor, subgraphOutcome } from "@/lib/lab/subgraphs";
 import { EMPTY_LAB_STATE } from "@/lib/lab/store";
 import { DECISION_IDS, type LabChoices, type LabPersistedState } from "@/lib/lab/types";
 
@@ -52,11 +56,14 @@ describe("Architecture Defence Lab catalog", () => {
     expect(DECISION_IDS).toHaveLength(10);
   });
 
-  it("keeps Recommended only on the stronger option", () => {
+  it("keeps Recommended only on the stronger option and offers three takes", () => {
     for (const decision of LAB_MISSION.decisions) {
+      expect(decision.options).toHaveLength(3);
       expect(decision.options.filter((item) => item.recommended)).toHaveLength(1);
       expect(decision.options[0]?.recommended).toBe(true);
       expect(optionById(decision.options[0]!.id).strength).toBe("strong");
+      expect(decision.options.some((item) => item.strength === "medium")).toBe(true);
+      expect(decision.options.some((item) => item.strength === "weak")).toBe(true);
     }
   });
 });
@@ -69,6 +76,7 @@ describe("decision flow", () => {
       const strong = decision.options[0];
       state = selectOption(state, strong.id);
       expect(state.pendingOptionId).toBe(strong.id);
+      expect(state.showingDecisionFeedback).toBe(false);
       state = confirmDecision(state);
     }
     expect(state.phase).toBe("review");
@@ -84,11 +92,24 @@ describe("decision flow", () => {
     expect(state.phase).toBe("decide");
     expect(state.currentDecisionIndex).toBe(0);
     expect(state.pendingOptionId).toBe("identity-mfa");
+    expect(state.showingDecisionFeedback).toBe(false);
     expect(state.choices.oversight).toBe("oversight-human");
     state = selectOption(state, "identity-password");
     state = confirmDecision(state);
     expect(state.choices.identity).toBe("identity-password");
     expect(state.choices.input).toBe("input-sandbox");
+  });
+
+  it("advances on Next without revealing the path on the decision screen", () => {
+    let state = beginLab(EMPTY_LAB_STATE, "guided");
+    state = selectOption(state, "identity-mfa");
+    expect(state.showingDecisionFeedback).toBe(false);
+    expect(state.currentDecisionIndex).toBe(0);
+    state = confirmDecision(state);
+    expect(state.showingDecisionFeedback).toBe(false);
+    expect(state.phase).toBe("decide");
+    expect(state.currentDecisionIndex).toBe(1);
+    expect(state.choices.identity).toBe("identity-mfa");
   });
 });
 
@@ -115,16 +136,29 @@ describe("attack simulation", () => {
   it("contains a mixed architecture that fails identity but keeps human approval", () => {
     const { simulation } = runAttack(MIXED_ARCHITECTURE);
     expect(simulation.stages[0]?.outcome).toBe("successful");
-    expect(simulation.stages[4]?.id).toBe("payout-manipulation");
-    expect(simulation.stages[4]?.outcome).toBe("blocked");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("blocked");
     expect(simulation.result).toBe("contained");
   });
 
   it("breaches a weak architecture and still runs every technique", () => {
     const { simulation } = runAttack(WEAK_ARCHITECTURE);
     expect(simulation.stages).toHaveLength(7);
-    expect(simulation.stages[4]?.outcome).toBe("successful");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("successful");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.stopNode).toBe("database");
+    expect(simulation.stages.find((item) => item.id === "detection")?.stopNode).toBe("database");
+    expect(simulation.stages.at(-1)?.id).toBe("detection");
+    expect(simulation.stages.at(-1)?.travelledPath.at(-1)).toBe("database");
+    expect(simulation.stages.slice(-3).every((item) => item.stopNode === "database")).toBe(true);
+    expect(simulation.stages.map((item) => item.id).indexOf("lateral-movement")).toBeLessThan(
+      simulation.stages.map((item) => item.id).indexOf("payout-manipulation"),
+    );
     expect(simulation.result).toBe("breached");
+  });
+
+  it("treats a middle identity choice as partial, not a full hold", () => {
+    const simulation = simulateAttack({ ...STRONG_ARCHITECTURE, identity: "identity-device-mfa" });
+    expect(simulation.stages[0]?.outcome).toBe("partial");
+    expect(simulation.stages[0]?.choiceTitle).toBe("MFA on new devices only");
   });
 
   it("gives different histories to different architectures", () => {
@@ -144,7 +178,7 @@ describe("attack simulation", () => {
   it("lets later layers contain a weak front door", () => {
     const { simulation } = runAttack(WEAK_PREVENTION_STRONG_CONTAINMENT);
     expect(simulation.stages[0]?.outcome).toBe("successful");
-    expect(simulation.stages[4]?.outcome).toBe("blocked");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("blocked");
     expect(simulation.result).not.toBe("breached");
   });
 
@@ -165,15 +199,89 @@ describe("lab play session", () => {
     expect(result.state.phase).toBe("setup");
   });
 
-  it("walks the campaign one technique at a time and can replay", () => {
+  it("walks the campaign one event at a time and can replay", () => {
     const launched = launchAttack(filledState(STRONG_ARCHITECTURE));
     expect(launched.state.phase).toBe("attack");
     expect(launched.state.revealedStageCount).toBe(1);
+    expect(launched.state.attackBeat).toBe(0);
     const second = nextAttackStep(launched.state);
-    expect(second.revealedStageCount).toBe(2);
+    expect(second.revealedStageCount).toBe(1);
+    expect(second.attackBeat).toBe(1);
     const replayed = replayAttack(second);
     expect(replayed.phase).toBe("attack");
     expect(replayed.revealedStageCount).toBe(1);
+    expect(replayed.attackBeat).toBe(0);
+  });
+
+  it("pauses without advancing the attack beat", () => {
+    const launched = launchAttack(filledState(STRONG_ARCHITECTURE)).state;
+    const paused = pauseAttack(launched, true);
+    expect(paused.paused).toBe(true);
+    expect(paused.revealedStageCount).toBe(1);
+    expect(paused.attackBeat).toBe(0);
+    expect(pauseAttack(paused, false).paused).toBe(false);
+  });
+
+  it("can go backward and forward without changing selected decisions", () => {
+    let state = launchAttack(filledState(STRONG_ARCHITECTURE)).state;
+    const choices = state.choices;
+    state = nextAttackStep(state);
+    expect(state.attackBeat).toBe(1);
+    state = previousAttackStep(state);
+    expect(state.attackBeat).toBe(0);
+    expect(state.revealedStageCount).toBe(1);
+    expect(state.paused).toBe(true);
+    expect(state.choices).toEqual(choices);
+    state = pauseAttack(state, false);
+    state = nextAttackStep(state);
+    expect(state.attackBeat).toBe(1);
+    expect(state.choices).toEqual(STRONG_ARCHITECTURE);
+  });
+
+  it("resets every attack visual on replay", () => {
+    let state = launchAttack(filledState(STRONG_ARCHITECTURE)).state;
+    state = nextAttackStep(state);
+    state = nextAttackStep(state);
+    const replayed = replayAttack(state);
+    const visual = deriveBoardVisual({
+      choices: STRONG_ARCHITECTURE,
+      simulation: simulateAttack(STRONG_ARCHITECTURE),
+      revealedStageCount: replayed.revealedStageCount,
+      attackBeat: replayed.attackBeat,
+      phase: replayed.phase,
+    });
+    expect(replayed.revealedStageCount).toBe(1);
+    expect(replayed.attackBeat).toBe(0);
+    expect(visual.pivotBanner).toBe(false);
+    expect(visual.stopBadge).toBeNull();
+    expect(visual.markerNode).toBe("portal");
+  });
+
+  it("stops a blocked route at the holding node and starts the next technique as a pivot", () => {
+    const simulation = simulateAttack(STRONG_ARCHITECTURE);
+    const stolen = simulation.stages[0]!;
+    const resultBeat = beatsForStage(stolen).length - 1;
+    const blocked = deriveBoardVisual({
+      choices: STRONG_ARCHITECTURE,
+      simulation,
+      revealedStageCount: 1,
+      attackBeat: resultBeat,
+      phase: "attack",
+    });
+    expect(stolen.travelledPath.includes("app")).toBe(false);
+    expect(blocked.nodeStatus.identity).toBe("blocked");
+    expect(blocked.markerVisible).toBe(false);
+    expect(blocked.stopBadge).toEqual({ nodeId: "identity", label: "BLOCKED" });
+    const pivot = deriveBoardVisual({
+      choices: STRONG_ARCHITECTURE,
+      simulation,
+      revealedStageCount: 2,
+      attackBeat: 0,
+      phase: "attack",
+    });
+    expect(pivot.pivotBanner).toBe(true);
+    expect(pivot.markerVisible).toBe(false);
+    expect(pivot.edges.some((edge) => edge.kind === "pivot-live")).toBe(true);
   });
 
   it("returns to the first decision on Improve and Retry without dropping choices", () => {
@@ -185,4 +293,23 @@ describe("lab play session", () => {
     expect(retried.revealedStageCount).toBe(0);
     expect(resetArchitecture(state).choices).toEqual({});
   });
+
+  it("can jump to the recommended control from Improve this control", () => {
+    const { state, simulation } = runAttack(WEAK_ARCHITECTURE);
+    const retried = improveAndRetry(state, simulation.review.recommendedDecisionId);
+    expect(retried.phase).toBe("decide");
+    expect(retried.currentDecisionIndex).toBe(DECISION_IDS.indexOf(simulation.review.recommendedDecisionId));
+    expect(retried.choices).toEqual(WEAK_ARCHITECTURE);
+  });
 });
+
+describe("local architecture slices", () => {
+  it("resolves held and exposed outcomes from option ids", () => {
+    const subgraph = subgraphFor("identity");
+    expect(subgraphOutcome(subgraph, null, true)).toBeNull();
+    expect(subgraphOutcome(subgraph, "identity-mfa", true)?.controlStatus).toBe("held");
+    expect(subgraphOutcome(subgraph, "identity-password", false)?.controlStatus).toBe("exposed");
+    expect(subgraphOutcome(subgraph, "identity-mfa", true)?.headline).toContain("Identity");
+  });
+});
+

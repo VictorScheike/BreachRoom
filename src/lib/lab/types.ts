@@ -38,13 +38,19 @@ export type MapNodeId = (typeof MAP_NODE_IDS)[number];
 export const NODE_KINDS = ["core", "control", "asset"] as const;
 export type NodeKind = (typeof NODE_KINDS)[number];
 
+export const BOARD_ZONES = ["user-input", "ai-services", "protected", "secops"] as const;
+export type BoardZoneId = (typeof BOARD_ZONES)[number];
+
+export const ATTACK_BEAT_KINDS = ["pivot", "entry", "travel", "result"] as const;
+export type AttackBeatKind = (typeof ATTACK_BEAT_KINDS)[number];
+
 export const ATTACK_TECHNIQUE_IDS = [
   "stolen-credentials",
   "poisoned-document",
   "prompt-injection",
+  "lateral-movement",
   "api-abuse",
   "payout-manipulation",
-  "lateral-movement",
   "detection",
 ] as const;
 export type AttackTechniqueId = (typeof ATTACK_TECHNIQUE_IDS)[number];
@@ -68,7 +74,7 @@ export interface ArchitectureOption {
   tradeOff: string;
   confirmation: string;
   recommended: boolean;
-  strength: "strong" | "weak";
+  strength: "strong" | "medium" | "weak";
   icon: string;
   mapTitle: string;
   mapDetail: string;
@@ -79,7 +85,7 @@ export interface ArchitectureDecision {
   number: number;
   question: string;
   nodeId: MapNodeId;
-  options: readonly [ArchitectureOption, ArchitectureOption];
+  options: readonly [ArchitectureOption, ArchitectureOption, ArchitectureOption];
 }
 
 export interface MapNodeDefinition {
@@ -88,8 +94,12 @@ export interface MapNodeDefinition {
   kind: NodeKind;
   decisionId: DecisionId | null;
   description: string;
-  column: number;
-  row: number;
+  icon: string;
+  zone: BoardZoneId;
+  x: number;
+  y: number;
+  mobileX: number;
+  mobileY: number;
 }
 
 export interface MapEdgeDefinition {
@@ -152,6 +162,9 @@ export interface ResolvedStage {
   blocked: boolean;
   isPivot: boolean;
   pivotLabel: string | null;
+  testedDecisionId: DecisionId;
+  choiceId: OptionId;
+  choiceTitle: string;
 }
 
 export interface ArchitectureReview {
@@ -160,6 +173,7 @@ export interface ArchitectureReview {
   greatestImpact: string;
   defenceInDepth: string;
   recommendedImprovement: string;
+  recommendedDecisionId: DecisionId;
   dataExposed: string;
 }
 
@@ -181,7 +195,9 @@ export interface LabPersistedState {
   pendingOptionId: OptionId | null;
   phase: LabPhase;
   revealedStageCount: number;
+  attackBeat: number;
   paused: boolean;
+  showingDecisionFeedback: boolean;
   attempts: number;
   lastResult: FinalResultKind | null;
   bestResult: FinalResultKind | null;

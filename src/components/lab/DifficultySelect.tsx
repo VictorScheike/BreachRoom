@@ -39,12 +39,19 @@ export function DifficultySelect({
         >
           <LabIcon name="scan" />
           <strong>Challenge</strong>
-          <span>Same architecture. No Recommended label. Consequences appear after you choose.</span>
+          <span>Same architecture. No Recommended label. Consequences show in the campaign, not while you pick.</span>
         </button>
       </div>
-      <button type="button" className="lab-primary" onClick={onBegin}>
-        Start the ten decisions
-      </button>
+      <div className="lab-setup__start">
+        <p className="lab-kicker">Ready to begin</p>
+        <p className="lab-setup__start-copy">
+          Ten decisions. Pick a control and press Next. The path stays neutral so the answer is not
+          given away. Then the Red Team tests the live path toward the Claims Database.
+        </p>
+        <button type="button" className="lab-primary lab-setup__start-button" onClick={onBegin}>
+          Start the ten decisions
+        </button>
+      </div>
     </section>
   );
 }
