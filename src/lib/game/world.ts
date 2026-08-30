@@ -1,4 +1,9 @@
 import {
+  closedDoorAt,
+  doorsForMap,
+  type DoorSpec,
+} from "@/lib/game/doors";
+import {
   isWalkableTile,
   tileFromChar,
   VOID_TILE,
@@ -31,6 +36,37 @@ export interface WorldMap {
   checkpoints: GridPoint[];
   landmarkTiles: readonly GridPoint[];
   destinationLabel: string;
+  doors: readonly DoorSpec[];
+}
+
+export interface MovementAccess {
+  openDoorIds: ReadonlySet<string>;
+  exitUnlocked: boolean;
+}
+
+export function geometryAccess(world: WorldMap): MovementAccess {
+  return {
+    openDoorIds: new Set(world.doors.map((door) => door.id)),
+    exitUnlocked: true,
+  };
+}
+
+export function closedMapAccess(): MovementAccess {
+  return {
+    openDoorIds: new Set(),
+    exitUnlocked: false,
+  };
+}
+
+export function playAccess(
+  openDoorIds: readonly string[],
+  unlockedCheckpointCount: number,
+  requiredCheckpoints: number,
+): MovementAccess {
+  return {
+    openDoorIds: new Set(openDoorIds),
+    exitUnlocked: unlockedCheckpointCount >= requiredCheckpoints && requiredCheckpoints > 0,
+  };
 }
 
 export const CARDINAL_STEPS: readonly GridPoint[] = [
@@ -72,6 +108,31 @@ export function isTileWalkable(world: WorldMap, point: GridPoint): boolean {
   return isInsideMap(world, point) && isWalkableTile(tileAt(world, point));
 }
 
+export function isTilePassable(
+  world: WorldMap,
+  point: GridPoint,
+  access: MovementAccess,
+): boolean {
+  if (!isTileWalkable(world, point)) {
+    return false;
+  }
+  if (closedDoorAt(world.doors, point, access.openDoorIds)) {
+    return false;
+  }
+  if (!access.exitUnlocked && pointsEqual(point, world.destination)) {
+    return false;
+  }
+  return true;
+}
+
+export function doorBlockingTile(
+  world: WorldMap,
+  point: GridPoint,
+  access: MovementAccess,
+): DoorSpec | null {
+  return closedDoorAt(world.doors, point, access.openDoorIds);
+}
+
 export function stepFrom(point: GridPoint, direction: MoveDirection): GridPoint {
   switch (direction) {
     case "up":
@@ -93,12 +154,13 @@ export function tryMove(
   world: WorldMap,
   from: GridPoint,
   direction: MoveDirection,
+  access: MovementAccess = geometryAccess(world),
 ): GridPoint | null {
   const next = stepFrom(from, direction);
   if (!isInsideMap(world, next)) {
     return null;
   }
-  if (tileAt(world, next).walkable !== true) {
+  if (!isTilePassable(world, next, access)) {
     return null;
   }
   return next;
@@ -116,17 +178,96 @@ export function checkpointAt(world: WorldMap, point: GridPoint): number | null {
   return tile.checkpointOrder;
 }
 
+export function nextCheckpointOrder(
+  world: WorldMap,
+  unlockedCheckpointOrders: readonly number[],
+): number | null {
+  const unlocked = new Set(unlockedCheckpointOrders);
+  for (const point of world.checkpoints) {
+    const order = tileAt(world, point).checkpointOrder;
+    if (order !== undefined && !unlocked.has(order)) {
+      return order;
+    }
+  }
+  return null;
+}
+
 export function encounterForTile(
   world: WorldMap,
   point: GridPoint,
-  decisionsMade: number,
+  unlockedCheckpointOrders: readonly number[],
 ): number | null {
   const order = checkpointAt(world, point);
   if (order === null) {
     return null;
   }
-  if (order === decisionsMade + 1) {
-    return order;
+  if (unlockedCheckpointOrders.includes(order)) {
+    return null;
+  }
+  return order === nextCheckpointOrder(world, unlockedCheckpointOrders) ? order : null;
+}
+
+export function findPath(
+  world: WorldMap,
+  from: GridPoint,
+  to: GridPoint,
+  access: MovementAccess,
+): GridPoint[] | null {
+  if (pointsEqual(from, to)) {
+    return [];
+  }
+  if (!isTilePassable(world, to, access) && !pointsEqual(to, from)) {
+    return null;
+  }
+  const parent = new Map<string, string | null>([[tileKey(from), null]]);
+  const queue: GridPoint[] = [from];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current) {
+      break;
+    }
+    if (pointsEqual(current, to)) {
+      const path: GridPoint[] = [];
+      let cursor: string | null = tileKey(to);
+      while (cursor && cursor !== tileKey(from)) {
+        const [xText, yText] = cursor.split(",");
+        path.push({ x: Number(xText), y: Number(yText) });
+        cursor = parent.get(cursor) ?? null;
+      }
+      path.reverse();
+      return path;
+    }
+    for (const direction of ["up", "down", "left", "right"] as const) {
+      const next = tryMove(world, current, direction, access);
+      if (!next) {
+        continue;
+      }
+      const key = tileKey(next);
+      if (parent.has(key)) {
+        continue;
+      }
+      parent.set(key, tileKey(current));
+      queue.push(next);
+    }
+  }
+  return null;
+}
+
+export function firstClosedDoorOnApproach(
+  world: WorldMap,
+  from: GridPoint,
+  to: GridPoint,
+  access: MovementAccess,
+): DoorSpec | null {
+  const openPath = findPath(world, from, to, geometryAccess(world));
+  if (!openPath) {
+    return doorBlockingTile(world, to, access);
+  }
+  for (const point of openPath) {
+    const door = doorBlockingTile(world, point, access);
+    if (door) {
+      return door;
+    }
   }
   return null;
 }
@@ -233,6 +374,7 @@ export function assembleWorld(
     checkpoints,
     landmarkTiles: [exit],
     destinationLabel: destination.label,
+    doors: doorsForMap(spec.id),
   };
 }
 
@@ -240,8 +382,15 @@ export function buildWorld(spec: WorldSpec): WorldMap {
   return assembleWorld(spec, parseLayout(spec.layout, spec.id));
 }
 
-export function floodWalkable(world: WorldMap, origin: GridPoint): Set<string> {
+export function floodWalkable(
+  world: WorldMap,
+  origin: GridPoint,
+  access: MovementAccess = geometryAccess(world),
+): Set<string> {
   const seen = new Set<string>();
+  if (!isTilePassable(world, origin, access) && !pointsEqual(origin, world.start)) {
+    return seen;
+  }
   if (!isTileWalkable(world, origin)) {
     return seen;
   }
@@ -255,7 +404,7 @@ export function floodWalkable(world: WorldMap, origin: GridPoint): Set<string> {
     for (const step of CARDINAL_STEPS) {
       const next = { x: current.x + step.x, y: current.y + step.y };
       const key = tileKey(next);
-      if (seen.has(key) || !isTileWalkable(world, next)) {
+      if (seen.has(key) || !isTilePassable(world, next, access)) {
         continue;
       }
       seen.add(key);
@@ -266,7 +415,7 @@ export function floodWalkable(world: WorldMap, origin: GridPoint): Set<string> {
 }
 
 export function destinationReachableAfterDecisions(world: WorldMap): boolean {
-  const reached = floodWalkable(world, world.start);
+  const reached = floodWalkable(world, world.start, geometryAccess(world));
   return world.checkpoints.every((point) => reached.has(tileKey(point)))
     && reached.has(tileKey(world.destination));
 }

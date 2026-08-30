@@ -433,6 +433,7 @@
 
   .game-shell-live .decision-dock-briefing,
   .game-shell-live .decision-dock-encounter,
+  .game-shell-live .decision-dock-consequence,
   .game-shell-live .decision-dock-final {
     position: fixed;
     left: 0;
@@ -455,6 +456,7 @@
 
   .game-shell-live .decision-dock-briefing::before,
   .game-shell-live .decision-dock-encounter::before,
+  .game-shell-live .decision-dock-consequence::before,
   .game-shell-live .decision-dock-final::before {
     content: "";
     display: block;
@@ -561,6 +563,7 @@
 
   .game-shell-live .decision-dock-briefing,
   .game-shell-live .decision-dock-encounter,
+  .game-shell-live .decision-dock-consequence,
   .game-shell-live .decision-dock-final {
     max-height: 78vh;
     max-height: 75dvh;

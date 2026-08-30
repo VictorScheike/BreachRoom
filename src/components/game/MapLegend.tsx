@@ -7,7 +7,7 @@ export function MapLegend() {
       </li>
       <li>
         <span className="map-legend-swatch map-legend-swatch-blocked" aria-hidden="true" />
-        Blocked
+        Blocked terrain
       </li>
       <li>
         <span className="map-legend-swatch map-legend-swatch-checkpoint" aria-hidden="true">
@@ -16,8 +16,24 @@ export function MapLegend() {
         Question checkpoint
       </li>
       <li>
+        <span className="map-legend-swatch map-legend-swatch-door-locked" aria-hidden="true">
+          🔒
+        </span>
+        Closed door
+      </li>
+      <li>
+        <span className="map-legend-swatch map-legend-swatch-door-open" aria-hidden="true">
+          ✓
+        </span>
+        Open door
+      </li>
+      <li>
         <span className="map-legend-swatch map-legend-swatch-player" aria-hidden="true" />
         Current position
+      </li>
+      <li>
+        <span className="map-legend-swatch map-legend-swatch-exit" aria-hidden="true" />
+        Final exit
       </li>
     </ul>
   );

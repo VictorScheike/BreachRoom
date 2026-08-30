@@ -26,7 +26,7 @@ export function isMissionMapVisible(screen: string): boolean {
 }
 
 export function hasActiveDecision(screen: string): boolean {
-  return screen === "encounter";
+  return screen === "encounter" || screen === "consequence";
 }
 
 export function hasDecisionFeedback(screen: string): boolean {

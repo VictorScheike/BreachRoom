@@ -4,6 +4,7 @@ interface DestinationMarkerProps {
   destination: MissionDestination;
   world: WorldMap;
   unlocked: boolean;
+  remainingCheckpoints?: number;
 }
 
 function placementClass(destination: MissionDestination, world: WorldMap): string {
@@ -29,7 +30,12 @@ const ICONS: Record<MissionDestination["icon"], string> = {
   coordination: "✚",
 };
 
-export function DestinationMarker({ destination, world, unlocked }: DestinationMarkerProps) {
+export function DestinationMarker({
+  destination,
+  world,
+  unlocked,
+  remainingCheckpoints = 0,
+}: DestinationMarkerProps) {
   return (
     <div
       className={`${placementClass(destination, world)} ${unlocked ? "is-open" : "is-locked"}`}
@@ -47,7 +53,9 @@ export function DestinationMarker({ destination, world, unlocked }: DestinationM
       title={
         unlocked
           ? destination.label
-          : "Complete all required decisions to unlock this destination."
+          : remainingCheckpoints > 0
+            ? `EXIT LOCKED — ${remainingCheckpoints} security checkpoint${remainingCheckpoints === 1 ? "" : "s"} remaining.`
+            : "Complete all required decisions to unlock this destination."
       }
     >
       <div className={`map-destination__object map-destination__object--${destination.icon}`} aria-hidden="true">
@@ -57,6 +65,11 @@ export function DestinationMarker({ destination, world, unlocked }: DestinationM
       <p className="map-destination__label">
         <span>{unlocked ? "EXIT OPEN" : "EXIT LOCKED"}</span>
         <strong>{destination.shortLabel}</strong>
+        {!unlocked && remainingCheckpoints > 0 ? (
+          <em>
+            {remainingCheckpoints} checkpoint{remainingCheckpoints === 1 ? "" : "s"} remaining
+          </em>
+        ) : null}
       </p>
     </div>
   );

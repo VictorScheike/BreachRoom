@@ -22,6 +22,7 @@ function renderGame(state: ReturnType<typeof createInitialGameState>): string {
       onMove={noop}
       onChoose={noop}
       onContinue={noop}
+      onRetry={noop}
       onOpenReport={noop}
       onToggleMute={noop}
       onChooseAnother={noop}

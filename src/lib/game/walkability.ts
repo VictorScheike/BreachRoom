@@ -1,5 +1,6 @@
 import { isWalkableTile } from "@/lib/game/tiles";
 import {
+  closedMapAccess,
   isInsideMap,
   stepFrom,
   tileAt,
@@ -28,13 +29,13 @@ export function isCheckpointTile(world: WorldMap, point: GridPoint): boolean {
 export function isCompletedCheckpoint(
   world: WorldMap,
   point: GridPoint,
-  decisionsMade: number,
+  unlockedCheckpointOrders: readonly number[],
 ): boolean {
   const tile = tileAt(world, point);
   return (
     isCheckpointTile(world, point) &&
     tile.checkpointOrder !== undefined &&
-    tile.checkpointOrder <= decisionsMade
+    unlockedCheckpointOrders.includes(tile.checkpointOrder)
   );
 }
 
@@ -61,7 +62,7 @@ export function initialRouteHint(world: WorldMap, maxSteps = 6): GridPoint[] {
       break;
     }
     for (const direction of CARDINALS) {
-      const next = tryMove(world, current, direction);
+      const next = tryMove(world, current, direction, closedMapAccess());
       if (!next) {
         continue;
       }

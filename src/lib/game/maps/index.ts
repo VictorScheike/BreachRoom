@@ -264,6 +264,13 @@ function makeCampus(): WorldMap {
   decorateFillRect(tiles, "#", "D", 8, 4, 16, 4);
   decorateFillRect(tiles, "#", "K", 8, 0, 16, 0);
   ringLedge(tiles, "T", "C");
+  // Outdoor islands sit on y=8 and indoor rooms on y=7. Seal every vertical
+  // join except the mapped security doorway at x=4–5.
+  for (const x of [6, 10, 11, 12, 13, 17, 18, 19, 20]) {
+    if (tiles[7]?.[x] && tiles[8]?.[x]) {
+      tiles[7][x] = "#";
+    }
+  }
   return worldFrom(
     "northstar-zero-hour",
     tiles,

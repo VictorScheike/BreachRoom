@@ -1,7 +1,10 @@
 import { TILE_DEFS, looksLikePath, unknownTileWarnings, type TileType } from "@/lib/game/tiles";
 import {
+  closedMapAccess,
   floodWalkable,
+  geometryAccess,
   isInsideMap,
+  playAccess,
   requiredDecisions,
   tileAt,
   tileKey,
@@ -101,20 +104,20 @@ export function validateWorld(world: WorldMap, expectedCheckpoints?: number): Ma
     issues.push(warning);
   }
 
-  const reached = floodWalkable(world, world.start);
-  if (!reached.has(tileKey(world.start))) {
+  const geometry = floodWalkable(world, world.start, geometryAccess(world));
+  if (!geometry.has(tileKey(world.start))) {
     issues.push(issue(world, "start is not reachable (start is not walkable)"));
   }
   world.checkpoints.forEach((point, index) => {
-    if (!reached.has(tileKey(point))) {
-      issues.push(issue(world, `checkpoint ${index + 1} cannot be reached from start`));
+    if (!geometry.has(tileKey(point))) {
+      issues.push(issue(world, `checkpoint ${index + 1} is not on the walkable route`));
     }
   });
-  if (!reached.has(tileKey(world.destination))) {
-    issues.push(issue(world, "exit cannot be reached from start after walking the route"));
+  if (!geometry.has(tileKey(world.destination))) {
+    issues.push(issue(world, "exit is not on the walkable route"));
   }
 
-  for (const key of reached) {
+  for (const key of geometry) {
     const [xText, yText] = key.split(",");
     const point = { x: Number(xText), y: Number(yText) };
     const tile = tileAt(world, point);
@@ -123,7 +126,196 @@ export function validateWorld(world: WorldMap, expectedCheckpoints?: number): Ma
     }
   }
 
+  issues.push(...validateDoorProgression(world));
+
   return { worldId: world.id, issues };
+}
+
+function checkpointPoint(world: WorldMap, order: number) {
+  return world.checkpoints[order - 1] ?? null;
+}
+
+function accessAfter(world: WorldMap, unlockedOrders: readonly number[]) {
+  const openDoorIds = world.doors
+    .filter((door) => unlockedOrders.includes(door.requiredCheckpointOrder))
+    .map((door) => door.id);
+  return playAccess(openDoorIds, unlockedOrders.length, world.checkpoints.length);
+}
+
+function occupiedByRouteMarker(world: WorldMap, point: { x: number; y: number }): string | null {
+  if (point.x === world.start.x && point.y === world.start.y) {
+    return "player spawn";
+  }
+  if (point.x === world.destination.x && point.y === world.destination.y) {
+    return "exit";
+  }
+  const checkpoint = world.checkpoints.findIndex((item) => item.x === point.x && item.y === point.y);
+  if (checkpoint >= 0) {
+    return `checkpoint ${checkpoint + 1}`;
+  }
+  return null;
+}
+
+export function validateDoorProgression(world: WorldMap): string[] {
+  const issues: string[] = [];
+  const seenTiles = new Set<string>();
+  const seenOrders = new Set<number>();
+
+  if (world.doors.length === 0) {
+    issues.push(issue(world, "walking map must define at least one progression door"));
+  }
+
+  for (const door of world.doors) {
+    if (door.mapId !== world.id) {
+      issues.push(issue(world, `door ${door.id} belongs to ${door.mapId}`));
+    }
+    if (door.blockedTiles.length === 0) {
+      issues.push(issue(world, `door ${door.id} blocks no tiles`));
+    }
+    if (
+      door.requiredCheckpointOrder < 1 ||
+      door.requiredCheckpointOrder > world.checkpoints.length
+    ) {
+      issues.push(
+        issue(world, `door ${door.id} requires checkpoint ${door.requiredCheckpointOrder}`),
+      );
+    }
+    if (seenOrders.has(door.requiredCheckpointOrder)) {
+      issues.push(
+        issue(world, `checkpoint ${door.requiredCheckpointOrder} unlocks more than one door`),
+      );
+    }
+    seenOrders.add(door.requiredCheckpointOrder);
+
+    for (const point of door.blockedTiles) {
+      const key = tileKey(point);
+      if (seenTiles.has(key)) {
+        issues.push(issue(world, `door ${door.id} overlaps another door at ${key}`));
+      }
+      seenTiles.add(key);
+      if (!isInsideMap(world, point)) {
+        issues.push(issue(world, `door ${door.id} is outside the map at ${key}`));
+      }
+      const tile = tileAt(world, point);
+      if (tile.walkable !== true) {
+        issues.push(issue(world, `door ${door.id} overlaps a wall at ${key}`));
+      }
+      const occupant = occupiedByRouteMarker(world, point);
+      if (occupant) {
+        issues.push(issue(world, `door ${door.id} overlaps ${occupant} at ${key}`));
+      }
+    }
+  }
+
+  const closed = floodWalkable(world, world.start, closedMapAccess());
+  const first = checkpointPoint(world, 1);
+  if (first && !closed.has(tileKey(first))) {
+    issues.push(issue(world, "the first required question is not reachable from spawn"));
+  }
+  if (closed.has(tileKey(world.destination))) {
+    issues.push(issue(world, "the exit is reachable before any doors open"));
+  }
+
+  for (const door of world.doors) {
+    const required = checkpointPoint(world, door.requiredCheckpointOrder);
+    if (!required) {
+      continue;
+    }
+    const beforeOwnDoor = floodWalkable(
+      world,
+      world.start,
+      accessAfter(
+        world,
+        Array.from({ length: door.requiredCheckpointOrder - 1 }, (_, index) => index + 1),
+      ),
+    );
+    if (!beforeOwnDoor.has(tileKey(required))) {
+      issues.push(
+        issue(
+          world,
+          `door ${door.id} blocks access to its own checkpoint ${door.requiredCheckpointOrder}`,
+        ),
+      );
+    }
+    if (beforeOwnDoor.has(tileKey(world.destination))) {
+      issues.push(
+        issue(world, `exit is reachable before door ${door.id} opens`),
+      );
+    }
+  }
+
+  let unlocked: number[] = [];
+  for (let order = 1; order <= world.checkpoints.length; order += 1) {
+    const point = checkpointPoint(world, order);
+    if (!point) {
+      continue;
+    }
+    const reached = floodWalkable(world, world.start, accessAfter(world, unlocked));
+    if (!reached.has(tileKey(point))) {
+      issues.push(
+        issue(world, `checkpoint ${order} is not reachable after unlocking ${unlocked.join(", ") || "nothing"}`),
+      );
+      break;
+    }
+    unlocked = [...unlocked, order];
+  }
+
+  const beforeExit = floodWalkable(
+    world,
+    world.start,
+    accessAfter(world, Array.from({ length: world.checkpoints.length - 1 }, (_, index) => index + 1)),
+  );
+  if (beforeExit.has(tileKey(world.destination))) {
+    issues.push(issue(world, "the exit is reachable before every mandatory question is completed"));
+  }
+
+  const afterAll = floodWalkable(
+    world,
+    world.start,
+    accessAfter(
+      world,
+      world.checkpoints.map((_, index) => index + 1),
+    ),
+  );
+  if (!afterAll.has(tileKey(world.destination))) {
+    issues.push(issue(world, "the exit is not reachable after every required door opens"));
+  }
+
+  for (let order = 1; order <= world.checkpoints.length; order += 1) {
+    const unlocked = Array.from({ length: order - 1 }, (_, index) => index + 1);
+    const reached = floodWalkable(world, world.start, accessAfter(world, unlocked));
+    const current = checkpointPoint(world, order);
+    if (current && !reached.has(tileKey(current))) {
+      issues.push(
+        issue(
+          world,
+          `checkpoint ${order} is not reachable after unlocking ${unlocked.join(", ") || "nothing"}`,
+        ),
+      );
+    }
+    for (let later = order + 1; later <= world.checkpoints.length; later += 1) {
+      const doorBetween = world.doors.some(
+        (door) => door.requiredCheckpointOrder >= order && door.requiredCheckpointOrder < later,
+      );
+      const laterPoint = checkpointPoint(world, later);
+      if (!laterPoint) {
+        continue;
+      }
+      if (doorBetween && reached.has(tileKey(laterPoint))) {
+        issues.push(
+          issue(
+            world,
+            `checkpoint ${later} is reachable while door for checkpoint ${order} is still closed`,
+          ),
+        );
+      }
+    }
+    if (reached.has(tileKey(world.destination))) {
+      issues.push(issue(world, `exit is reachable before checkpoint ${order} is completed`));
+    }
+  }
+
+  return issues;
 }
 
 export function assertWorldValid(world: WorldMap, expectedCheckpoints?: number): void {

@@ -1,6 +1,14 @@
+import { isCorrectAnswer } from "@/lib/game/answers";
+import {
+  DOOR_UNLOCK_MESSAGE,
+  EXIT_UNLOCK_MESSAGE,
+  doorUnlockedByCheckpoint,
+  openDoorIdsForUnlocks,
+} from "@/lib/game/doors";
 import { worldForMission } from "@/lib/game/maps";
 import {
   encounterForTile,
+  playAccess,
   pointsEqual,
   tryMove,
   type GridPoint,
@@ -51,10 +59,13 @@ export interface GameState {
     guidance?: string;
     framework?: string;
     technology?: string;
+    doorMessage?: string;
   } | null;
   muted: boolean;
   trainingConfig: TrainingConfig | null;
   endedEarly: boolean;
+  unlockedCheckpointOrders: number[];
+  openDoorIds: string[];
 }
 
 export type GameAction =
@@ -65,6 +76,7 @@ export type GameAction =
   | { type: "BEGIN_MISSION" }
   | { type: "MOVE"; direction: MoveDirection }
   | { type: "CHOOSE_OPTION"; optionId: string; displayLetter: "A" | "B" | "C" }
+  | { type: "RETRY_QUESTION" }
   | { type: "CONTINUE_JOURNEY" }
   | { type: "OPEN_REPORT" }
   | { type: "REPLAY_MISSION" }
@@ -72,7 +84,8 @@ export type GameAction =
   | { type: "CHOOSE_ANOTHER_MISSION" }
   | { type: "ABORT_MISSION" }
   | { type: "END_EARLY" }
-  | { type: "TOGGLE_MUTE" };
+  | { type: "TOGGLE_MUTE" }
+  | { type: "RESTORE_SESSION"; snapshot: GameState };
 
 export function createInitialGameState(): GameState {
   return {
@@ -89,6 +102,8 @@ export function createInitialGameState(): GameState {
     muted: false,
     trainingConfig: null,
     endedEarly: false,
+    unlockedCheckpointOrders: [],
+    openDoorIds: [],
   };
 }
 
@@ -100,10 +115,28 @@ export function currentWorld(state: GameState): WorldMap | null {
 }
 
 export function currentQuestion(state: GameState): Question | null {
-  if (!state.playthrough) {
+  if (!state.playthrough || !state.missionId) {
     return null;
   }
-  return state.playthrough.questions[state.choices.length] ?? null;
+  const world = worldForMission(state.missionId);
+  const nextOrder = world.checkpoints
+    .map((_, index) => index + 1)
+    .find((order) => !state.unlockedCheckpointOrders.includes(order));
+  if (nextOrder === undefined) {
+    return null;
+  }
+  return state.playthrough.questions[nextOrder - 1] ?? null;
+}
+
+export function remainingCheckpoints(state: GameState): number {
+  if (!state.playthrough) {
+    return 0;
+  }
+  return Math.max(0, state.playthrough.questions.length - state.unlockedCheckpointOrders.length);
+}
+
+export function allCheckpointsUnlocked(state: GameState): boolean {
+  return remainingCheckpoints(state) === 0 && (state.playthrough?.questions.length ?? 0) > 0;
 }
 
 export function currentScore(state: GameState): PlayScore | null {
@@ -145,6 +178,8 @@ function startMission(
     muted,
     trainingConfig,
     endedEarly: false,
+    unlockedCheckpointOrders: [],
+    openDoorIds: [],
   };
 }
 
@@ -168,6 +203,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         lastFeedback: null,
         trainingConfig: null,
         endedEarly: false,
+        unlockedCheckpointOrders: [],
+        openDoorIds: [],
       };
     }
     case "START_DIRECT":
@@ -197,18 +234,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return state;
       }
       const world = worldForMission(state.missionId);
-      const next = tryMove(world, state.position, action.direction);
+      const access = playAccess(
+        state.openDoorIds,
+        state.unlockedCheckpointOrders.length,
+        state.playthrough.questions.length,
+      );
+      const next = tryMove(world, state.position, action.direction, access);
       if (!next) {
         return state;
       }
-      if (pointsEqual(next, world.destination) && state.choices.length >= state.playthrough.questions.length) {
+      if (pointsEqual(next, world.destination) && allCheckpointsUnlocked(state)) {
         return {
           ...state,
           position: next,
           screen: "finalEncounter",
         };
       }
-      const checkpoint = encounterForTile(world, next, state.choices.length);
+      const checkpoint = encounterForTile(world, next, state.unlockedCheckpointOrders);
       if (checkpoint !== null) {
         return {
           ...state,
@@ -221,7 +263,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, position: next };
     }
     case "CHOOSE_OPTION": {
-      if (state.screen !== "encounter" || !state.playthrough) {
+      if (state.screen !== "encounter" || !state.playthrough || !state.missionId) {
         return state;
       }
       const question = currentQuestion(state);
@@ -232,36 +274,75 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!chosen) {
         return state;
       }
+      const alreadyRecorded = state.choices.some((choice) => choice.questionId === question.id);
+      const choices = alreadyRecorded
+        ? state.choices
+        : [
+            ...state.choices,
+            {
+              questionId: question.id,
+              optionId: action.optionId,
+              displayLetter: action.displayLetter,
+            },
+          ];
+      const correct = isCorrectAnswer(question, action.optionId);
+      const world = worldForMission(state.missionId);
+      const currentOrder =
+        world.checkpoints
+          .map((_, index) => index + 1)
+          .find((order) => !state.unlockedCheckpointOrders.includes(order)) ?? null;
+      const lastFeedback = {
+        title: chosen.title,
+        consequence: question.questionConsequence ?? chosen.consequence,
+        quality: chosen.quality,
+        verdictLabel: correct ? "Correct" : "Not the safest action",
+        guidance: question.guidance,
+        framework: question.frameworks[0],
+        technology: question.technologyTags?.[0]
+          ? technologyLabel(question.technologyTags[0])
+          : undefined,
+        doorMessage: undefined as string | undefined,
+      };
+      if (!correct) {
+        return {
+          ...state,
+          selectedOptionId: action.optionId,
+          choices,
+          lastFeedback,
+          screen: "consequence",
+        };
+      }
+      const unlockedCheckpointOrders =
+        currentOrder !== null && !state.unlockedCheckpointOrders.includes(currentOrder)
+          ? [...state.unlockedCheckpointOrders, currentOrder]
+          : state.unlockedCheckpointOrders;
+      const openDoorIds = openDoorIdsForUnlocks(state.missionId, unlockedCheckpointOrders);
+      const newlyOpened = doorUnlockedByCheckpoint(state.missionId, currentOrder ?? 0);
+      const allDone = unlockedCheckpointOrders.length >= state.playthrough.questions.length;
+      lastFeedback.doorMessage = allDone
+        ? EXIT_UNLOCK_MESSAGE
+        : newlyOpened
+          ? DOOR_UNLOCK_MESSAGE
+          : undefined;
       return {
         ...state,
         selectedOptionId: action.optionId,
-        choices: [
-          ...state.choices,
-          {
-            questionId: question.id,
-            optionId: action.optionId,
-            displayLetter: action.displayLetter,
-          },
-        ],
-        lastFeedback: {
-          title: chosen.title,
-          consequence: question.questionConsequence ?? chosen.consequence,
-          quality: chosen.quality,
-          verdictLabel:
-            question.correctOptionId
-              ? chosen.id === question.correctOptionId
-                ? "Correct"
-                : "Not quite"
-              : undefined,
-          guidance: question.guidance,
-          framework: question.frameworks[0],
-          technology: question.technologyTags?.[0]
-            ? technologyLabel(question.technologyTags[0])
-            : undefined,
-        },
+        choices,
+        lastFeedback,
+        unlockedCheckpointOrders,
+        openDoorIds,
         screen: "exploring",
       };
     }
+    case "RETRY_QUESTION":
+      if (state.screen !== "consequence") {
+        return state;
+      }
+      return {
+        ...state,
+        screen: "encounter",
+        selectedOptionId: null,
+      };
     case "CONTINUE_JOURNEY":
       if (state.screen !== "consequence" && state.screen !== "exploring") {
         return state;
@@ -275,7 +356,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.screen !== "finalEncounter" || !state.playthrough) {
         return state;
       }
-      if (state.choices.length < state.playthrough.questions.length) {
+      if (!allCheckpointsUnlocked(state)) {
         return state;
       }
       return { ...state, screen: "report", endedEarly: false };
@@ -318,6 +399,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...createInitialGameState(), muted: state.muted };
     case "TOGGLE_MUTE":
       return { ...state, muted: !state.muted };
+    case "RESTORE_SESSION":
+      return {
+        ...action.snapshot,
+        muted: state.muted,
+      };
     default: {
       const unhandled: never = action;
       return unhandled;

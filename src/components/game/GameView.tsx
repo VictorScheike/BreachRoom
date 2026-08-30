@@ -3,15 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DecisionDock } from "@/components/game/DecisionDock";
 import { DestinationMarker } from "@/components/game/DestinationMarker";
+import { MapDoor } from "@/components/game/MapDoor";
 import { MissionPlayer } from "@/components/game/MissionPlayer";
 import { MapLegend } from "@/components/game/MapLegend";
 import { MissionRoleBadge } from "@/components/game/MissionRoleBadge";
 import {
+  allCheckpointsUnlocked,
   currentQuestion,
   currentScore,
   currentWorld,
+  remainingCheckpoints,
   type GameState,
 } from "@/lib/game/engine";
+import {
+  CHECKPOINT_HINT,
+  DOOR_LOCKED_BUMP,
+  coordsEqual,
+  type DoorSpec,
+} from "@/lib/game/doors";
 import {
   acceptsMovementInput,
   hasActiveDecision,
@@ -21,7 +30,10 @@ import {
 } from "@/lib/game/player";
 import { playTone } from "@/lib/game/sound";
 import {
+  firstClosedDoorOnApproach,
+  findPath,
   manhattan,
+  playAccess,
   stepFrom,
   tileKey,
   tryMove,
@@ -60,6 +72,7 @@ interface GameViewProps {
   onMove: (direction: MoveDirection) => void;
   onChoose: (optionId: string, letter: "A" | "B" | "C") => void;
   onContinue: () => void;
+  onRetry: () => void;
   onOpenReport: () => void;
   onToggleMute: () => void;
   onChooseAnother: () => void;
@@ -86,6 +99,7 @@ export function GameView({
   onBegin,
   onMove,
   onChoose,
+  onRetry,
   onOpenReport,
   onToggleMute,
   onChooseAnother,
@@ -97,7 +111,11 @@ export function GameView({
   const [bumpKey, setBumpKey] = useState<string | null>(null);
   const [showMoveHint, setShowMoveHint] = useState(true);
   const [showRouteHint, setShowRouteHint] = useState(true);
-  const [toastHiddenFor, setToastHiddenFor] = useState<number | null>(null);
+  const [toastHiddenFor, setToastHiddenFor] = useState<string | null>(null);
+  const [doorNotice, setDoorNotice] = useState<string | null>(null);
+  const [openingDoorId, setOpeningDoorId] = useState<string | null>(null);
+  const [routeRevealKeys, setRouteRevealKeys] = useState<string[]>([]);
+  const prevOpenDoors = useRef<string[]>([]);
   const walkTimeout = useRef<number | null>(null);
   const bumpTimeout = useRef<number | null>(null);
   const toastTimeout = useRef<number | null>(null);
@@ -134,6 +152,45 @@ export function GameView({
     return lookup;
   }, [hintTiles]);
 
+  const access = useMemo(
+    () =>
+      playAccess(
+        state.openDoorIds,
+        state.unlockedCheckpointOrders.length,
+        state.playthrough?.questions.length ?? 0,
+      ),
+    [state.openDoorIds, state.playthrough?.questions.length, state.unlockedCheckpointOrders.length],
+  );
+
+  const doorsByTile = useMemo(() => {
+    const lookup = new Map<string, DoorSpec>();
+    if (!world) {
+      return lookup;
+    }
+    for (const door of world.doors) {
+      for (const point of door.blockedTiles) {
+        lookup.set(tileKey(point), door);
+      }
+    }
+    return lookup;
+  }, [world]);
+
+  const bumpTile = useCallback(
+    (key: string, door: DoorSpec | null) => {
+      setBumpKey(key);
+      if (bumpTimeout.current !== null) {
+        window.clearTimeout(bumpTimeout.current);
+      }
+      bumpTimeout.current = window.setTimeout(() => setBumpKey(null), 320);
+      if (door) {
+        setDoorNotice(DOOR_LOCKED_BUMP);
+        window.setTimeout(() => setDoorNotice(null), 2200);
+      }
+      playTone(state.muted || reducedMotion, 110, 90);
+    },
+    [reducedMotion, state.muted],
+  );
+
   const move = useCallback(
     (direction: MoveDirection, source: "keyboard" | "touch" = "touch") => {
       if (!acceptsMovementInput(state.screen) || !movementFromControl(state.screen, source, direction)) {
@@ -144,19 +201,15 @@ export function GameView({
         onMove(direction);
         return;
       }
-      const next = tryMove(world, state.position, direction);
+      const next = tryMove(world, state.position, direction, access);
       if (!next) {
         const blocked = stepFrom(state.position, direction);
-        setBumpKey(tileKey(blocked));
-        if (bumpTimeout.current !== null) {
-          window.clearTimeout(bumpTimeout.current);
-        }
-        bumpTimeout.current = window.setTimeout(() => setBumpKey(null), 320);
-        playTone(state.muted || reducedMotion, 110, 90);
+        bumpTile(tileKey(blocked), doorsByTile.get(tileKey(blocked)) ?? null);
         return;
       }
       setShowMoveHint(false);
       setShowRouteHint(false);
+      setDoorNotice(null);
       setWalking(true);
       if (walkTimeout.current !== null) {
         window.clearTimeout(walkTimeout.current);
@@ -164,7 +217,7 @@ export function GameView({
       walkTimeout.current = window.setTimeout(() => setWalking(false), 140);
       onMove(direction);
     },
-    [onMove, reducedMotion, state.muted, state.position, state.screen, world],
+    [access, bumpTile, doorsByTile, onMove, state.position, state.screen, world],
   );
 
   const onMapTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
@@ -234,10 +287,27 @@ export function GameView({
   }, [reducedMotion, state.missionId, state.screen]);
 
   useEffect(() => {
+    const previous = new Set(prevOpenDoors.current);
+    const newlyOpened = state.openDoorIds.find((id) => !previous.has(id)) ?? null;
+    prevOpenDoors.current = state.openDoorIds;
+    if (!newlyOpened || !world) {
+      return undefined;
+    }
+    setOpeningDoorId(newlyOpened);
+    const door = world.doors.find((item) => item.id === newlyOpened);
+    setRouteRevealKeys(door ? door.blockedTiles.map((point) => tileKey(point)) : []);
+    const timeout = window.setTimeout(() => {
+      setOpeningDoorId(null);
+      setRouteRevealKeys([]);
+    }, 900);
+    return () => window.clearTimeout(timeout);
+  }, [state.openDoorIds, world]);
+
+  useEffect(() => {
     if (!state.lastFeedback) {
       return undefined;
     }
-    const key = state.choices.length;
+    const key = `${state.lastFeedback.quality}:${state.lastFeedback.doorMessage ?? ""}:${state.unlockedCheckpointOrders.join(",")}:${state.screen}`;
     if (toastTimeout.current !== null) {
       window.clearTimeout(toastTimeout.current);
     }
@@ -247,7 +317,7 @@ export function GameView({
         window.clearTimeout(toastTimeout.current);
       }
     };
-  }, [state.lastFeedback, state.choices.length]);
+  }, [state.lastFeedback, state.screen, state.unlockedCheckpointOrders]);
 
   if (!world || !mission || !state.playthrough) {
     return null;
@@ -274,19 +344,29 @@ export function GameView({
   const letters: ("A" | "B" | "C")[] = ["A", "B", "C"];
   const encounterActive = hasActiveDecision(state.screen);
   const perspective = perspectiveFromState(state, mission);
-  const exitUnlocked = state.choices.length >= total;
+  const exitUnlocked = allCheckpointsUnlocked(state);
+  const unresolved = remainingCheckpoints(state);
+  const selectedOption =
+    question && state.selectedOptionId
+      ? question.options.find((item) => item.id === state.selectedOptionId) ?? null
+      : null;
   const sheetOpen =
     state.screen === "briefing" ||
     state.screen === "encounter" ||
+    state.screen === "consequence" ||
     state.screen === "finalEncounter";
+  const toastKey = state.lastFeedback
+    ? `${state.lastFeedback.quality}:${state.lastFeedback.doorMessage ?? ""}:${state.unlockedCheckpointOrders.join(",")}:${state.screen}`
+    : "";
+  const doorProgress = `${state.openDoorIds.length} of ${world.doors.length}`;
 
   let dock = (
     <DecisionDock
       mode="explore"
-      decisionNumber={state.choices.length}
+      decisionNumber={state.unlockedCheckpointOrders.length}
       total={total}
-        title={objective}
-      body="Walk toward the destination. Yellow ? markers are questions. Checkpoints trigger the next decision automatically – you do not need to hunt tiles."
+      title={objective}
+      body={`${CHECKPOINT_HINT} Yellow ? markers are questions. Checkpoints trigger the next decision automatically.`}
     />
   );
 
@@ -307,7 +387,7 @@ export function GameView({
     dock = (
       <DecisionDock
         mode="encounter"
-        decisionNumber={state.choices.length + 1}
+        decisionNumber={state.unlockedCheckpointOrders.length + 1}
         total={total}
         title={question.title}
         body={question.situation}
@@ -326,6 +406,19 @@ export function GameView({
           playTone(state.muted || reducedMotion, 220, 80);
           onChoose(optionId, letter);
         }}
+      />
+    );
+  } else if (state.screen === "consequence" && question && selectedOption) {
+    dock = (
+      <DecisionDock
+        mode="consequence"
+        decisionNumber={state.unlockedCheckpointOrders.length + 1}
+        total={total}
+        title={question.title}
+        body={question.situation}
+        selected={selectedOption}
+        incorrect
+        onRetry={onRetry}
       />
     );
   } else if (state.screen === "finalEncounter") {
@@ -356,7 +449,8 @@ export function GameView({
             Objective: Reach {world.destinationLabel} · {manhattan(state.position, world.destination)} tiles
           </p>
           <p className="game-progress">
-            Decisions: {state.choices.length} / {total}
+            Decisions: {state.unlockedCheckpointOrders.length} / {total}
+            <span className="game-door-progress">Doors unlocked: {doorProgress}</span>
             {phaseCaption ? ` · ${phaseCaption}` : ""}
           </p>
           <ul className="game-status" aria-label="Mission status">
@@ -402,8 +496,9 @@ export function GameView({
           <p className="game-mobile-status-objective">{world.destinationLabel}</p>
           <div className="game-mobile-status-meta">
             <span>
-              {state.choices.length}/{total}
+              {state.unlockedCheckpointOrders.length}/{total}
             </span>
+            <span className="game-door-progress-mobile">Doors {doorProgress}</span>
             <span>{perspective.playingAs}</span>
             <details className="game-mobile-more">
               <summary aria-label="Mission options">…</summary>
@@ -460,8 +555,10 @@ export function GameView({
                   const checkpointDone = isCompletedCheckpoint(
                     world,
                     point,
-                    state.choices.length,
+                    state.unlockedCheckpointOrders,
                   );
+                  const door = doorsByTile.get(key) ?? null;
+                  const doorOpen = door ? state.openDoorIds.includes(door.id) : false;
                   return (
                     <div
                       key={key}
@@ -477,6 +574,7 @@ export function GameView({
                         tile.isStart ? "rpg-tile--start" : "",
                         showRouteHint && hintStep !== undefined ? "rpg-tile--hint" : "",
                         bumpKey === key ? "rpg-tile--bump" : "",
+                        routeRevealKeys.includes(key) ? "rpg-tile--route-reveal" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
@@ -501,15 +599,44 @@ export function GameView({
                         const direction = adjacentMove(state.position, point);
                         if (direction) {
                           move(direction);
-                        } else if (!walkable) {
-                          setBumpKey(key);
-                          if (bumpTimeout.current !== null) {
-                            window.clearTimeout(bumpTimeout.current);
+                          return;
+                        }
+                        if (door && !doorOpen) {
+                          bumpTile(key, door);
+                          return;
+                        }
+                        const path = findPath(world, state.position, point, access);
+                        if (path && path[0]) {
+                          const stepDirection = adjacentMove(state.position, path[0]);
+                          if (stepDirection) {
+                            move(stepDirection);
                           }
-                          bumpTimeout.current = window.setTimeout(() => setBumpKey(null), 320);
+                          return;
+                        }
+                        const blockedDoor = firstClosedDoorOnApproach(
+                          world,
+                          state.position,
+                          point,
+                          access,
+                        );
+                        if (blockedDoor) {
+                          bumpTile(tileKey(blockedDoor.anchor), blockedDoor);
+                          return;
+                        }
+                        if (!walkable || (tile.isExit && !exitUnlocked)) {
+                          bumpTile(key, null);
                         }
                       }}
-                    />
+                    >
+                      {door ? (
+                        <MapDoor
+                          door={door}
+                          open={doorOpen}
+                          opening={openingDoorId === door.id}
+                          isAnchor={coordsEqual(door.anchor, point)}
+                        />
+                      ) : null}
+                    </div>
                   );
                 }),
               )}
@@ -521,6 +648,7 @@ export function GameView({
                 destination={world.destination}
                 world={world}
                 unlocked={exitUnlocked}
+                remainingCheckpoints={unresolved}
               />
               {showPlayer ? (
                 <MissionPlayer
@@ -541,12 +669,21 @@ export function GameView({
             </p>
           ) : null}
           <MapLegend />
-          {state.lastFeedback && toastHiddenFor !== state.choices.length ? (
+          {doorNotice ? (
+            <p className="decision-toast decision-toast-door" role="status">
+              {doorNotice}
+            </p>
+          ) : null}
+          {state.lastFeedback &&
+          state.screen !== "consequence" &&
+          toastHiddenFor !== toastKey ? (
             <p
               className={`decision-toast decision-toast-${state.lastFeedback.quality}`}
               role="status"
             >
-              {state.lastFeedback.verdictLabel ? (
+              {state.lastFeedback.doorMessage ? (
+                <strong>{state.lastFeedback.doorMessage} </strong>
+              ) : state.lastFeedback.verdictLabel ? (
                 <strong>{state.lastFeedback.verdictLabel}. </strong>
               ) : null}
               {state.lastFeedback.guidance ? `${state.lastFeedback.guidance} ` : null}

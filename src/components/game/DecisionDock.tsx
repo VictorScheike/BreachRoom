@@ -17,9 +17,11 @@ interface DecisionDockProps {
   onBegin?: () => void;
   onChoose?: (optionId: string, letter: "A" | "B" | "C") => void;
   onContinue?: () => void;
+  onRetry?: () => void;
   onOpenReport?: () => void;
   beginLabel?: string;
   roleChip?: string;
+  incorrect?: boolean;
 }
 
 export function DecisionDock({
@@ -37,6 +39,8 @@ export function DecisionDock({
   onBegin,
   onChoose,
   onOpenReport,
+  onRetry,
+  incorrect = false,
   beginLabel,
   roleChip,
 }: DecisionDockProps) {
@@ -109,7 +113,12 @@ export function DecisionDock({
           <p className="game-kicker">Incident update</p>
           <h2 className="dock-title">{title}</h2>
           <p className="dock-copy">
-            <strong>{qualityLabel(selected.quality)}.</strong> {selected.consequence}
+            {incorrect ? (
+              <strong>That was not the safest action. </strong>
+            ) : (
+              <strong>{qualityLabel(selected.quality)}. </strong>
+            )}
+            {selected.consequence}
           </p>
           <p className="dock-copy">{selected.explanation}</p>
           {scoreFlash ? (
@@ -123,6 +132,11 @@ export function DecisionDock({
           ) : null}
           {selected.npcReaction ? (
             <p className="npc-bubble">{selected.npcReaction}</p>
+          ) : null}
+          {incorrect ? (
+            <button type="button" className="game-primary" onClick={onRetry}>
+              Try again
+            </button>
           ) : null}
         </>
       ) : null}

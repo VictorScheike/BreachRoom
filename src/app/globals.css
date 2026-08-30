@@ -371,6 +371,156 @@ summary::-webkit-details-marker {
   box-shadow: inset 0 0 0 2px #fb7185, inset 0 0 12px rgba(225, 29, 72, 0.45);
 }
 
+.rpg-tile--route-reveal {
+  box-shadow: inset 0 0 0 2px #4ade80, 0 0 10px rgba(74, 222, 128, 0.45);
+}
+
+.map-door {
+  position: absolute;
+  inset: 12%;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.map-door-gate {
+  position: absolute;
+  inset: 8%;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+.map-door--ns .map-door-gate {
+  inset: 18% 6%;
+}
+
+.map-door--ew .map-door-gate {
+  inset: 6% 18%;
+}
+
+.map-door--locked .map-door-gate {
+  box-shadow: inset 0 0 0 2px currentColor, 0 0 6px rgba(248, 113, 113, 0.45);
+}
+
+.map-door--open .map-door-gate {
+  inset: 28% 8%;
+  opacity: 0.55;
+  box-shadow: inset 0 0 0 2px #86efac, 0 0 8px rgba(74, 222, 128, 0.55);
+}
+
+.map-door--opening .map-door-gate {
+  animation: door-unlock 0.7s ease;
+}
+
+.map-door-lock {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(0.38rem, 1.5vw, 0.62rem);
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px #0b1220);
+}
+
+.map-door-label {
+  position: absolute;
+  bottom: -2px;
+  z-index: 1;
+  padding: 0 2px;
+  border-radius: 2px;
+  background: #0b1220;
+  color: #fecaca;
+  font-size: clamp(0.28rem, 1.1vw, 0.45rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+.map-door--open .map-door-label {
+  color: #bbf7d0;
+}
+
+.map-door--bar .map-door-lock,
+.map-door--bar .map-door-label {
+  display: none;
+}
+
+.map-door--fence {
+  color: #a3e635;
+}
+
+.map-door--fence.map-door--locked .map-door-gate {
+  background: linear-gradient(90deg, rgba(63, 98, 18, 0.92), rgba(101, 163, 13, 0.88));
+}
+
+.map-door--heat {
+  color: #fb923c;
+}
+
+.map-door--heat.map-door--locked .map-door-gate {
+  background: linear-gradient(90deg, rgba(124, 45, 18, 0.95), rgba(194, 65, 12, 0.9));
+}
+
+.map-door--stone {
+  color: #cbd5e1;
+}
+
+.map-door--stone.map-door--locked .map-door-gate {
+  background: linear-gradient(90deg, rgba(51, 65, 85, 0.95), rgba(71, 85, 105, 0.92));
+}
+
+.map-door--security {
+  color: #38bdf8;
+}
+
+.map-door--security.map-door--locked .map-door-gate {
+  background: linear-gradient(90deg, rgba(12, 74, 110, 0.95), rgba(14, 116, 144, 0.92));
+}
+
+.map-door--server {
+  color: #c4b5fd;
+}
+
+.map-door--server.map-door--locked .map-door-gate {
+  background: linear-gradient(90deg, rgba(76, 29, 149, 0.95), rgba(91, 33, 182, 0.9));
+}
+
+.map-door--open .map-door-gate {
+  background: rgba(22, 101, 52, 0.35);
+}
+
+.game-door-progress {
+  display: inline-block;
+  margin-left: 0.65rem;
+  color: #94a3b8;
+  font-size: 0.82em;
+  font-weight: 600;
+}
+
+.game-door-progress-mobile {
+  color: #94a3b8;
+  font-size: 0.78em;
+}
+
+.decision-toast-door {
+  background: rgba(127, 29, 29, 0.88);
+  color: #fecaca;
+}
+
+@keyframes door-unlock {
+  0% {
+    transform: scaleX(1);
+    box-shadow: inset 0 0 0 2px #f87171, 0 0 8px rgba(248, 113, 113, 0.5);
+  }
+  55% {
+    transform: scaleX(0.35);
+    box-shadow: inset 0 0 0 2px #86efac, 0 0 12px rgba(74, 222, 128, 0.8);
+  }
+  100% {
+    transform: scaleX(1);
+    box-shadow: inset 0 0 0 2px #86efac, 0 0 8px rgba(74, 222, 128, 0.45);
+  }
+}
+
 @keyframes route-hint {
   0% {
     opacity: 0;
@@ -848,6 +998,39 @@ summary::-webkit-details-marker {
 
 .map-legend-swatch-objective {
   background: #38bdf8;
+}
+
+.map-legend-swatch-path {
+  background: #64748b;
+  box-shadow: inset 0 0 0 1px #94a3b8;
+}
+
+.map-legend-swatch-blocked {
+  background: #1e293b;
+  box-shadow: inset 0 0 0 1px #0f172a;
+}
+
+.map-legend-swatch-door-locked {
+  display: grid;
+  place-items: center;
+  background: #7f1d1d;
+  color: #fecaca;
+  font-size: 0.45rem;
+  box-shadow: inset 0 0 0 1px #f87171;
+}
+
+.map-legend-swatch-door-open {
+  display: grid;
+  place-items: center;
+  background: #14532d;
+  color: #bbf7d0;
+  font-size: 0.45rem;
+  box-shadow: inset 0 0 0 1px #4ade80;
+}
+
+.map-legend-swatch-exit {
+  background: #0e7490;
+  box-shadow: inset 0 0 0 1px #38bdf8;
 }
 
 .dock-title {
@@ -1479,6 +1662,14 @@ summary::-webkit-details-marker {
   color: #f0b429;
 }
 
+.map-destination__label em {
+  display: block;
+  color: #fda4af;
+  font-style: normal;
+  font-size: 6px;
+  letter-spacing: 0.04em;
+}
+
 .map-destination.is-open .map-destination__label span {
   color: #67e8f9;
 }
@@ -2003,7 +2194,8 @@ summary::-webkit-details-marker {
   .ember-layer,
   .map-focus-landmark,
   .rpg-tile--hint::before,
-  .rpg-tile--bump {
+  .rpg-tile--bump,
+  .map-door--opening .map-door-gate {
     animation: none !important;
   }
   .destination-weak,

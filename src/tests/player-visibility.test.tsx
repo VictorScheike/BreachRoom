@@ -4,7 +4,6 @@ import { GameView } from "@/components/game/GameView";
 import { MissionPlayer } from "@/components/game/MissionPlayer";
 import {
   createInitialGameState,
-  currentQuestion,
   gameReducer,
   type GameState,
 } from "@/lib/game/engine";
@@ -17,6 +16,7 @@ import {
 } from "@/lib/game/player";
 import type { MissionId } from "@/lib/missions/types";
 import type { MoveDirection } from "@/lib/game/world";
+import { chooseCorrect, walkToEncounter } from "@/tests/helpers/play";
 
 const MISSIONS: readonly MissionId[] = [
   "locked-out",
@@ -36,6 +36,7 @@ function renderGame(state: GameState): string {
       onMove={noop}
       onChoose={noop}
       onContinue={noop}
+      onRetry={noop}
       onOpenReport={noop}
       onToggleMute={noop}
       onChooseAnother={noop}
@@ -57,49 +58,6 @@ function beginExploring(missionId: MissionId, seed = 11): GameState {
     seed,
   });
   return gameReducer(state, { type: "BEGIN_MISSION" });
-}
-
-function walkToEncounter(start: GameState): GameState {
-  const dirs: MoveDirection[] = ["right", "up", "down", "left"];
-  const seen = new Set<string>();
-  const queue: GameState[] = [start];
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (!current) {
-      break;
-    }
-    if (current.screen === "encounter") {
-      return current;
-    }
-    const key = `${current.position.x},${current.position.y},${current.choices.length}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    for (const direction of dirs) {
-      const next = gameReducer(current, { type: "MOVE", direction });
-      if (next.screen !== current.screen || next.position.x !== current.position.x || next.position.y !== current.position.y) {
-        queue.push(next);
-      }
-    }
-    if (seen.size > 2500) {
-      break;
-    }
-  }
-  throw new Error(`Could not reach an encounter on ${start.missionId}`);
-}
-
-function answerFirstOption(state: GameState): GameState {
-  const question = currentQuestion(state);
-  const option = question?.options[0];
-  if (!option) {
-    throw new Error("No option to choose");
-  }
-  return gameReducer(state, {
-    type: "CHOOSE_OPTION",
-    optionId: option.id,
-    displayLetter: "A",
-  });
 }
 
 describe("player stays visible during decisions", () => {
@@ -132,12 +90,13 @@ describe("player stays visible during decisions", () => {
 
   it("keeps the player visible during answer feedback", () => {
     const encounter = walkToEncounter(beginExploring("dependency-depths"));
-    const exploring = answerFirstOption(encounter);
+    const exploring = chooseCorrect(encounter);
     expect(exploring.screen).toBe("exploring");
     expect(exploring.position).toEqual(encounter.position);
     const html = renderGame(exploring);
     expect(playerMatches(html)).toHaveLength(1);
     expect(html).toContain("decision-toast");
+    expect(html).toContain("security door unlocked");
     expect(html).not.toContain("Continue journey");
     expect(movementFromControl(exploring.screen, "keyboard", "w")).toBe("up");
   });
@@ -147,7 +106,7 @@ describe("player stays visible during decisions", () => {
     const total = state.playthrough?.questions.length ?? 0;
     for (let index = 0; index < total; index += 1) {
       state = walkToEncounter(state);
-      state = answerFirstOption(state);
+      state = chooseCorrect(state);
       expect(state.screen).toBe("exploring");
     }
     const dirs: MoveDirection[] = ["right", "up", "down", "left"];
@@ -189,7 +148,7 @@ describe("player stays visible during decisions", () => {
 
   it("unlocks movement immediately after an answer", () => {
     const encounter = walkToEncounter(beginExploring("locked-out"));
-    const exploring = answerFirstOption(encounter);
+    const exploring = chooseCorrect(encounter);
     expect(exploring.screen).toBe("exploring");
     expect(exploring.position).toEqual(encounter.position);
     expect(exploring.lastFeedback?.consequence).toBeTruthy();
@@ -209,7 +168,7 @@ describe("player stays visible during decisions", () => {
       state = walkToEncounter(state);
       const html = renderGame(state);
       expect(playerMatches(html)).toHaveLength(1);
-      state = answerFirstOption(state);
+      state = chooseCorrect(state);
       expect(playerMatches(renderGame(state))).toHaveLength(1);
       expect(state.screen).toBe("exploring");
     }
@@ -265,6 +224,9 @@ describe("player stays visible during decisions", () => {
     expect(html).toContain("Mission perspective");
     expect(html).toContain("decision-dock-briefing");
     expect(html).toContain("Question checkpoint");
+    expect(html).toContain("Closed door");
+    expect(html).toContain("Open door");
+    expect(html).toContain("Final exit");
     expect(html).toContain("Use the arrow keys, WASD, or tap a neighbouring tile to walk the path.");
     expect(html).toContain("Begin incident response");
     expect(html.indexOf("decision-dock-briefing")).toBeLessThan(html.indexOf("game-map"));

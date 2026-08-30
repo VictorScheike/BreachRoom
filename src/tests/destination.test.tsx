@@ -54,6 +54,7 @@ describe("destination markers", () => {
         onMove={() => undefined}
         onChoose={() => undefined}
         onContinue={() => undefined}
+        onRetry={() => undefined}
         onOpenReport={() => undefined}
         onToggleMute={() => undefined}
         onChooseAnother={() => undefined}

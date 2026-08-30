@@ -13,6 +13,7 @@ import type { MissionId, RoleId } from "@/lib/missions/types";
 import { loadTrainingFromSearch, loadTrainingSession, rememberQuestionIds } from "@/lib/training/session";
 import { missionPerspective } from "@/lib/game/perspective";
 import { sessionIdFor, upsertProgressSession } from "@/lib/progress/store";
+import { clearLiveSession, loadLiveSession, saveLiveSession } from "@/lib/game/sessionPersist";
 
 const MISSION_IDS: readonly MissionId[] = [
   "locked-out",
@@ -63,14 +64,34 @@ function PlayApp() {
     const roleId = parseRole(params.get("role"));
     const training = params.get("training") === "1";
     const seed = Math.floor(Math.random() * 1_000_000_000);
+    const snapshot = loadLiveSession();
 
     if (training) {
       const fromUrl = loadTrainingFromSearch(params);
       const config = fromUrl ?? loadTrainingSession();
       if (config && (!missionId || config.mapId === missionId)) {
         rememberQuestionIds(config.questionIds);
+        if (
+          snapshot &&
+          snapshot.trainingConfig &&
+          snapshot.missionId === config.mapId &&
+          snapshot.screen !== "report"
+        ) {
+          dispatch({ type: "RESTORE_SESSION", snapshot });
+          return;
+        }
         dispatch({ type: "START_TRAINING", config });
       }
+      return;
+    }
+    if (
+      snapshot &&
+      snapshot.missionId &&
+      snapshot.screen !== "report" &&
+      snapshot.screen !== "missionSelection" &&
+      (!missionId || snapshot.missionId === missionId)
+    ) {
+      dispatch({ type: "RESTORE_SESSION", snapshot });
       return;
     }
     if (missionId && roleId) {
@@ -98,6 +119,7 @@ function PlayApp() {
 
   useEffect(() => {
     if (!state.missionId || !state.playthrough) {
+      clearLiveSession();
       return;
     }
     if (state.screen === "missionSelection" || state.screen === "roleSelect") {
@@ -119,7 +141,7 @@ function PlayApp() {
       missionTitle: mission.title,
       seed: state.seed,
       questionIds: state.playthrough.questions.map((item) => item.id),
-      questionsCompleted: state.choices.length,
+      questionsCompleted: state.unlockedCheckpointOrders.length,
       questionsRequired: state.playthrough.questions.length,
       phaseLabel: phase ? phase.label : null,
       completed: state.screen === "report" && !state.endedEarly,
@@ -135,6 +157,7 @@ function PlayApp() {
       audienceMode: perspective.mode,
       perspectiveLabel: perspective.playingAs,
     });
+    saveLiveSession(state);
   }, [report, state]);
 
   if (state.screen === "missionSelection") {
@@ -180,6 +203,7 @@ function PlayApp() {
         dispatch({ type: "CHOOSE_OPTION", optionId, displayLetter })
       }
       onContinue={() => dispatch({ type: "CONTINUE_JOURNEY" })}
+      onRetry={() => dispatch({ type: "RETRY_QUESTION" })}
       onOpenReport={() => dispatch({ type: "OPEN_REPORT" })}
       onToggleMute={() => dispatch({ type: "TOGGLE_MUTE" })}
       onChooseAnother={() => dispatch({ type: "ABORT_MISSION" })}
