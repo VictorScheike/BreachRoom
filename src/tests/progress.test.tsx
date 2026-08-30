@@ -143,8 +143,8 @@ describe("progress store", () => {
     expect(html).toContain("You have finished Locked Out");
     expect(html).toContain("See my score");
     expect(html).toContain("progress/report?session=locked-out%3A9");
-    expect(html).toContain("Screens go dark");
-    expect(html).toContain("The Excel from &#x27;Finance&#x27;");
+    expect(html).toContain("Lock banners on multiple warehouse workstations");
+    expect(html).toContain("Macro-enabled spreadsheet from a lookalike finance mailbox");
     expect(html).toContain("correct");
     expect(html).not.toContain("Recent training sessions");
   });
