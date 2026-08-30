@@ -1,9 +1,12 @@
 import { DECISION_IDS } from "./types";
+import type { FinalResultKind, LabPersistedState } from "./types";
 import { LAB_MISSION_ID } from "./catalog";
 import { resultLabel } from "./engine";
 import { chosenCount } from "./catalog";
-import type { FinalResultKind, LabDifficulty, LabPersistedState } from "./types";
+import { difficultyLabel } from "@/lib/lab/copy";
 import { upsertProgressSession, type ProgressSession } from "@/lib/progress/store";
+
+export { difficultyLabel } from "@/lib/lab/copy";
 
 export const LAB_PROGRESS_SESSION_ID = `${LAB_MISSION_ID}:lab`;
 
@@ -51,8 +54,4 @@ export function syncLabProgress(state: LabPersistedState, result: FinalResultKin
   };
   upsertProgressSession(session);
   return session;
-}
-
-export function difficultyLabel(difficulty: LabDifficulty): string {
-  return difficulty === "challenge" ? "Challenge" : "Guided";
 }

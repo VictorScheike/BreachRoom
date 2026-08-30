@@ -121,6 +121,9 @@ export interface ArchitectureDecision {
   number: number;
   area: string;
   question: string;
+  lookingAt: string;
+  affects: string;
+  layer: BoardZoneId | "all";
   nodeId: MapNodeId;
   options: readonly [ArchitectureOption, ArchitectureOption, ArchitectureOption];
 }

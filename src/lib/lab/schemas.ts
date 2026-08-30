@@ -47,6 +47,9 @@ export const architectureDecisionSchema = z
     number: z.number().int().min(1).max(10),
     area: nonEmpty,
     question: nonEmpty,
+    lookingAt: nonEmpty,
+    affects: nonEmpty,
+    layer: z.union([z.enum(BOARD_ZONES), z.literal("all")]),
     nodeId: z.enum(MAP_NODE_IDS),
     options: z.tuple([architectureOptionSchema, architectureOptionSchema, architectureOptionSchema]),
   })

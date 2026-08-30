@@ -421,6 +421,32 @@
 }
 
 .lab-decision__copy { grid-area: copy; }
+
+.lab-insight {
+  margin: 0 0 0.7rem;
+  color: var(--lab-text-body);
+  line-height: 1.45;
+}
+
+.lab-insight span {
+  display: block;
+  margin-bottom: 0.18rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  color: var(--lab-text-muted);
+}
+
+.lab-insight--affects {
+  margin-top: 0.15rem;
+}
+
+.lab-map-caption {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--lab-text-secondary);
+}
 .lab-decision__map { grid-area: map; min-width: 0; }
 .lab-decision__choices { grid-area: choices; }
 
@@ -614,6 +640,16 @@
 
 .lab-map.is-flat .lab-zone-band__label {
   opacity: 0.45;
+}
+
+.lab-zone-band.is-focus {
+  border-style: solid;
+  border-color: var(--lab-brand-orange);
+  background: color-mix(in srgb, var(--lab-brand-orange) 8%, var(--lab-surface-elevated));
+}
+
+.lab-zone-band.is-dim {
+  opacity: 0.5;
 }
 
 .lab-zone {

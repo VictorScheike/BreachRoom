@@ -15,6 +15,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 1,
     area: "External exposure",
     question: "The Claims Portal and Claims API sit at the edge of Nordic Shield. How should they be exposed to the internet?",
+    lookingAt: "The Edge zone — Employee and Claims Portal, the front door.",
+    affects: "Whether a web filter sits in front, and whether the Claims API stays public.",
+    layer: "external",
     nodeId: "waf",
     options: [
       option("exposure-private", "exposure", "WAF and private API endpoint", {
@@ -87,6 +90,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 2,
     area: "Identity and access",
     question: "Claims handlers sign in through the Identity Provider to reach the Claims Portal. How should employees authenticate, and how is access assigned?",
+    lookingAt: "The Edge zone — how staff prove who they are before the portal opens.",
+    affects: "Whether a stolen password is enough to get in.",
+    layer: "external",
     nodeId: "identity",
     options: [
       option("identity-mfa", "identity", "MFA and role-based access", {
@@ -159,6 +165,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 3,
     area: "Network segmentation",
     question: "The Claims Portal, AI Claims App, Claims API and Claims Database currently share one path. Should they sit in separate security zones?",
+    lookingAt: "The three layers: Edge, Application, and Protected data.",
+    affects: "Whether a foothold in one box can walk freely into the others.",
+    layer: "all",
     nodeId: "network",
     options: [
       option("network-segmented", "network", "Separate zones with controlled links", {
@@ -231,6 +240,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 4,
     area: "API protection",
     question: "The Claims Portal must communicate with the Claims API. How should that connection be protected?",
+    lookingAt: "The path from the AI Claims App toward the Claims API.",
+    affects: "How strictly the app must identify itself before it can call the API.",
+    layer: "protected",
     nodeId: "gateway",
     options: [
       option("gateway-private", "gateway", "Private endpoint, gateway and service identity", {
@@ -303,6 +315,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 5,
     area: "Service authentication",
     question: "The AI Claims App must prove itself to the Claims API. How should internal services authenticate?",
+    lookingAt: "The Application zone — how the AI proves itself to other services.",
+    affects: "Whether a compromised app hands over a reusable secret.",
+    layer: "application",
     nodeId: "secrets",
     options: [
       option("secrets-vault", "secrets", "Managed identities and a secrets vault", {
@@ -375,6 +390,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 6,
     area: "Database permissions",
     question: "What should the Claims API allow the AI Claims App to read or change in the Claims Database?",
+    lookingAt: "The Protected data zone — Claims API and Claims Database.",
+    affects: "How much customer data the AI is allowed to read or change.",
+    layer: "protected",
     nodeId: "api",
     options: [
       option("api-restricted", "data-access", "Read-only on the open claim", {
@@ -447,6 +465,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 7,
     area: "AI retrieval boundaries",
     question: "When the AI Claims App asks the retrieval service for context, what may it search?",
+    lookingAt: "The Application zone — what the AI is allowed to search.",
+    affects: "Whether one claim can become a search across other customers.",
+    layer: "application",
     nodeId: "retrieval",
     options: [
       option("retrieval-case", "retrieval", "Only the current claim", {
@@ -519,6 +540,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 8,
     area: "Malicious input protection",
     question: "Claim documents and prompts reach the AI Claims App through the portal. How should they be checked before that workflow?",
+    lookingAt: "The path from the Claims Portal into the AI Claims App.",
+    affects: "Whether a hostile document is inspected before the AI reads it.",
+    layer: "application",
     nodeId: "scanner",
     options: [
       option("input-sandbox", "input", "Validate, scan and isolate uploads", {
@@ -591,6 +615,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 9,
     area: "Logging and detection",
     question: "Which authentication events, API calls, AI actions and database queries should be logged and monitored?",
+    lookingAt: "The monitoring bar under the diagram — logs from sign-in, API, AI and data.",
+    affects: "Whether this attack is noticed in time, or only after the fact.",
+    layer: "all",
     nodeId: "detection",
     options: [
       option("detection-siem", "detection", "SIEM on identity, API, AI and data", {
@@ -663,6 +690,9 @@ export const LAB_DECISIONS: readonly ArchitectureDecision[] = [
     number: 10,
     area: "Containment and recovery",
     question: "If this architecture is abused, can Nordic Shield isolate systems, revoke access, restore data and follow a tested process?",
+    lookingAt: "The whole board — backups, isolation, and whether someone can cut the session off.",
+    affects: "Whether Nordic Shield can contain a foothold and restore customer data.",
+    layer: "all",
     nodeId: "backup",
     options: [
       option("recovery-tested", "recovery", "Isolation, revocation, protected backups, tested IR", {

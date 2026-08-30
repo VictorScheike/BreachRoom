@@ -22,21 +22,24 @@ const decisionProps = {
 };
 
 describe("Architecture Defence Lab UI", () => {
-  it("starts with Guided and Challenge instead of a component palette", () => {
+  it("starts with Beginner and Challenging instead of a component palette", () => {
     const html = renderToStaticMarkup(
       <ArchitectureDefenceLabView state={EMPTY_LAB_STATE} onChange={noop} />,
     );
     expect(html).toContain("Architecture Defence Lab");
-    expect(html).toContain("Guided");
-    expect(html).toContain("Challenge");
+    expect(html).toContain("Beginner");
+    expect(html).toContain("Challenging");
     expect(html).toContain("Start the ten decisions");
     expect(html).toContain("Nordic Shield Insurance");
     expect(html).toContain("fictional");
+    expect(html).toContain("Edge");
+    expect(html).toContain("Protected data");
+    expect(html).not.toContain("Recommended");
     expect(html).not.toContain("User and Input Zone");
     expect(html).not.toContain("Launch Attack");
   });
 
-  it("shows one decision at a time with a Recommended label only in Guided", () => {
+  it("shows one decision at a time with layer hints and no Recommended label", () => {
     const decision = LAB_MISSION.decisions[0]!;
     const guided = renderToStaticMarkup(
       <DecisionScreen
@@ -57,7 +60,10 @@ describe("Architecture Defence Lab UI", () => {
       />,
     );
     expect(guided).toContain("Decision 1 of 10");
-    expect(guided).toContain("Recommended");
+    expect(guided).toContain("You are looking at");
+    expect(guided).toContain("Your choice changes");
+    expect(guided).toContain(decision.question);
+    expect(guided).not.toContain("Recommended");
     expect(guided).toContain("more infrastructure and private-link configuration");
     expect(guided).toContain("WAF in front of public portal and API");
     expect(guided).toContain("Direct public portal and API");
@@ -320,7 +326,7 @@ describe("lab reachability from existing surfaces", () => {
     expect(html).toMatch(/href="\/lab\/?"/);
     expect(html).toContain("The Poisoned Claim");
     expect(html).toContain("Inbox Under Siege");
-    expect(html).toContain("GUIDED OR CHALLENGE");
+    expect(html).toContain("BEGINNER OR CHALLENGING");
   });
 
   it("lists a completed lab on My Progress with an Open lab link", () => {
@@ -350,7 +356,7 @@ describe("lab reachability from existing surfaces", () => {
               roleId: "security-architect",
               topics: ["ai-security", "secure-architecture"],
               audienceMode: "standard",
-              perspectiveLabel: "Guided",
+              perspectiveLabel: "Beginner",
             },
           ],
         }}

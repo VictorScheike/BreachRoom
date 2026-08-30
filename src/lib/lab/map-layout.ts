@@ -212,10 +212,10 @@ export const LAB_EDGES: readonly MapEdgeDefinition[] = [
 
 export const CORE_VISIBLE_NODES: readonly MapNodeId[] = [...PRIMARY_SYSTEM_IDS];
 
-export const LAB_ZONE_LABELS: readonly { id: BoardZoneId; label: string }[] = [
-  { id: "external", label: "Edge zone" },
-  { id: "application", label: "Application zone" },
-  { id: "protected", label: "Protected data zone" },
+export const LAB_ZONE_LABELS: readonly { id: BoardZoneId; label: string; note: string }[] = [
+  { id: "external", label: "Edge zone", note: "Front door. Staff and the internet meet the company here." },
+  { id: "application", label: "Application zone", note: "The AI reads claims and drafts replies here." },
+  { id: "protected", label: "Protected data zone", note: "Customer records and payouts live here." },
 ];
 
 export const EDGE_CONTROL_IDS: Record<PrimaryEdgeId, readonly MapNodeId[]> = {

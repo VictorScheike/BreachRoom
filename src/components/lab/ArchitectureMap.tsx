@@ -16,6 +16,7 @@ import {
 } from "@/lib/lab/map-layout";
 import type {
   AttackSimulation,
+  BoardZoneId,
   ControlStatus,
   LabChoices,
   LabPhase,
@@ -101,6 +102,7 @@ export function ArchitectureMap({
   focusedStageId,
   reducedMotion = false,
   paused = false,
+  focusZone = "all",
 }: {
   choices: LabChoices;
   previewOptionId?: OptionId | null;
@@ -116,6 +118,7 @@ export function ArchitectureMap({
   focusedStageId?: string | null;
   reducedMotion?: boolean;
   paused?: boolean;
+  focusZone?: BoardZoneId | "all";
 }) {
   const detected = useBoardLayout();
   const layout = layoutProp ?? detected;
@@ -168,9 +171,19 @@ export function ArchitectureMap({
     >
       <div className="lab-map__zones" aria-hidden="true">
         {LAB_ZONE_LABELS.map((zone) => (
-          <span key={zone.id} className={`lab-zone-band lab-zone-band--${zone.id}`}>
+          <span
+            key={zone.id}
+            className={[
+              "lab-zone-band",
+              `lab-zone-band--${zone.id}`,
+              focusZone !== "all" && focusZone === zone.id ? "is-focus" : "",
+              focusZone !== "all" && focusZone !== zone.id ? "is-dim" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          >
             <span className="lab-zone-band__label">{zone.label}</span>
-            {zone.id === "application" && network ? <span className="lab-zone-band__note">{network.mapTitle}</span> : null}
+            <span className="lab-zone-band__note">{zone.id === "application" && network ? network.mapTitle : zone.note}</span>
           </span>
         ))}
       </div>

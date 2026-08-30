@@ -1,4 +1,4 @@
-import type { ControlStatus, StageOutcomeKind, SystemStatus } from "./types";
+import type { ControlStatus, LabDifficulty, StageOutcomeKind, SystemStatus } from "./types";
 
 export const OUTCOME_LABELS: Record<StageOutcomeKind, string> = {
   succeeded: "SUCCEEDED",
@@ -30,3 +30,10 @@ export const CONTROL_STATUS_LABELS: Record<ControlStatus, string> = {
 };
 
 export const DIFFICULTY_CAPTION = "Difficulty";
+
+export function difficultyLabel(difficulty: LabDifficulty): string {
+  return difficulty === "challenge" ? "Challenging" : "Beginner";
+}
+
+export const LAB_SETUP_BLURB =
+  "Nordic Shield Insurance needs a claims system. You choose the controls. Then a stolen staff login tries to walk from the front door to the customer database.";

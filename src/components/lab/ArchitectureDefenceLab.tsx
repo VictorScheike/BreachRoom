@@ -9,7 +9,7 @@ import { FinalReview, defaultFocusedStage } from "@/components/lab/FinalReview";
 import { GameHud } from "@/components/lab/GameHud";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
 import { LAB_MISSION, TECHNIQUE_COUNT, decisionById } from "@/lib/lab/catalog";
-import { DIFFICULTY_CAPTION } from "@/lib/lab/copy";
+import { DIFFICULTY_CAPTION, difficultyLabel, LAB_SETUP_BLURB } from "@/lib/lab/copy";
 import { ATTACK_STEP_MS, currentBeat, hudStatus } from "@/lib/lab/animation";
 import { simulateAttack } from "@/lib/lab/engine";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
@@ -114,7 +114,7 @@ export function ArchitectureDefenceLabView({
 
       {inGame ? (
         <GameHud
-          kicker={`${LAB_MISSION.company} · ${state.difficulty === "guided" ? "Guided" : "Challenge"}`}
+          kicker={`${LAB_MISSION.company} · ${difficultyLabel(state.difficulty)}`}
           title={
             state.phase === "decide"
               ? `Decision ${currentDecision.number} of 10`
@@ -142,7 +142,7 @@ export function ArchitectureDefenceLabView({
             disabled={state.phase === "attack" || state.phase === "result"}
             onClick={() => handleDifficulty("guided")}
           >
-            Guided
+            Beginner
           </button>
           <button
             type="button"
@@ -151,7 +151,7 @@ export function ArchitectureDefenceLabView({
             disabled={state.phase === "attack" || state.phase === "result"}
             onClick={() => handleDifficulty("challenge")}
           >
-            Challenge
+            Challenging
           </button>
         </div>
       ) : null}
@@ -163,7 +163,7 @@ export function ArchitectureDefenceLabView({
               {LAB_MISSION.missionLabel} · {LAB_MISSION.title}
             </p>
             <p className="lab-mission-head__tagline">{LAB_MISSION.tagline}</p>
-            <p>{LAB_MISSION.scenario}</p>
+            <p>{LAB_SETUP_BLURB}</p>
             <p className="lab-fictional">{LAB_MISSION.fictionalNote}</p>
           </div>
         </div>
@@ -198,7 +198,7 @@ export function ArchitectureDefenceLabView({
                 <p className="lab-kicker">Architecture locked</p>
                 <h2 className="lab-launch__title">Run the complete attack</h2>
                 <p className="lab-launch__copy">
-                  Ten controls are now on the board. The Red Team will walk one attack chain through the architecture you built.
+                  Ten controls are on the board. Next, one attack walks left to right through the layers you built.
                 </p>
                 {missingMessage ? <p className="lab-missing">{missingMessage}</p> : null}
               </div>

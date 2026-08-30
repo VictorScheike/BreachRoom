@@ -59,7 +59,7 @@ describe("Architecture Defence Lab catalog", () => {
     expect(DECISION_IDS).toHaveLength(10);
   });
 
-  it("keeps Recommended only on the stronger option and offers three takes", () => {
+  it("keeps one stronger option per decision and offers three takes", () => {
     for (const decision of LAB_MISSION.decisions) {
       expect(decision.options).toHaveLength(3);
       expect(decision.options.filter((item) => item.recommended)).toHaveLength(1);
@@ -68,6 +68,9 @@ describe("Architecture Defence Lab catalog", () => {
       expect(decision.options.some((item) => item.strength === "medium")).toBe(true);
       expect(decision.options.some((item) => item.strength === "weak")).toBe(true);
       expect(decision.options.every((item) => item.campaignStageIds.length > 0)).toBe(true);
+      expect(decision.lookingAt.length).toBeGreaterThan(10);
+      expect(decision.affects.length).toBeGreaterThan(10);
+      expect(decision.question.length).toBeGreaterThan(20);
     }
   });
 });

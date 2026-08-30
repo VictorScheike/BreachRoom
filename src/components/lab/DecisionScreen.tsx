@@ -24,7 +24,7 @@ export function DecisionScreen({
   onBack: () => void;
   canGoBack: boolean;
 }) {
-  const guided = difficulty === "guided";
+  const beginner = difficulty === "guided";
   const lockedCount = chosenCount(choices);
 
   return (
@@ -33,25 +33,36 @@ export function DecisionScreen({
         <p className="lab-kicker">
           Decision {decision.number} of 10 · {decision.area} · {lockedCount} of 10 controls selected
         </p>
+        <p className="lab-insight">
+          <span>You are looking at</span> {decision.lookingAt}
+        </p>
         <h2 id="lab-decision-heading">{decision.question}</h2>
+        <p className="lab-insight lab-insight--affects">
+          <span>Your choice changes</span> {decision.affects}
+        </p>
       </div>
       <div className="lab-decision__map">
         <p className="lab-kicker">Live architecture</p>
+        <p className="lab-map-caption">
+          Left to right is the path a claim — and an attacker — can travel. Boxes are systems. Small
+          shields are the controls you choose.
+        </p>
         <ArchitectureMap
           choices={choices}
           previewOptionId={pendingOptionId}
           phase="decide"
           inspectable={false}
           compact
+          focusZone={decision.layer}
         />
-        <ArchitectureUpdateNote optionId={pendingOptionId} guided={guided} />
+        <ArchitectureUpdateNote optionId={pendingOptionId} beginner={beginner} />
       </div>
       <div className="lab-decision__choices">
         <div className="lab-options" role="radiogroup" aria-label="Architecture options">
           {decision.options.map((option) => {
             const selected = pendingOptionId === option.id;
-            const showTradeOff = guided || selected;
-            const description = guided ? option.description : option.challengeDescription;
+            const showTradeOff = beginner || selected;
+            const description = beginner ? option.description : option.challengeDescription;
             return (
               <button
                 key={option.id}
@@ -63,7 +74,6 @@ export function DecisionScreen({
               >
                 <span className="lab-option__top">
                   <LabIcon name={option.icon} />
-                  {guided && option.recommended ? <span className="lab-recommended">Recommended</span> : null}
                 </span>
                 <strong>{option.title}</strong>
                 <span>{description}</span>
@@ -85,11 +95,11 @@ export function DecisionScreen({
   );
 }
 
-function ArchitectureUpdateNote({ optionId, guided }: { optionId: OptionId | null; guided: boolean }) {
+function ArchitectureUpdateNote({ optionId, beginner }: { optionId: OptionId | null; beginner: boolean }) {
   if (!optionId) {
     return (
       <p className="decision-strip is-idle" role="status">
-        Select a control to add or change it on the architecture.
+        Pick a control. It appears on the architecture before you continue.
       </p>
     );
   }
@@ -97,7 +107,7 @@ function ArchitectureUpdateNote({ optionId, guided }: { optionId: OptionId | nul
   return (
     <p className="decision-strip is-updated" role="status" aria-live="polite">
       <strong>{option.architectureUpdate}</strong>
-      {guided ? <span>{option.riskReduced}</span> : <span>Trade-off: {option.tradeOff}</span>}
+      {beginner ? <span>This reduces: {option.riskReduced}</span> : <span>Trade-off: {option.tradeOff}</span>}
     </p>
   );
 }
