@@ -1,10 +1,5 @@
 import { AI_FORGE_QUESTIONS } from "@/lib/missions/ai-forge/questions";
 import { DEPENDENCY_DEPTHS_QUESTIONS } from "@/lib/missions/dependency-depths/questions";
-import {
-  AI_FORGE_EXTRAS,
-  DEPENDENCY_DEPTHS_EXTRAS,
-  LOCKED_OUT_EXTRAS,
-} from "@/lib/missions/extras";
 import { INBOX_UNDER_SIEGE_QUESTIONS } from "@/lib/missions/inbox-under-siege/questions";
 import { NORTHSTAR_ZERO_HOUR_QUESTIONS, ZERO_HOUR_PHASES } from "@/lib/missions/northstar-zero-hour/questions";
 import { LOCKED_OUT_QUESTIONS } from "@/lib/missions/locked-out/questions";
@@ -98,7 +93,7 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
         setup: "A tiny afternoon change and a ransomware banner arrive in the same hour. Awkward.",
       },
     ],
-    questions: annotate("locked-out", [...LOCKED_OUT_QUESTIONS, ...LOCKED_OUT_EXTRAS]),
+    questions: annotate("locked-out", LOCKED_OUT_QUESTIONS),
     published: true,
     summary:
       "Work a ransomware morning across the Northstar campus and reach the Core Server Room.",
@@ -140,7 +135,7 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
         setup: "A coding agent wants your repos, your docs and, while it is here, production.",
       },
     ],
-    questions: annotate("ai-forge", [...AI_FORGE_QUESTIONS, ...AI_FORGE_EXTRAS]),
+    questions: annotate("ai-forge", AI_FORGE_QUESTIONS),
     published: true,
     summary: "Help the organisation launch an AI system with rails, not accidents.",
   },
@@ -194,7 +189,7 @@ export const MISSIONS: Record<MissionId, MissionDefinition> = {
         setup: "A cloud app is nearly released with generous IAM, shy logs and a root-shaped container.",
       },
     ],
-    questions: annotate("dependency-depths", [...DEPENDENCY_DEPTHS_QUESTIONS, ...DEPENDENCY_DEPTHS_EXTRAS]),
+    questions: annotate("dependency-depths", DEPENDENCY_DEPTHS_QUESTIONS),
     published: true,
     summary: "Trace a weakness through packages, pipelines and cloud until the build can be trusted.",
   },

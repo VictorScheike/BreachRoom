@@ -54,6 +54,7 @@ export function question(
       | "toolIds"
       | "learningObjectiveIds"
       | "difficulty"
+      | "prompt"
     >
   >,
 ): Question {
