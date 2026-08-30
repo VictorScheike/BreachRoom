@@ -80,11 +80,18 @@ export const mapEdgeSchema = z
 export const attackTechniqueSchema = z
   .object({
     id: z.enum(ATTACK_TECHNIQUE_IDS),
-    number: z.number().int().min(1).max(8),
+    number: z.number().int().min(1).max(10),
     name: nonEmpty,
     summary: nonEmpty,
+    role: z.enum(["offensive", "detection", "response"]),
+    requiredAccess: nonEmpty,
+    target: nonEmpty,
+    attemptedAction: nonEmpty,
+    controlTested: nonEmpty,
+    accessIfSuccessful: nonEmpty,
+    nextStageIds: z.array(z.enum(ATTACK_TECHNIQUE_IDS)),
     entryNode: z.enum(MAP_NODE_IDS),
-    path: z.array(z.enum(MAP_NODE_IDS)).min(2),
+    path: z.array(z.enum(MAP_NODE_IDS)).min(1),
     primaryDecisionId: z.enum(DECISION_IDS),
     influencingDecisionIds: z.array(z.enum(DECISION_IDS)),
   })
@@ -100,9 +107,9 @@ export const labMissionSchema = z
     tagline: nonEmpty,
     scenario: nonEmpty,
     decisions: z.array(architectureDecisionSchema).length(10),
-    nodes: z.array(mapNodeSchema).min(13).max(16),
-    edges: z.array(mapEdgeSchema).min(10),
-    techniques: z.array(attackTechniqueSchema).length(8),
+    nodes: z.array(mapNodeSchema).min(5).max(16),
+    edges: z.array(mapEdgeSchema).min(4),
+    techniques: z.array(attackTechniqueSchema).length(10),
   })
   .strict()
   .superRefine((mission, ctx) => {

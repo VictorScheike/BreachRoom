@@ -1,6 +1,6 @@
 "use client";
 
-import { nodeById } from "@/lib/lab/catalog";
+import { TECHNIQUE_COUNT, nodeById } from "@/lib/lab/catalog";
 import { compactOutcome, type AttackBeat, type IncidentLogEvent } from "@/lib/lab/animation";
 import { OUTCOME_LABELS } from "@/lib/lab/copy";
 import type { ResolvedStage } from "@/lib/lab/types";
@@ -31,26 +31,9 @@ export function IncidentPanel({
   const target = nodeById(targetId);
   const showResult = beat?.kind === "result" || !beat;
 
-  if (beat?.kind === "pivot") {
-    return (
-      <aside className="lab-incident is-pivot" aria-live="polite" aria-label="Incident panel">
-        <p className="lab-kicker">Red Team</p>
-        <h2>Red Team pivots</h2>
-        <p className="lab-incident__response">{stage.pivotLabel ?? "Blocked. Red Team changes technique."}</p>
-        <ul className="lab-incident__log">
-          {recent.map((event) => (
-            <li key={event.id} className={`is-${event.tone}`}>
-              {event.text}
-            </li>
-          ))}
-        </ul>
-      </aside>
-    );
-  }
-
   return (
     <aside className="lab-incident" aria-live="polite" aria-label="Incident panel">
-      <p className="lab-kicker">Technique {stage.number} of 8</p>
+      <p className="lab-kicker">Technique {stage.number} of {TECHNIQUE_COUNT}</p>
       <h2>{stage.name}</h2>
       <p className="lab-incident__target">Target: {target.name}</p>
       <p className="lab-incident__response">{showResult ? stage.explanation : stage.attackerAction}</p>

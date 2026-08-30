@@ -96,7 +96,7 @@ describe("lab persistence", () => {
       const loaded = loadLabState();
       expect(loaded.choices).toEqual(STRONG_ARCHITECTURE);
       expect(loaded.phase).toBe("result");
-      expect(loaded.bestResult).toBe("prevented");
+      expect(loaded.bestResult).toBe("contained");
       expect(globalThis.localStorage.getItem(LAB_STORAGE_KEY)).toContain("lab-poisoned-claim");
     } finally {
       restore();

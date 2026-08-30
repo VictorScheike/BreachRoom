@@ -42,23 +42,44 @@ export type NodeKind = (typeof NODE_KINDS)[number];
 export const BOARD_ZONES = ["external", "application", "protected", "secops"] as const;
 export type BoardZoneId = (typeof BOARD_ZONES)[number];
 
-export const ATTACK_BEAT_KINDS = ["pivot", "entry", "travel", "result"] as const;
+export const ATTACK_BEAT_KINDS = ["entry", "travel", "result"] as const;
 export type AttackBeatKind = (typeof ATTACK_BEAT_KINDS)[number];
 
 export const ATTACK_TECHNIQUE_IDS = [
-  "stolen-credentials",
+  "initial-foothold",
+  "claims-portal",
   "poisoned-document",
   "ai-manipulation",
   "api-call",
   "unrelated-claims",
   "extract-modify",
+  "payout-manipulation",
   "monitoring",
   "contain-recover",
 ] as const;
 export type AttackTechniqueId = (typeof ATTACK_TECHNIQUE_IDS)[number];
 
-export const STAGE_OUTCOMES = ["blocked", "detected", "limited", "compromised", "recovered"] as const;
+export const STAGE_OUTCOMES = [
+  "succeeded",
+  "compromised",
+  "limited",
+  "blocked",
+  "detected",
+  "contained",
+  "not-reached",
+  "not-required",
+  "recovered",
+] as const;
 export type StageOutcomeKind = (typeof STAGE_OUTCOMES)[number];
+
+export const SYSTEM_STATUSES = ["normal", "reached", "compromised", "protected", "contained", "impacted"] as const;
+export type SystemStatus = (typeof SYSTEM_STATUSES)[number];
+
+export const CONTROL_STATUSES = ["active", "triggered", "effective", "bypassed", "failed"] as const;
+export type ControlStatus = (typeof CONTROL_STATUSES)[number];
+
+export const STAGE_ROLES = ["offensive", "detection", "response"] as const;
+export type StageRole = (typeof STAGE_ROLES)[number];
 
 export const FINAL_RESULTS = ["prevented", "contained", "breached"] as const;
 export type FinalResultKind = (typeof FINAL_RESULTS)[number];
@@ -130,6 +151,13 @@ export interface AttackTechniqueDefinition {
   number: number;
   name: string;
   summary: string;
+  role: StageRole;
+  requiredAccess: string;
+  target: string;
+  attemptedAction: string;
+  controlTested: string;
+  accessIfSuccessful: string;
+  nextStageIds: readonly AttackTechniqueId[];
   entryNode: MapNodeId;
   path: readonly MapNodeId[];
   primaryDecisionId: DecisionId;
@@ -154,7 +182,14 @@ export interface ResolvedStage {
   id: AttackTechniqueId;
   number: number;
   name: string;
+  role: StageRole;
   outcome: StageOutcomeKind;
+  requiredAccess: string;
+  target: string;
+  attemptedAction: string;
+  controlTested: string;
+  accessIfSuccessful: string;
+  nextStageIds: readonly AttackTechniqueId[];
   attackerAction: string;
   controlResponse: string;
   explanation: string;
@@ -170,6 +205,7 @@ export interface ResolvedStage {
   influencingDecisionIds: readonly DecisionId[];
   choiceId: OptionId;
   choiceTitle: string;
+  controlStatus: ControlStatus | null;
 }
 
 export interface ArchitectureImprovement {
@@ -199,6 +235,13 @@ export interface ArchitectureReview {
   assetReached: string;
   remainingRisks: readonly string[];
   improvements: readonly ArchitectureImprovement[];
+  compromisedSystems: readonly string[];
+  neverReached: readonly string[];
+  stoppingControl: string;
+  endedAt: string;
+  detectionOccurred: boolean;
+  recoveryRequired: boolean;
+  recoveryReadiness: string;
 }
 
 export interface AttackSimulation {

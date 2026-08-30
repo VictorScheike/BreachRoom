@@ -8,7 +8,7 @@ import { DifficultySelect } from "@/components/lab/DifficultySelect";
 import { FinalReview, defaultFocusedStage } from "@/components/lab/FinalReview";
 import { GameHud } from "@/components/lab/GameHud";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
-import { LAB_MISSION, decisionById } from "@/lib/lab/catalog";
+import { LAB_MISSION, TECHNIQUE_COUNT, decisionById } from "@/lib/lab/catalog";
 import { DIFFICULTY_CAPTION } from "@/lib/lab/copy";
 import { ATTACK_STEP_MS, currentBeat, hudStatus } from "@/lib/lab/animation";
 import { simulateAttack } from "@/lib/lab/engine";
@@ -90,7 +90,7 @@ export function ArchitectureDefenceLabView({
   const campaignPhase = state.phase === "review" || state.phase === "attack" || state.phase === "result";
   const progressCurrent =
     state.phase === "attack" ? (activeStage?.number ?? 1) : state.phase === "decide" ? currentDecision.number : 10;
-  const progressTotal = state.phase === "attack" || state.phase === "result" ? 8 : 10;
+  const progressTotal = state.phase === "attack" || state.phase === "result" ? TECHNIQUE_COUNT : 10;
   const resultFocusId =
     state.phase === "result" && simulation
       ? (focusedStageId ?? defaultFocusedStage(simulation)?.id ?? null)
@@ -120,8 +120,8 @@ export function ArchitectureDefenceLabView({
               ? `Decision ${currentDecision.number} of 10`
               : state.phase === "review"
                 ? "Architecture complete · 10/10"
-                : state.phase === "attack"
-                  ? `Red Team · Step ${activeStage?.number ?? 1} of 8`
+                  : state.phase === "attack"
+                  ? `Red Team · Step ${activeStage?.number ?? 1} of ${TECHNIQUE_COUNT}`
                   : "Final assessment"
           }
           status={status}
@@ -251,7 +251,7 @@ export function ArchitectureDefenceLabView({
               onPrevious={() => update(previousAttackStep(state))}
               onPause={() => update(pauseAttack(state, !state.paused))}
               onNext={() => update(nextAttackStep(state))}
-              readyMessage="The architecture is ready. The Red Team will use every control you chose — stolen password, poisoned document, then the path toward the records."
+              readyMessage="The architecture is ready. The Red Team starts with a stolen authenticated session, then follows one connected path through the system you built."
             />
           ) : null}
 

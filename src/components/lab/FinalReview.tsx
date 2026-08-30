@@ -32,8 +32,34 @@ export function FinalReview({
       <p className={`lab-final__result is-${simulation.result}`}>{simulation.resultLabel}</p>
       <h2 id="lab-final-heading">{simulation.resultSummary}</h2>
       <p className="lab-final__impact">{review.greatestImpact}</p>
+      <dl className="lab-final__facts">
+        <div>
+          <dt>Attack ended at</dt>
+          <dd>{review.endedAt}</dd>
+        </div>
+        <div>
+          <dt>Systems compromised</dt>
+          <dd>{review.compromisedSystems.join(", ") || "None"}</dd>
+        </div>
+        <div>
+          <dt>Never reached</dt>
+          <dd>{review.neverReached.join(", ") || "None"}</dd>
+        </div>
+        <div>
+          <dt>Control that stopped progression</dt>
+          <dd>{review.stoppingControl}</dd>
+        </div>
+        <div>
+          <dt>Monitoring</dt>
+          <dd>{review.detectionOccurred ? "Detected" : "Did not correlate this incident in time"}</dd>
+        </div>
+        <div>
+          <dt>Recovery</dt>
+          <dd>{review.recoveryReadiness}</dd>
+        </div>
+      </dl>
       <p className="lab-final__asset">
-        <strong>Protected asset reached:</strong> {review.assetReached}
+        <strong>Furthest asset reached:</strong> {review.assetReached}
       </p>
       <p className="lab-final__score">Architecture score {simulation.score} — the path matters more than the number.</p>
       {focused ? <StageExplanation stage={focused} total={TECHNIQUE_COUNT} /> : null}
@@ -45,10 +71,7 @@ export function FinalReview({
               className={focused?.id === stage.id ? "is-active" : ""}
               onClick={() => onFocusStage?.(stage.id)}
             >
-              <span>
-                {stage.isPivot ? "Pivot · " : ""}
-                {stage.name}
-              </span>
+              <span>{stage.name}</span>
               <strong className={`is-${stage.outcome}`}>{OUTCOME_LABELS[stage.outcome]}</strong>
             </button>
           </li>
@@ -101,7 +124,7 @@ function PillarCard({ pillar }: { pillar: DefencePillar }) {
   return (
     <article className={`lab-pillar is-${pillar.id}`}>
       <p className="lab-kicker">{pillar.label}</p>
-      <p className="lab-pillar__score">{pillar.score}</p>
+      <p className="lab-pillar__score">{pillar.id === "recovery" && pillar.summary.includes("not required") ? "—" : pillar.score}</p>
       <p>{pillar.summary}</p>
       {pillar.worked[0] ? <p className="lab-pillar__worked">{pillar.worked[0]}</p> : null}
       {pillar.failed[0] ? <p className="lab-pillar__failed">{pillar.failed[0]}</p> : null}
@@ -125,18 +148,26 @@ function StageExplanation({ stage, total }: { stage: ResolvedStage; total: numbe
       <p className="lab-final__question">{decision.question}</p>
       <dl className="lab-final__story">
         <div>
+          <dt>Required previous access</dt>
+          <dd>{stage.requiredAccess}</dd>
+        </div>
+        <div>
+          <dt>Target</dt>
+          <dd>{stage.target}</dd>
+        </div>
+        <div>
           <dt>What the attacker tried</dt>
           <dd>{stage.attackerAction}</dd>
         </div>
         <div>
-          <dt>What happened</dt>
-          <dd>{stage.explanation}</dd>
-        </div>
-        <div>
-          <dt>Control that decided it</dt>
+          <dt>Control being tested</dt>
           <dd>
             {control.name}. {stage.controlResponse}
           </dd>
+        </div>
+        <div>
+          <dt>What happened</dt>
+          <dd>{stage.explanation}</dd>
         </div>
         <div>
           <dt>Where it ended</dt>
@@ -150,14 +181,15 @@ function StageExplanation({ stage, total }: { stage: ResolvedStage; total: numbe
 }
 
 export function defaultFocusedStage(simulation: AttackSimulation): ResolvedStage | undefined {
+  const blocked = simulation.stages.find((item) => item.outcome === "blocked");
+  if (blocked) {
+    return blocked;
+  }
   if (simulation.result === "breached") {
     return (
-      simulation.stages.find((item) => item.id === "extract-modify") ??
-      [...simulation.stages].reverse().find((item) => item.stopNode === "database")
+      simulation.stages.find((item) => item.id === "extract-modify" && item.outcome !== "not-reached") ??
+      simulation.stages.find((item) => item.id === "payout-manipulation" && item.outcome !== "not-reached")
     );
   }
-  return (
-    [...simulation.stages].reverse().find((item) => item.stopNode === "database" || item.travelledPath.includes("database")) ??
-    simulation.stages[simulation.stages.length - 1]
-  );
+  return simulation.stages.find((item) => item.outcome === "contained") ?? simulation.stages.find((item) => item.id === "contain-recover");
 }

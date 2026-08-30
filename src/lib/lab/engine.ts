@@ -1,5 +1,5 @@
 import { LAB_MISSION, optionForChoice } from "./catalog";
-import { resolveCampaignStages } from "./campaign";
+import { hasDataImpact, resolveCampaignStages } from "./campaign";
 import type {
   ArchitectureImprovement,
   ArchitectureReview,
@@ -9,6 +9,7 @@ import type {
   FinalResultKind,
   LabChoices,
   ResolvedStage,
+  StageOutcomeKind,
 } from "./types";
 import { DECISION_IDS } from "./types";
 
@@ -27,46 +28,40 @@ const RESULT_RANK: Record<FinalResultKind, number> = {
 const PREVENTION_DECISIONS: readonly DecisionId[] = ["exposure", "identity", "gateway", "input"];
 const LIMITATION_DECISIONS: readonly DecisionId[] = ["network", "secrets", "data-access", "retrieval"];
 
+function continues(outcome: StageOutcomeKind): boolean {
+  return outcome === "succeeded" || outcome === "compromised" || outcome === "limited";
+}
+
 export function simulateAttack(choices: LabChoices): AttackSimulation {
   const stages = resolveCampaignStages(choices);
   const byId = (id: ResolvedStage["id"]) => stages.find((item) => item.id === id);
-  const stolen = byId("stolen-credentials");
-  const upload = byId("poisoned-document");
-  const unrelated = byId("unrelated-claims");
   const extract = byId("extract-modify");
+  const payout = byId("payout-manipulation");
   const recover = byId("contain-recover");
   const monitor = byId("monitoring");
-
-  const extractHeld = extract?.outcome === "blocked";
+  const ai = byId("ai-manipulation");
+  const impact = hasDataImpact(stages);
   const recovered = recover?.outcome === "recovered";
-  const stolenHeld = stolen?.outcome === "blocked";
-  const uploadHeld = upload?.outcome === "blocked";
-  const unrelatedOpen = unrelated?.outcome === "compromised";
-  const extractOpen = extract?.outcome === "compromised";
+  const deepHit = extract?.outcome === "succeeded" || payout?.outcome === "succeeded";
 
-  let result: FinalResultKind;
-  if (extractOpen && !recovered) {
+  let result: FinalResultKind = "contained";
+  if (deepHit && !recovered) {
     result = "breached";
-  } else if (extractHeld && (stolenHeld || uploadHeld) && !unrelatedOpen) {
-    result = "prevented";
-  } else {
-    result = "contained";
   }
 
-  const pillars = buildPillars(choices, stages);
+  const pillars = buildPillars(choices, stages, impact, recovered);
   const score = overallScore(pillars);
-  const review = buildReview(choices, stages, result);
+  const review = buildReview(choices, stages, result, impact);
 
   return {
     stages,
     result,
     resultLabel: RESULT_LABEL[result],
     resultSummary: summaryFor(result, {
-      stolenHeld,
-      uploadHeld,
-      extractHeld,
       recovered,
       detected: monitor?.outcome === "detected",
+      aiBlocked: ai?.outcome === "blocked",
+      impact,
     }),
     review,
     score,
@@ -75,26 +70,22 @@ export function simulateAttack(choices: LabChoices): AttackSimulation {
 
 function summaryFor(
   result: FinalResultKind,
-  flags: {
-    stolenHeld: boolean;
-    uploadHeld: boolean;
-    extractHeld: boolean;
-    recovered: boolean;
-    detected: boolean;
-  },
+  flags: { recovered: boolean; detected: boolean; aiBlocked: boolean; impact: boolean },
 ): string {
-  if (result === "prevented") {
-    return flags.stolenHeld && flags.uploadHeld
-      ? "The architecture stopped the stolen password and the poisoned document. The campaign did not reach the records."
-      : "Later layers still kept the Claims Database from being rewritten. The attacker did not complete the objective.";
+  if (flags.aiBlocked && result === "contained") {
+    if (flags.detected) {
+      return "The attacker compromised an authenticated employee session and reached the Claims Portal. Layered controls limited the uploaded document and stopped the attack at the AI workflow. No unrelated claims, protected database records or payout functions were reached. Monitoring detected the activity and the session was contained.";
+    }
+    return "The attacker compromised an authenticated employee session and reached the Claims Portal. Layered controls limited the uploaded document and stopped the attack at the AI workflow. No unrelated claims, protected database records or payout functions were reached.";
   }
   if (result === "contained") {
     if (flags.recovered) {
-      return "Part of the chain succeeded, then isolation, revocation or restore reduced the lasting damage.";
+      return "The stolen session reached further into the architecture. Isolation, revocation and restore reduced the lasting damage.";
     }
-    return flags.extractHeld
-      ? "Part of the chain succeeded, but least privilege or segmentation kept the blast radius in check."
-      : "The campaign moved, then a later control limited how far it could go.";
+    if (flags.detected) {
+      return "Part of the chain succeeded, then detection and containment kept the blast radius in check.";
+    }
+    return "The stolen session reached the Claims Portal. Later controls stopped the offensive path before protected records were rewritten.";
   }
   return flags.detected
     ? "The Claims Database was reached. Monitoring produced a usable picture, but recovery did not roll the damage back."
@@ -124,40 +115,48 @@ function pillarScore(choices: LabChoices, ids: readonly DecisionId[], effect: "p
   return Math.round((total / (ids.length * 2)) * 100);
 }
 
-function buildPillars(choices: LabChoices, stages: readonly ResolvedStage[]): DefencePillar[] {
+function buildPillars(
+  choices: LabChoices,
+  stages: readonly ResolvedStage[],
+  impact: boolean,
+  recovered: boolean,
+): DefencePillar[] {
   const prevention = pillarScore(choices, PREVENTION_DECISIONS, "prevention");
   const limitation = pillarScore(choices, LIMITATION_DECISIONS, "blast");
   const detection = pillarScore(choices, ["detection"], "detection");
-  const recovery = pillarScore(choices, ["recovery"], "recovery");
+  const recoveryChoice = pillarScore(choices, ["recovery"], "recovery");
+  const recoveryScore = impact ? (recovered ? recoveryChoice : Math.min(recoveryChoice, 50)) : 0;
 
   return [
     {
       id: "prevention",
       label: "Prevention",
-      summary: "Whether stolen credentials, hostile uploads and unauthenticated API calls were stopped.",
+      summary: "Whether uploads, unauthorised AI actions and API abuse were stopped after the mandatory foothold.",
       score: prevention,
-      ...splitStages(stages, ["stolen-credentials", "poisoned-document", "api-call"], ["blocked"]),
+      ...splitStages(stages, ["poisoned-document", "ai-manipulation", "api-call"], ["blocked", "limited"]),
     },
     {
       id: "limitation",
       label: "Blast-radius limitation",
       summary: "Whether segmentation, retrieval bounds and least privilege kept the hit on one case.",
       score: limitation,
-      ...splitStages(stages, ["ai-manipulation", "unrelated-claims", "extract-modify"], ["blocked", "limited"]),
+      ...splitStages(stages, ["unrelated-claims", "extract-modify", "payout-manipulation"], ["blocked", "limited", "not-reached"]),
     },
     {
       id: "detection",
       label: "Detection",
-      summary: "Whether identity, API, AI and database events became one incident.",
+      summary: "Whether identity, upload, AI and API events became one incident.",
       score: detection,
-      ...splitStages(stages, ["monitoring"], ["detected", "limited"]),
+      ...splitStages(stages, ["monitoring"], ["detected"]),
     },
     {
       id: "recovery",
       label: "Recovery",
-      summary: "Whether isolation, revocation and protected backups reduced lasting damage.",
-      score: recovery,
-      ...splitStages(stages, ["contain-recover"], ["recovered", "limited"]),
+      summary: impact
+        ? "Whether isolation, revocation and protected backups reduced lasting damage."
+        : "Recovery readiness: Prepared, but not required during this incident.",
+      score: recoveryScore,
+      ...splitStages(stages, ["contain-recover"], impact ? ["recovered", "contained"] : ["contained", "not-required"]),
     },
   ];
 }
@@ -171,7 +170,7 @@ function splitStages(
   const failed: string[] = [];
   for (const id of ids) {
     const stage = stages.find((item) => item.id === id);
-    if (!stage) {
+    if (!stage || stage.outcome === "not-reached" || stage.outcome === "not-required") {
       continue;
     }
     const line = `${stage.name}: ${stage.choiceTitle}. ${stage.impact}`;
@@ -197,49 +196,113 @@ function overallScore(pillars: readonly DefencePillar[]): number {
 }
 
 function assetReached(stages: readonly ResolvedStage[]): string {
+  const payout = stages.find((item) => item.id === "payout-manipulation");
   const extract = stages.find((item) => item.id === "extract-modify");
   const unrelated = stages.find((item) => item.id === "unrelated-claims");
   const api = stages.find((item) => item.id === "api-call");
-  const ai = stages.find((item) => item.id === "ai-manipulation");
-  const upload = stages.find((item) => item.id === "poisoned-document");
-  const stolen = stages.find((item) => item.id === "stolen-credentials");
-  if (extract?.outcome === "compromised") {
+  const portal = stages.find((item) => item.id === "claims-portal");
+  if (payout?.outcome === "succeeded") {
+    return "Payout functions";
+  }
+  if (extract?.outcome === "succeeded") {
     return "Claims Database";
   }
-  if (unrelated?.outcome === "compromised") {
+  if (unrelated?.outcome === "succeeded") {
     return "Claims Database (unrelated records)";
   }
-  if (extract?.outcome === "limited" || unrelated?.outcome === "limited") {
+  if (extract?.outcome === "limited" || payout?.outcome === "limited") {
     return "Open claim in the Claims Database";
   }
-  if (api?.outcome === "compromised") {
+  if (api?.outcome === "succeeded" || api?.outcome === "limited") {
     return "Claims API";
   }
-  if (ai?.outcome === "compromised") {
-    return "AI Claims App";
-  }
-  if (upload?.outcome === "compromised") {
-    return "Document pipeline";
-  }
-  if (stolen?.outcome === "compromised") {
+  if (portal?.outcome === "compromised") {
     return "Claims Portal";
   }
-  return "No protected asset. The campaign stopped at the edge.";
+  return "Authenticated employee session";
+}
+
+function stoppingControl(stages: readonly ResolvedStage[]): string {
+  const blocked = stages.find((item) => item.role === "offensive" && item.outcome === "blocked");
+  if (blocked) {
+    return `${blocked.choiceTitle} stopped the offensive path at ${blocked.name}.`;
+  }
+  const limited = [...stages].reverse().find((item) => item.role === "offensive" && item.outcome === "limited");
+  if (limited) {
+    return `${limited.choiceTitle} limited ${limited.name}.`;
+  }
+  return "No control fully stopped the offensive path.";
+}
+
+function endedAt(stages: readonly ResolvedStage[]): string {
+  const blocked = stages.find((item) => item.role === "offensive" && item.outcome === "blocked");
+  if (blocked) {
+    return blocked.name;
+  }
+  const lastOffensive = [...stages].reverse().find((item) => item.role === "offensive" && item.outcome !== "not-reached");
+  return lastOffensive?.name ?? "Initial foothold";
+}
+
+function neverReachedAssets(stages: readonly ResolvedStage[]): string[] {
+  const labels: string[] = [];
+  const byId = (id: ResolvedStage["id"]) => stages.find((item) => item.id === id);
+  if (byId("api-call")?.outcome === "not-reached" || byId("api-call")?.outcome === "blocked") {
+    labels.push("Claims API");
+  }
+  if (byId("unrelated-claims")?.outcome === "not-reached" || byId("unrelated-claims")?.outcome === "blocked") {
+    labels.push("Unrelated claims");
+  }
+  if (byId("extract-modify")?.outcome === "not-reached" || byId("extract-modify")?.outcome === "blocked") {
+    labels.push("Protected database records");
+  }
+  if (byId("payout-manipulation")?.outcome === "not-reached" || byId("payout-manipulation")?.outcome === "blocked") {
+    labels.push("Payout functions");
+  }
+  return labels;
+}
+
+function compromisedSystems(stages: readonly ResolvedStage[]): string[] {
+  const items: string[] = [];
+  if (stages.some((item) => item.id === "initial-foothold" && item.outcome === "succeeded")) {
+    items.push("Authenticated employee session");
+  }
+  if (stages.some((item) => item.id === "claims-portal" && item.outcome === "compromised")) {
+    items.push("Claims Portal");
+  }
+  if (stages.some((item) => item.id === "ai-manipulation" && continues(item.outcome))) {
+    items.push("AI Claims App");
+  }
+  if (stages.some((item) => item.id === "api-call" && continues(item.outcome))) {
+    items.push("Claims API");
+  }
+  if (hasDataImpact(stages)) {
+    items.push("Claims Database");
+  }
+  return items;
 }
 
 function buildReview(
   choices: LabChoices,
   stages: readonly ResolvedStage[],
   result: FinalResultKind,
+  impact: boolean,
 ): ArchitectureReview {
   const protectedItems: string[] = [];
   const exposedItems: string[] = [];
   for (const stage of stages) {
-    if (stage.outcome === "blocked" || stage.outcome === "recovered" || stage.outcome === "detected") {
+    if (stage.outcome === "not-reached" || stage.outcome === "not-required") {
+      continue;
+    }
+    if (
+      stage.outcome === "blocked" ||
+      stage.outcome === "contained" ||
+      stage.outcome === "detected" ||
+      stage.outcome === "recovered"
+    ) {
       protectedItems.push(`${stage.name}: ${stage.impact}`);
     } else if (stage.outcome === "limited") {
       protectedItems.push(`${stage.name}: limited. ${stage.impact}`);
-    } else {
+    } else if (stage.role === "offensive") {
       exposedItems.push(`${stage.name}: ${stage.impact}`);
     }
   }
@@ -248,49 +311,47 @@ function buildReview(
   const remainingRisks = DECISION_IDS.map((id) => optionForChoice(choices, id)).flatMap((option) =>
     option && option.strength !== "strong" ? [option.residualRisk] : [],
   );
-
-  const extract = stages.find((item) => item.id === "extract-modify");
+  const monitor = stages.find((item) => item.id === "monitoring");
   const recover = stages.find((item) => item.id === "contain-recover");
-  const stolen = optionForChoice(choices, "identity");
-  const upload = optionForChoice(choices, "input");
-  const api = optionForChoice(choices, "data-access");
-
-  const greatestImpact =
-    extract?.outcome === "blocked"
-      ? `${api?.title ?? "Database permissions"} kept the campaign off a full rewrite of the Claims Database.`
-      : recover?.outcome === "recovered"
-        ? `${optionForChoice(choices, "recovery")?.title ?? "Recovery"} reduced the lasting damage after the path opened.`
-        : stolen?.strength === "strong"
-          ? `${stolen.title} closed the stolen-password route.`
-          : upload?.strength === "strong"
-            ? `${upload.title} stopped the poisoned file.`
-            : `${api?.title ?? "API permissions"} decided how far a steered workflow could read.`;
-
+  const detectionOccurred = monitor?.outcome === "detected";
   const recommended = improvements[0];
+  const recoveryOption = optionForChoice(choices, "recovery");
+  const prepared = recoveryOption?.strength === "strong" || recoveryOption?.strength === "medium";
 
   return {
-    pillars: buildPillars(choices, stages),
+    pillars: buildPillars(choices, stages, impact, recover?.outcome === "recovered"),
     protectedItems: protectedItems.slice(0, 8),
     exposedItems: exposedItems.slice(0, 8),
-    greatestImpact,
+    greatestImpact: stoppingControl(stages),
     defenceInDepth:
-      result === "prevented" || result === "contained"
-        ? "A blocked stage ended at that control. The next attempt was a new pivot, not a continuation past a layer that already held."
-        : "When neighbouring choices were thin — identity, uploads, API reach and recovery — the campaign had a clear run to the records.",
+      result === "contained"
+        ? "A blocked offensive step ended that path. Dependent later steps were not reached. Detection and containment ran only on activity that actually occurred."
+        : "When neighbouring choices were thin — uploads, retrieval, API reach and recovery — the same chain continued into protected data.",
     recommendedImprovement: recommended
       ? `${recommended.title} ${recommended.why}`
       : "Keep treating retrieved documents as untrusted input and rehearse isolation.",
     recommendedDecisionId: recommended?.decisionId ?? "input",
-    dataExposed: extract?.outcome === "compromised"
+    dataExposed: impact
       ? recover?.outcome === "recovered"
-        ? "The Claims Database was reached, then restore reduced what remained changed."
-        : "Additional claims data was reachable through the service path."
-      : extract?.outcome === "limited"
-        ? "The open claim could be affected. The rest of the book was harder to reach."
-        : "No customer dataset was shown to have left through bulk API access.",
+        ? "Claims data was changed, then restore reduced what remained."
+        : "Claims data on the reached path could be read or changed."
+      : "No protected database records or payout functions were reached.",
     assetReached: assetReached(stages),
     remainingRisks: remainingRisks.slice(0, 6),
     improvements,
+    compromisedSystems: compromisedSystems(stages),
+    neverReached: neverReachedAssets(stages),
+    stoppingControl: stoppingControl(stages),
+    endedAt: endedAt(stages),
+    detectionOccurred,
+    recoveryRequired: impact,
+    recoveryReadiness: impact
+      ? recover?.outcome === "recovered"
+        ? "Recovery ran because protected data was affected."
+        : "Recovery was required because data was affected, but it did not fully restore the incident."
+      : prepared
+        ? "Recovery readiness: Prepared, but not required during this incident."
+        : "Recovery was not required. Containment controls were also thin.",
   };
 }
 
@@ -322,7 +383,7 @@ function whyImprovement(decisionId: DecisionId): string {
     case "exposure":
       return "Because a public Claims API is an internet-reachable target even when the portal itself looks ordinary.";
     case "identity":
-      return "Because a stolen password should not become a working claims session.";
+      return "Because a stolen password should not become a new claims session, and RBAC should keep a stolen session low-privilege.";
     case "network":
       return "Because a foothold in the AI app should not be a straight walk to the database.";
     case "gateway":

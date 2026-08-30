@@ -1,4 +1,5 @@
 import { beatsForStage } from "./animation";
+import { nextPlayableStageIndex, previousPlayableStageIndex } from "./campaign";
 import { DECISION_COUNT, LAB_MISSION, TECHNIQUE_COUNT, isComplete, optionById } from "./catalog";
 import { simulateAttack } from "./engine";
 import { saveLabState, withAttemptResult } from "./store";
@@ -138,10 +139,11 @@ export function nextAttackStep(state: LabPersistedState): LabPersistedState {
   if (beat < beats.length - 1) {
     return { ...state, attackBeat: beat + 1, paused: false };
   }
-  if (state.revealedStageCount < TECHNIQUE_COUNT) {
+  const nextIndex = nextPlayableStageIndex(simulation.stages, state.revealedStageCount);
+  if (nextIndex !== null) {
     return {
       ...state,
-      revealedStageCount: state.revealedStageCount + 1,
+      revealedStageCount: nextIndex + 1,
       attackBeat: 0,
       paused: false,
     };
@@ -162,12 +164,14 @@ export function nextAttackStep(state: LabPersistedState): LabPersistedState {
 export function previousAttackStep(state: LabPersistedState): LabPersistedState {
   if (state.phase === "result") {
     const simulation = simulateAttack(state.choices);
-    const last = simulation.stages[TECHNIQUE_COUNT - 1];
+    const lastIndex =
+      previousPlayableStageIndex(simulation.stages, simulation.stages.length + 1) ?? simulation.stages.length - 1;
+    const last = simulation.stages[lastIndex];
     const beats = last ? beatsForStage(last) : [];
     return {
       ...state,
       phase: "attack",
-      revealedStageCount: TECHNIQUE_COUNT,
+      revealedStageCount: lastIndex + 1,
       attackBeat: Math.max(0, beats.length - 1),
       paused: true,
     };
@@ -178,13 +182,14 @@ export function previousAttackStep(state: LabPersistedState): LabPersistedState 
   if (state.attackBeat > 0) {
     return { ...state, attackBeat: state.attackBeat - 1, paused: true };
   }
-  if (state.revealedStageCount > 1) {
-    const simulation = simulateAttack(state.choices);
-    const previous = simulation.stages[state.revealedStageCount - 2];
+  const simulation = simulateAttack(state.choices);
+  const previousIndex = previousPlayableStageIndex(simulation.stages, state.revealedStageCount);
+  if (previousIndex !== null) {
+    const previous = simulation.stages[previousIndex];
     const beats = previous ? beatsForStage(previous) : [];
     return {
       ...state,
-      revealedStageCount: state.revealedStageCount - 1,
+      revealedStageCount: previousIndex + 1,
       attackBeat: Math.max(0, beats.length - 1),
       paused: true,
     };

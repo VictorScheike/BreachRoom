@@ -50,11 +50,12 @@ function runAttack(choices: LabChoices) {
 }
 
 describe("Architecture Defence Lab catalog", () => {
-  it("validates ten architecture decisions and eight campaign stages", () => {
+  it("validates ten architecture decisions and ten campaign stages", () => {
     expect(labMissionSchema.parse(LAB_MISSION).id).toBe("lab-poisoned-claim");
     expect(LAB_MISSION.decisions).toHaveLength(10);
-    expect(LAB_MISSION.techniques).toHaveLength(8);
+    expect(LAB_MISSION.techniques).toHaveLength(10);
     expect(LAB_MISSION.nodes).toHaveLength(14);
+    expect(LAB_MISSION.edges).toHaveLength(4);
     expect(DECISION_IDS).toHaveLength(10);
   });
 
@@ -118,48 +119,79 @@ describe("decision flow", () => {
 });
 
 describe("attack simulation", () => {
-  it("stops a blocked technique at its control and starts the next as a pivot", () => {
+  it("always starts with a succeeded foothold and a compromised portal", () => {
     const { simulation } = runAttack(STRONG_ARCHITECTURE);
-    const stolen = simulation.stages[0];
-    const document = simulation.stages[1];
-    expect(stolen?.outcome).toBe("blocked");
-    expect(stolen?.stopNode).toBe("identity");
-    expect(stolen?.travelledPath.includes("app")).toBe(false);
-    expect(document?.isPivot).toBe(true);
-    expect(document?.pivotLabel).toBe("Blocked. Red Team changes technique.");
-    expect(document?.entryNode).toBe("portal");
-    expect(simulation.result).toBe("prevented");
-    expect(simulation.review.pillars).toHaveLength(4);
+    expect(simulation.stages[0]?.id).toBe("initial-foothold");
+    expect(simulation.stages[0]?.outcome).toBe("succeeded");
+    expect(simulation.stages[1]?.id).toBe("claims-portal");
+    expect(simulation.stages[1]?.outcome).toBe("compromised");
+    expect(simulation.result).toBe("contained");
+    expect(simulation.resultLabel).toBe("Contained");
+  });
+
+  it("blocks AI manipulation on the strongest architecture and marks later offensive stages not reached", () => {
+    const { simulation } = runAttack(STRONG_ARCHITECTURE);
+    const byId = (id: string) => simulation.stages.find((item) => item.id === id);
+    expect(byId("poisoned-document")?.outcome).toBe("limited");
+    expect(byId("ai-manipulation")?.outcome).toBe("blocked");
+    expect(byId("ai-manipulation")?.travelledPath.includes("api")).toBe(false);
+    expect(byId("api-call")?.outcome).toBe("not-reached");
+    expect(byId("unrelated-claims")?.outcome).toBe("not-reached");
+    expect(byId("extract-modify")?.outcome).toBe("not-reached");
+    expect(byId("payout-manipulation")?.outcome).toBe("not-reached");
+    expect(byId("api-call")?.isPivot).toBe(false);
+  });
+
+  it("still runs detection after a blocked attempt when telemetry exists", () => {
+    const { simulation } = runAttack(STRONG_ARCHITECTURE);
+    expect(simulation.stages.find((item) => item.id === "monitoring")?.outcome).toBe("detected");
+    expect(simulation.stages.find((item) => item.id === "contain-recover")?.outcome).toBe("contained");
+    expect(simulation.review.detectionOccurred).toBe(true);
+    expect(simulation.review.recoveryRequired).toBe(false);
+    expect(simulation.review.recoveryReadiness).toContain("Prepared, but not required");
+  });
+
+  it("does not run recovery without impact", () => {
+    const { simulation } = runAttack(STRONG_ARCHITECTURE);
+    expect(simulation.stages.find((item) => item.id === "contain-recover")?.outcome).not.toBe("recovered");
+    expect(simulation.review.pillars.find((item) => item.id === "recovery")?.score).toBe(0);
+    expect(simulation.review.pillars.find((item) => item.id === "recovery")?.summary).toContain("not required");
   });
 
   it("does not continue a blocked technique past the holding node", () => {
-    const stolen = simulateAttack(STRONG_ARCHITECTURE).stages[0];
-    expect(stolen?.travelledPath.at(-1)).toBe("identity");
-    expect(stolen?.responsibleNode).toBe("identity");
+    const ai = simulateAttack(STRONG_ARCHITECTURE).stages.find((item) => item.id === "ai-manipulation");
+    expect(ai?.travelledPath.at(-1)).toBe("app");
+    expect(ai?.stopNode).toBe("app");
+    expect(ai?.travelledPath.includes("database")).toBe(false);
   });
 
-  it("contains a mixed architecture that fails identity but keeps later layers", () => {
+  it("contains a mixed architecture that fails the front door but keeps later layers", () => {
     const { simulation } = runAttack(MIXED_ARCHITECTURE);
-    expect(simulation.stages[0]?.outcome).toBe("compromised");
-    expect(simulation.stages.find((item) => item.id === "extract-modify")?.outcome).toBe("blocked");
+    expect(simulation.stages[0]?.outcome).toBe("succeeded");
+    expect(simulation.stages[1]?.outcome).toBe("compromised");
+    expect(simulation.stages.find((item) => item.id === "poisoned-document")?.outcome).toBe("succeeded");
+    expect(simulation.stages.find((item) => item.id === "extract-modify")?.outcome).toBe("not-reached");
     expect(simulation.result).toBe("contained");
   });
 
-  it("breaches a weak architecture and still runs every technique", () => {
+  it("lets weak controls continue the same chain into protected data", () => {
     const { simulation } = runAttack(WEAK_ARCHITECTURE);
-    expect(simulation.stages).toHaveLength(8);
-    expect(simulation.stages.find((item) => item.id === "extract-modify")?.outcome).toBe("compromised");
+    expect(simulation.stages).toHaveLength(10);
+    expect(simulation.stages.find((item) => item.id === "ai-manipulation")?.outcome).toBe("succeeded");
+    expect(simulation.stages.find((item) => item.id === "api-call")?.outcome).toBe("succeeded");
+    expect(simulation.stages.find((item) => item.id === "unrelated-claims")?.outcome).toBe("succeeded");
+    expect(simulation.stages.find((item) => item.id === "extract-modify")?.outcome).toBe("succeeded");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("succeeded");
     expect(simulation.stages.find((item) => item.id === "extract-modify")?.stopNode).toBe("database");
-    expect(simulation.stages.at(-1)?.id).toBe("contain-recover");
-    expect(simulation.stages.at(-1)?.outcome).toBe("compromised");
-    expect(simulation.review.assetReached).toBe("Claims Database");
+    expect(simulation.review.assetReached).toBe("Payout functions");
     expect(simulation.result).toBe("breached");
   });
 
-  it("treats a middle identity choice as limited, not a full hold", () => {
+  it("keeps the mandatory foothold even when identity is strong", () => {
     const simulation = simulateAttack({ ...STRONG_ARCHITECTURE, identity: "identity-device-mfa" });
-    expect(simulation.stages[0]?.outcome).toBe("limited");
-    expect(simulation.stages[0]?.choiceTitle).toContain("SSO");
+    expect(simulation.stages[0]?.outcome).toBe("succeeded");
+    expect(simulation.stages[0]?.controlStatus).toBe("effective");
+    expect(simulation.stages[1]?.outcome).toBe("compromised");
   });
 
   it("gives different histories to different architectures", () => {
@@ -172,16 +204,19 @@ describe("attack simulation", () => {
     expect(medium.stages.map((stage) => stage.outcome)).not.toEqual(weak.stages.map((stage) => stage.outcome));
   });
 
-  it("still prevents the objective when monitoring is weak", () => {
+  it("still contains the objective when monitoring is weak", () => {
     const { simulation } = runAttack(STRONG_PREVENTION_WEAK_DETECTION);
-    expect(simulation.result).toBe("prevented");
-    expect(simulation.stages.find((item) => item.id === "monitoring")?.outcome).toBe("compromised");
+    expect(simulation.result).toBe("contained");
+    expect(simulation.stages.find((item) => item.id === "ai-manipulation")?.outcome).toBe("blocked");
+    expect(simulation.stages.find((item) => item.id === "monitoring")?.outcome).toBe("limited");
+    expect(simulation.review.detectionOccurred).toBe(false);
   });
 
   it("lets later layers contain a weak front door", () => {
     const { simulation } = runAttack(WEAK_PREVENTION_STRONG_CONTAINMENT);
-    expect(simulation.stages[0]?.outcome).toBe("compromised");
+    expect(simulation.stages[0]?.outcome).toBe("succeeded");
     expect(simulation.stages.find((item) => item.id === "extract-modify")?.outcome).toBe("blocked");
+    expect(simulation.stages.find((item) => item.id === "payout-manipulation")?.outcome).toBe("not-reached");
     expect(simulation.result).not.toBe("breached");
   });
 
@@ -189,10 +224,29 @@ describe("attack simulation", () => {
     const simulation = simulateAttack({
       ...WEAK_ARCHITECTURE,
       recovery: "recovery-tested",
+      detection: "detection-siem",
     });
-    expect(simulation.stages.find((item) => item.id === "extract-modify")?.outcome).toBe("compromised");
+    expect(simulation.stages.find((item) => item.id === "extract-modify")?.outcome).toBe("succeeded");
     expect(simulation.stages.find((item) => item.id === "contain-recover")?.outcome).toBe("recovered");
     expect(simulation.result).toBe("contained");
+    expect(simulation.review.recoveryRequired).toBe(true);
+  });
+
+  it("skips not-reached stages while walking the attack", () => {
+    const launched = launchAttack(filledState(STRONG_ARCHITECTURE));
+    let state = launched.state;
+    const seen = new Set<number>([state.revealedStageCount]);
+    while (state.phase === "attack") {
+      state = nextAttackStep(state);
+      if (state.phase === "attack") {
+        seen.add(state.revealedStageCount);
+      }
+    }
+    expect(seen.has(5)).toBe(false);
+    expect(seen.has(6)).toBe(false);
+    expect(seen.has(7)).toBe(false);
+    expect(seen.has(8)).toBe(false);
+    expect(state.phase).toBe("result");
   });
 
   it("keeps previous selections on the growing architecture", () => {
@@ -208,6 +262,7 @@ describe("attack simulation", () => {
     expect(complete.has("scanner")).toBe(true);
     expect(complete.has("gateway")).toBe(true);
     expect(complete.has("backup")).toBe(true);
+    expect(complete.has("network")).toBe(false);
   });
 
   it("calculates the campaign from selected controls rather than a hardcoded matrix", () => {
@@ -221,6 +276,9 @@ describe("attack simulation", () => {
       "detection",
       "recovery",
     ]);
+    expect(strong.review.neverReached).toEqual(
+      expect.arrayContaining(["Claims API", "Unrelated claims", "Protected database records", "Payout functions"]),
+    );
   });
 });
 
@@ -289,31 +347,25 @@ describe("lab play session", () => {
     expect(visual.markerNode).toBe("employee");
   });
 
-  it("stops a blocked route at the holding node and starts the next technique as a pivot", () => {
+  it("stops a blocked route at the AI app and does not draw later attack hops", () => {
     const simulation = simulateAttack(STRONG_ARCHITECTURE);
-    const stolen = simulation.stages[0]!;
-    const resultBeat = beatsForStage(stolen).length - 1;
+    const ai = simulation.stages.find((item) => item.id === "ai-manipulation")!;
+    const aiIndex = simulation.stages.findIndex((item) => item.id === "ai-manipulation") + 1;
+    const resultBeat = beatsForStage(ai).length - 1;
     const blocked = deriveBoardVisual({
       choices: STRONG_ARCHITECTURE,
       simulation,
-      revealedStageCount: 1,
+      revealedStageCount: aiIndex,
       attackBeat: resultBeat,
       phase: "attack",
     });
-    expect(stolen.travelledPath.includes("app")).toBe(false);
-    expect(blocked.nodeStatus.identity).toBe("blocked");
+    expect(ai.travelledPath.includes("api")).toBe(false);
+    expect(blocked.nodeStatus.app).toBe("blocked");
+    expect(blocked.systemStatus.app).toBe("protected");
     expect(blocked.markerVisible).toBe(false);
-    expect(blocked.stopBadge).toEqual({ nodeId: "identity", label: "BLOCKED" });
-    const pivot = deriveBoardVisual({
-      choices: STRONG_ARCHITECTURE,
-      simulation,
-      revealedStageCount: 2,
-      attackBeat: 0,
-      phase: "attack",
-    });
-    expect(pivot.pivotBanner).toBe(true);
-    expect(pivot.markerVisible).toBe(false);
-    expect(pivot.edges.some((edge) => edge.kind === "pivot-live")).toBe(true);
+    expect(blocked.stopBadge).toEqual({ nodeId: "app", label: "BLOCKED" });
+    expect(blocked.controlStatus.retrieval).toBe("effective");
+    expect(blocked.edges.filter((edge) => edge.kind === "live" && (edge.to === "api" || edge.to === "database"))).toHaveLength(0);
   });
 
   it("returns to the first decision on Improve and Retry without dropping choices", () => {

@@ -100,25 +100,25 @@ describe("Architecture Defence Lab UI", () => {
       revealedStageCount: 1,
     };
     const html = renderToStaticMarkup(<ArchitectureDefenceLabView state={state} onChange={noop} />);
-    expect(html).toContain("Stolen credentials");
-    expect(html).toContain("Next attack step");
+    expect(html).toContain("Red Team · Step 1 of 10");
+    expect(html).toContain("Initial foothold");
     expect(html).toContain("Pause");
     expect(html).toContain("Replay attack");
-    expect(html).toContain("Red Team · Step 1 of 8");
     expect(html).not.toContain("Run Red Team");
     expect(html).toContain("Previous");
+    expect(html).toContain("Next");
     expect(html).not.toContain("Current technique");
     expect(html).not.toContain("Attack impact");
   });
 
-  it("shows Prevented or Breached from the actual architecture", () => {
+  it("shows Contained or Breached from the actual architecture", () => {
     const strong = renderToStaticMarkup(
       <ArchitectureDefenceLabView
         state={{
           ...EMPTY_LAB_STATE,
           choices: STRONG_ARCHITECTURE,
           phase: "result",
-          revealedStageCount: 8,
+          revealedStageCount: 10,
           lastResult: simulateAttack(STRONG_ARCHITECTURE).result,
         }}
         onChange={noop}
@@ -130,28 +130,32 @@ describe("Architecture Defence Lab UI", () => {
           ...EMPTY_LAB_STATE,
           choices: WEAK_ARCHITECTURE,
           phase: "result",
-          revealedStageCount: 8,
+          revealedStageCount: 10,
           lastResult: simulateAttack(WEAK_ARCHITECTURE).result,
         }}
         onChange={noop}
       />,
     );
-    expect(strong).toContain("Prevented");
+    expect(strong).toContain("Contained");
+    expect(strong).not.toContain("Prevented");
     expect(weak).toContain("Breached");
-    expect(weak).toContain("EXPOSED");
+    expect(weak).toContain("COMPROMISED");
     expect(weak).not.toContain(">SUCCESS<");
     expect(strong).toContain("Improve and retry");
     expect(strong).toContain("Prevention");
     expect(strong).toContain("Blast-radius limitation");
     expect(strong).toContain("Detection");
     expect(strong).toContain("Recovery");
-    expect(strong).toContain("Protected asset reached");
+    expect(strong).toContain("Furthest asset reached");
     expect(strong).toContain("attack-timeline");
     expect(strong).toContain("Because you chose:");
     expect(strong).toContain("What the attacker tried");
     expect(strong).toContain("Where it ended");
+    expect(strong).toContain("NOT REACHED");
+    expect(strong).toContain("Prepared, but not required");
+    expect(strong).toContain("Claims Portal");
     expect(weak).toContain("Claims Database");
-    expect(weak).toContain("Shared staff password");
+    expect(weak).toContain("Shared password");
   });
 
   it("renders a connected network board instead of a card grid", () => {
@@ -253,12 +257,14 @@ describe("Architecture Defence Lab UI", () => {
 
   it("marks held edges green and live attack edges red, with text labels", () => {
     const simulation = simulateAttack(STRONG_ARCHITECTURE);
-    const resultBeat = simulation.stages[0] ? simulation.stages[0].travelledPath.length : 1;
+    const ai = simulation.stages.find((item) => item.id === "ai-manipulation");
+    const aiIndex = simulation.stages.findIndex((item) => item.id === "ai-manipulation") + 1;
+    const resultBeat = ai ? Math.max(0, ai.travelledPath.length) : 1;
     const blocked = renderToStaticMarkup(
       <ArchitectureMap
         choices={STRONG_ARCHITECTURE}
         simulation={simulation}
-        revealedStageCount={1}
+        revealedStageCount={aiIndex}
         attackBeat={resultBeat}
         phase="attack"
         inspectable={false}
@@ -266,14 +272,16 @@ describe("Architecture Defence Lab UI", () => {
       />,
     );
     expect(blocked).toContain('data-state="held"');
-    expect(blocked).toContain("Blocked");
+    expect(blocked).toContain("BLOCKED");
+    expect(blocked).toContain("PROTECTED");
+    expect(blocked).toContain("EFFECTIVE");
     expect(blocked).toContain("MFA + RBAC");
 
     const live = renderToStaticMarkup(
       <ArchitectureMap
         choices={WEAK_ARCHITECTURE}
         simulation={simulateAttack(WEAK_ARCHITECTURE)}
-        revealedStageCount={1}
+        revealedStageCount={2}
         attackBeat={1}
         phase="attack"
         inspectable={false}
@@ -282,7 +290,7 @@ describe("Architecture Defence Lab UI", () => {
       />,
     );
     expect(live).toContain('data-state="active"');
-    expect(live).toContain("Active attack");
+    expect(live).toContain("COMPROMISED");
     expect(live).not.toContain("animateMotion");
   });
 
@@ -292,16 +300,16 @@ describe("Architecture Defence Lab UI", () => {
       <ArchitectureMap
         choices={STRONG_ARCHITECTURE}
         simulation={simulation}
-        revealedStageCount={8}
+        revealedStageCount={10}
         phase="result"
-        focusedStageId="stolen-credentials"
+        focusedStageId="ai-manipulation"
         inspectable={false}
         layout="desktop"
       />,
     );
-    expect(html).toContain('data-node-id="identity"');
+    expect(html).toContain('data-node-id="app"');
     expect(html).toContain("is-dimmed");
-    expect(html).toContain("Blocked");
+    expect(html).toContain("BLOCKED");
   });
 });
 
