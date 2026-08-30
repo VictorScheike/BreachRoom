@@ -8,8 +8,8 @@ import { DifficultySelect } from "@/components/lab/DifficultySelect";
 import { FinalReview, defaultFocusedStage } from "@/components/lab/FinalReview";
 import { GameHud } from "@/components/lab/GameHud";
 import { EducationalDisclaimer } from "@/components/EducationalDisclaimer";
-import { LAB_MISSION, decisionById } from "@/lib/lab/catalog";
-import { DIFFICULTY_CAPTION } from "@/lib/lab/copy";
+import { LAB_MISSION, TECHNIQUE_COUNT, decisionById } from "@/lib/lab/catalog";
+import { DIFFICULTY_CAPTION, difficultyLabel, LAB_SETUP_BLURB } from "@/lib/lab/copy";
 import { ATTACK_STEP_MS, currentBeat, hudStatus } from "@/lib/lab/animation";
 import { simulateAttack } from "@/lib/lab/engine";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePrefersReducedMotion";
@@ -59,7 +59,7 @@ export function ArchitectureDefenceLabView({
   const revealed = state.phase === "attack" || state.phase === "result" ? state.revealedStageCount : 0;
   const activeStage = simulation && revealed > 0 ? simulation.stages[revealed - 1] ?? null : null;
   const beat = currentBeat(activeStage, state.attackBeat);
-  const currentDecision = decisionById(DECISION_IDS[state.currentDecisionIndex] ?? "identity");
+  const currentDecision = decisionById(DECISION_IDS[state.currentDecisionIndex] ?? "exposure");
   const status = hudStatus({
     phase: state.phase,
     stage: activeStage,
@@ -90,7 +90,7 @@ export function ArchitectureDefenceLabView({
   const campaignPhase = state.phase === "review" || state.phase === "attack" || state.phase === "result";
   const progressCurrent =
     state.phase === "attack" ? (activeStage?.number ?? 1) : state.phase === "decide" ? currentDecision.number : 10;
-  const progressTotal = state.phase === "attack" || state.phase === "result" ? 7 : 10;
+  const progressTotal = state.phase === "attack" || state.phase === "result" ? TECHNIQUE_COUNT : 10;
   const resultFocusId =
     state.phase === "result" && simulation
       ? (focusedStageId ?? defaultFocusedStage(simulation)?.id ?? null)
@@ -114,14 +114,14 @@ export function ArchitectureDefenceLabView({
 
       {inGame ? (
         <GameHud
-          kicker={`${LAB_MISSION.company} · ${state.difficulty === "guided" ? "Guided" : "Challenge"}`}
+          kicker={`${LAB_MISSION.company} · ${difficultyLabel(state.difficulty)}`}
           title={
             state.phase === "decide"
               ? `Decision ${currentDecision.number} of 10`
               : state.phase === "review"
                 ? "Architecture complete · 10/10"
-                : state.phase === "attack"
-                  ? `Red Team · Step ${activeStage?.number ?? 1} of 7`
+                  : state.phase === "attack"
+                  ? `Red Team · Step ${activeStage?.number ?? 1} of ${TECHNIQUE_COUNT}`
                   : "Final assessment"
           }
           status={status}
@@ -142,7 +142,7 @@ export function ArchitectureDefenceLabView({
             disabled={state.phase === "attack" || state.phase === "result"}
             onClick={() => handleDifficulty("guided")}
           >
-            Guided
+            Beginner
           </button>
           <button
             type="button"
@@ -151,7 +151,7 @@ export function ArchitectureDefenceLabView({
             disabled={state.phase === "attack" || state.phase === "result"}
             onClick={() => handleDifficulty("challenge")}
           >
-            Challenge
+            Challenging
           </button>
         </div>
       ) : null}
@@ -163,7 +163,7 @@ export function ArchitectureDefenceLabView({
               {LAB_MISSION.missionLabel} · {LAB_MISSION.title}
             </p>
             <p className="lab-mission-head__tagline">{LAB_MISSION.tagline}</p>
-            <p>{LAB_MISSION.scenario}</p>
+            <p>{LAB_SETUP_BLURB}</p>
             <p className="lab-fictional">{LAB_MISSION.fictionalNote}</p>
           </div>
         </div>
@@ -198,7 +198,7 @@ export function ArchitectureDefenceLabView({
                 <p className="lab-kicker">Architecture locked</p>
                 <h2 className="lab-launch__title">Run the complete attack</h2>
                 <p className="lab-launch__copy">
-                  Ten controls are now on the board. The Red Team will test the live paths, not a static scorecard.
+                  Ten controls are on the board. Next, one attack walks left to right through the layers you built.
                 </p>
                 {missingMessage ? <p className="lab-missing">{missingMessage}</p> : null}
               </div>
@@ -251,7 +251,7 @@ export function ArchitectureDefenceLabView({
               onPrevious={() => update(previousAttackStep(state))}
               onPause={() => update(pauseAttack(state, !state.paused))}
               onNext={() => update(nextAttackStep(state))}
-              readyMessage="The architecture is ready. Run the Red Team campaign to see how each defensive layer changes the attack."
+              readyMessage="The architecture is ready. The Red Team starts with a stolen authenticated session, then follows one connected path through the system you built."
             />
           ) : null}
 

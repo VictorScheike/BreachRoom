@@ -1,8 +1,8 @@
 "use client";
 
+import { LabMissionCard } from "@/components/site/LabMissionCard";
 import { MissionCard } from "@/components/site/MissionCard";
 import { MissionFilter } from "@/components/site/MissionFilter";
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { publishedMissions } from "@/lib/missions/catalog";
 import type { DifficultyId } from "@/lib/missions/types";
@@ -51,37 +51,11 @@ export function MissionsLibrary() {
     <div>
       <section className="lab-library" aria-labelledby="lab-library-heading">
         <p className="training-lede lab-library-intro">
-          Architecture Defence Lab is a different exercise from the maps below. You build a secure
-          architecture, then you watch one coherent attack move through the system you actually
-          chose — stolen credentials and a poisoned document, not a walk across a workplace.
+          Architecture Defence Lab is a different exercise from the maps below. You answer ten
+          architecture questions — front door, AI, and customer data — then watch one attack test
+          the system you actually built.
         </p>
-        <article className="mission-card lab-library-card">
-          <div className="mission-card__body">
-            <div className="mission-card__content">
-              <p className="mission-card__meta">ARCHITECTURE DEFENCE LAB · GUIDED OR CHALLENGE</p>
-              <h2 id="lab-library-heading" className="mission-card__title">
-                Architecture Defence Lab
-              </h2>
-              <p className="mission-card__destination">The Poisoned Claim</p>
-              <p className="mission-card__description mission-card__description--four">
-                Build a claims-handling architecture for fictional Nordic Shield Insurance, then watch
-                one coherent attack — stolen credentials plus a poisoned document — move through the
-                system you built.
-              </p>
-              <ul className="topic-chips">
-                <li>AI security</li>
-                <li>Secure architecture</li>
-                <li>Defence in depth</li>
-              </ul>
-              <p className="mission-card__destination">Build it. Then let the attack loose.</p>
-            </div>
-            <div className="mission-card__footer">
-              <Link className="btn-primary mission-card__action" href="/lab/">
-                Enter the lab
-              </Link>
-            </div>
-          </div>
-        </article>
+        <LabMissionCard titleAs="h2" descriptionLines={4} headingId="lab-library-heading" />
       </section>
       <section className="map-missions-block" aria-labelledby="map-missions-heading">
         <h2 id="map-missions-heading">Map missions</h2>

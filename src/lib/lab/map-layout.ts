@@ -1,122 +1,75 @@
 import type { BoardZoneId, MapEdgeDefinition, MapNodeDefinition, MapNodeId, NodeKind } from "./types";
 
+export const PRIMARY_SYSTEM_IDS: readonly MapNodeId[] = ["employee", "portal", "app", "api", "database"];
+
+export const BADGE_NODE_IDS: readonly MapNodeId[] = [
+  "identity",
+  "waf",
+  "scanner",
+  "retrieval",
+  "secrets",
+  "gateway",
+  "backup",
+];
+
+export const SIEM_NODE_ID: MapNodeId = "detection";
+export const ZONE_NODE_ID: MapNodeId = "network";
+
+export const PRIMARY_EDGE_IDS = ["employee-portal", "portal-app", "app-api", "api-database"] as const;
+export type PrimaryEdgeId = (typeof PRIMARY_EDGE_IDS)[number];
+
 export const LAB_NODES: readonly MapNodeDefinition[] = [
+  {
+    id: "employee",
+    name: "Employee",
+    kind: "actor",
+    decisionId: null,
+    description: "A claims handler, or someone using a stolen staff session.",
+    icon: "person",
+    zone: "external",
+    x: 8,
+    y: 40,
+    mobileX: 50,
+    mobileY: 8,
+  },
   {
     id: "portal",
     name: "Claims Portal",
-    kind: "core",
+    kind: "system",
     decisionId: null,
     description: "Staff login and document upload.",
     icon: "portal",
-    zone: "user-input",
-    x: 14,
-    y: 42,
-    mobileX: 50,
-    mobileY: 16,
-  },
-  {
-    id: "identity",
-    name: "Identity",
-    kind: "control",
-    decisionId: "identity",
-    description: "Who can sign in, and with what proof.",
-    icon: "shield",
-    zone: "user-input",
-    x: 14,
-    y: 16,
-    mobileX: 50,
-    mobileY: 6,
-  },
-  {
-    id: "input",
-    name: "Document Upload",
-    kind: "control",
-    decisionId: "input",
-    description: "What happens to a claims file before the AI reads it.",
-    icon: "file",
-    zone: "user-input",
-    x: 14,
-    y: 68,
+    zone: "external",
+    x: 29,
+    y: 40,
     mobileX: 50,
     mobileY: 26,
   },
   {
     id: "app",
     name: "AI Claims App",
-    kind: "core",
+    kind: "system",
     decisionId: null,
     description: "Summarises cases and drafts replies.",
     icon: "cpu",
-    zone: "ai-services",
-    x: 40,
-    y: 42,
+    zone: "application",
+    x: 50,
+    y: 40,
     mobileX: 50,
-    mobileY: 40,
+    mobileY: 44,
   },
   {
-    id: "model",
-    name: "AI Model",
-    kind: "control",
-    decisionId: "model",
-    description: "Where prompts are processed.",
-    icon: "cpu",
-    zone: "ai-services",
-    x: 40,
-    y: 16,
-    mobileX: 24,
-    mobileY: 50,
-  },
-  {
-    id: "retrieval",
-    name: "Retrieval",
-    kind: "control",
-    decisionId: "retrieval",
-    description: "What the model is allowed to search.",
-    icon: "lock",
-    zone: "ai-services",
-    x: 57,
-    y: 20,
-    mobileX: 76,
-    mobileY: 50,
-  },
-  {
-    id: "secrets",
-    name: "Managed Identity",
-    kind: "control",
-    decisionId: "secrets",
-    description: "How the app proves itself to internal services.",
-    icon: "vault",
-    zone: "ai-services",
-    x: 57,
-    y: 42,
-    mobileX: 50,
-    mobileY: 60,
-  },
-  {
-    id: "supply-chain",
-    name: "Signed Builds",
-    kind: "control",
-    decisionId: "supply-chain",
-    description: "How code and dependencies reach production.",
-    icon: "pipeline",
-    zone: "ai-services",
-    x: 40,
-    y: 68,
-    mobileX: 24,
-    mobileY: 70,
-  },
-  {
-    id: "data-access",
+    id: "api",
     name: "Claims API",
-    kind: "control",
+    kind: "system",
     decisionId: "data-access",
     description: "What the assistant may read or change.",
     icon: "lock",
     zone: "protected",
-    x: 75,
-    y: 30,
+    x: 71,
+    y: 40,
     mobileX: 50,
-    mobileY: 76,
+    mobileY: 62,
   },
   {
     id: "database",
@@ -126,36 +79,101 @@ export const LAB_NODES: readonly MapNodeDefinition[] = [
     description: "Customer and payout data.",
     icon: "database",
     zone: "protected",
-    x: 90,
-    y: 42,
+    x: 92,
+    y: 40,
     mobileX: 50,
-    mobileY: 86,
+    mobileY: 80,
   },
   {
-    id: "oversight",
-    name: "Human Approval",
+    id: "identity",
+    name: "MFA + RBAC",
     kind: "control",
-    decisionId: "oversight",
-    description: "Who can turn a draft into a payout.",
-    icon: "person",
+    decisionId: "identity",
+    description: "How staff authenticate and how portal access is assigned.",
+    icon: "shield",
+    zone: "external",
+    x: 29,
+    y: 58,
+    mobileX: 78,
+    mobileY: 26,
+  },
+  {
+    id: "waf",
+    name: "WAF",
+    kind: "control",
+    decisionId: "exposure",
+    description: "What internet traffic is allowed to reach the portal.",
+    icon: "shield",
+    zone: "external",
+    x: 18.5,
+    y: 28,
+    mobileX: 22,
+    mobileY: 17,
+  },
+  {
+    id: "scanner",
+    name: "Document Scanner",
+    kind: "control",
+    decisionId: "input",
+    description: "What happens to a claims file before the AI reads it.",
+    icon: "scan",
+    zone: "application",
+    x: 39.5,
+    y: 28,
+    mobileX: 22,
+    mobileY: 35,
+  },
+  {
+    id: "retrieval",
+    name: "Case-scoped RAG",
+    kind: "control",
+    decisionId: "retrieval",
+    description: "What the assistant is allowed to search.",
+    icon: "lock",
+    zone: "application",
+    x: 50,
+    y: 58,
+    mobileX: 78,
+    mobileY: 44,
+  },
+  {
+    id: "secrets",
+    name: "Managed Identity",
+    kind: "control",
+    decisionId: "secrets",
+    description: "How the AI app proves itself to internal services.",
+    icon: "vault",
+    zone: "application",
+    x: 60.5,
+    y: 31,
+    mobileX: 22,
+    mobileY: 53,
+  },
+  {
+    id: "gateway",
+    name: "Private API Gateway",
+    kind: "control",
+    decisionId: "gateway",
+    description: "Authentication, validation and rate limiting on the Claims API path.",
+    icon: "filter",
     zone: "protected",
-    x: 90,
-    y: 68,
-    mobileX: 24,
-    mobileY: 94,
+    x: 60.5,
+    y: 49,
+    mobileX: 78,
+    mobileY: 53,
   },
   {
     id: "network",
-    name: "Network Segmentation",
+    name: "Network zones",
     kind: "control",
     decisionId: "network",
-    description: "How AI services reach the rest of the estate.",
+    description: "Whether portal, AI, API and database are separated.",
     icon: "network",
-    zone: "secops",
-    x: 26,
-    y: 88,
-    mobileX: 76,
-    mobileY: 70,
+    zone: "application",
+    x: 50,
+    y: 12,
+    mobileX: 22,
+    mobileY: 8,
   },
   {
     id: "detection",
@@ -165,45 +183,67 @@ export const LAB_NODES: readonly MapNodeDefinition[] = [
     description: "Whether events become one incident.",
     icon: "radar",
     zone: "secops",
-    x: 75,
-    y: 88,
-    mobileX: 76,
+    x: 50,
+    y: 86,
+    mobileX: 50,
     mobileY: 94,
+  },
+  {
+    id: "backup",
+    name: "Protected Backup",
+    kind: "control",
+    decisionId: "recovery",
+    description: "Isolation, revocation and restore after an incident.",
+    icon: "contained",
+    zone: "protected",
+    x: 92,
+    y: 58,
+    mobileX: 78,
+    mobileY: 80,
   },
 ];
 
 export const LAB_EDGES: readonly MapEdgeDefinition[] = [
-  { id: "portal-identity", from: "portal", to: "identity" },
-  { id: "portal-input", from: "portal", to: "input" },
-  { id: "identity-app", from: "identity", to: "app" },
-  { id: "input-app", from: "input", to: "app" },
-  { id: "portal-network", from: "portal", to: "network" },
-  { id: "network-app", from: "network", to: "app" },
-  { id: "app-model", from: "app", to: "model" },
-  { id: "app-retrieval", from: "app", to: "retrieval" },
-  { id: "model-retrieval", from: "model", to: "retrieval" },
-  { id: "app-secrets", from: "app", to: "secrets" },
-  { id: "secrets-api", from: "secrets", to: "data-access" },
-  { id: "retrieval-api", from: "retrieval", to: "data-access" },
-  { id: "api-database", from: "data-access", to: "database" },
-  { id: "app-oversight", from: "app", to: "oversight" },
-  { id: "oversight-database", from: "oversight", to: "database" },
-  { id: "app-supply", from: "app", to: "supply-chain" },
-  { id: "app-detection", from: "app", to: "detection" },
+  { id: "employee-portal", from: "employee", to: "portal" },
+  { id: "portal-app", from: "portal", to: "app" },
+  { id: "app-api", from: "app", to: "api" },
+  { id: "api-database", from: "api", to: "database" },
 ];
 
-export const LAB_ZONE_LABELS: readonly { id: BoardZoneId; label: string }[] = [
-  { id: "user-input", label: "User and Input" },
-  { id: "ai-services", label: "AI Services" },
-  { id: "protected", label: "Protected Systems" },
-  { id: "secops", label: "Security Operations" },
+export const CORE_VISIBLE_NODES: readonly MapNodeId[] = [...PRIMARY_SYSTEM_IDS];
+
+export const LAB_ZONE_LABELS: readonly { id: BoardZoneId; label: string; note: string }[] = [
+  { id: "external", label: "Edge zone", note: "Front door. Staff and the internet meet the company here." },
+  { id: "application", label: "Application zone", note: "The AI reads claims and drafts replies here." },
+  { id: "protected", label: "Protected data zone", note: "Customer records and payouts live here." },
 ];
+
+export const EDGE_CONTROL_IDS: Record<PrimaryEdgeId, readonly MapNodeId[]> = {
+  "employee-portal": ["waf"],
+  "portal-app": ["scanner"],
+  "app-api": ["secrets", "gateway"],
+  "api-database": [],
+};
+
+export const SYSTEM_CONTROL_IDS: Partial<Record<MapNodeId, readonly MapNodeId[]>> = {
+  portal: ["identity"],
+  app: ["retrieval"],
+  database: ["backup"],
+};
 
 export type BoardLayout = "desktop" | "mobile";
 
 export interface NodePoint {
   x: number;
   y: number;
+}
+
+export function isPrimarySystem(id: MapNodeId): boolean {
+  return PRIMARY_SYSTEM_IDS.includes(id);
+}
+
+export function isBadgeNode(id: MapNodeId): boolean {
+  return BADGE_NODE_IDS.includes(id);
 }
 
 export function nodePoint(node: MapNodeDefinition, layout: BoardLayout): NodePoint {
@@ -213,14 +253,14 @@ export function nodePoint(node: MapNodeDefinition, layout: BoardLayout): NodePoi
 export function nodeRadii(kind: NodeKind, layout: BoardLayout): { rx: number; ry: number } {
   if (layout === "mobile") {
     if (kind === "control") {
-      return { rx: 14, ry: 4.2 };
+      return { rx: 10, ry: 3.4 };
     }
-    return { rx: 16, ry: 4.8 };
+    return { rx: 16, ry: 5.2 };
   }
   if (kind === "control") {
-    return { rx: 6.4, ry: 5.4 };
+    return { rx: 5.2, ry: 3.6 };
   }
-  return { rx: 7.6, ry: 6.2 };
+  return { rx: 8.4, ry: 7 };
 }
 
 export function ellipseEdge(from: NodePoint, to: NodePoint, radii: { rx: number; ry: number }): NodePoint {
@@ -231,28 +271,6 @@ export function ellipseEdge(from: NodePoint, to: NodePoint, radii: { rx: number;
     x: from.x + dx / magnitude,
     y: from.y + dy / magnitude,
   };
-}
-
-export function edgeEndpoints(
-  fromNode: MapNodeDefinition,
-  toNode: MapNodeDefinition,
-  layout: BoardLayout,
-): { x1: number; y1: number; x2: number; y2: number } {
-  const from = nodePoint(fromNode, layout);
-  const to = nodePoint(toNode, layout);
-  const start = ellipseEdge(from, to, nodeRadii(fromNode.kind, layout));
-  const end = ellipseEdge(to, from, nodeRadii(toNode.kind, layout));
-  return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
-}
-
-export function curvePath(x1: number, y1: number, x2: number, y2: number): string {
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const len = Math.hypot(dx, dy) || 1;
-  const bulge = Math.min(48, len * 0.14);
-  return `M ${x1} ${y1} Q ${mx - (dy / len) * bulge} ${my + (dx / len) * bulge} ${x2} ${y2}`;
 }
 
 export function scaledPoint(node: MapNodeDefinition, layout: BoardLayout): NodePoint {
@@ -271,11 +289,19 @@ export function edgePath(fromNode: MapNodeDefinition, toNode: MapNodeDefinition,
     rx: nodeRadii(toNode.kind, layout).rx * 10,
     ry: nodeRadii(toNode.kind, layout).ry * 6.2,
   });
-  return curvePath(start.x, start.y, end.x, end.y);
+  return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
 }
 
 export function findEdge(from: MapNodeId, to: MapNodeId): MapEdgeDefinition | undefined {
   return LAB_EDGES.find(
     (edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from),
   );
+}
+
+export function edgesForVisible(visible: ReadonlySet<MapNodeId>): MapEdgeDefinition[] {
+  return LAB_EDGES.filter((edge) => visible.has(edge.from) && visible.has(edge.to));
+}
+
+export function hopUsesPrimaryEdge(from: MapNodeId, to: MapNodeId): MapEdgeDefinition | undefined {
+  return findEdge(from, to);
 }

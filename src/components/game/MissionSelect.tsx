@@ -1,5 +1,18 @@
 import Link from "next/link";
+import { LabMissionThumbnail } from "@/components/site/LabMissionThumbnail";
 import { MissionThumbnail } from "@/components/site/MissionThumbnail";
+import { DECISION_COUNT } from "@/lib/lab/catalog";
+import {
+  LAB_CARD_CTA,
+  LAB_CARD_DESTINATION,
+  LAB_CARD_FRAMEWORKS,
+  LAB_CARD_HREF,
+  LAB_CARD_KICKER,
+  LAB_CARD_LEARNING,
+  LAB_CARD_SUMMARY,
+  LAB_CARD_TITLE,
+  LAB_PLAY_INTRO,
+} from "@/lib/lab/copy";
 import { publishedMissions } from "@/lib/missions/catalog";
 import type { MissionDefinition, MissionId } from "@/lib/missions/types";
 
@@ -25,17 +38,37 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
       <div className="game-shell mission-select">
         <p className="game-kicker">Try the exercise</p>
         <h1 className="game-panel-title">Choose a mission</h1>
-        <p className="game-panel-copy">
-          These maps exist so you can practise the hard calls before they land on your desk. Each
-          one is a different workplace under pressure — after you pick a map, you choose a relevant
-          role or the standard version.
-        </p>
+        <p className="game-panel-copy">{LAB_PLAY_INTRO}</p>
         <p>
           <Link className="back-link" href="/missions/">
             Browse all missions
           </Link>
         </p>
         <div className="mission-grid">
+          <article className="mission-card mission-select-card mission-card-lab">
+            <div className="mission-select-thumb">
+              <LabMissionThumbnail label={LAB_CARD_DESTINATION} />
+            </div>
+            <p className="game-kicker">
+              {LAB_CARD_KICKER} · {DECISION_COUNT} decisions
+            </p>
+            <h2 className="mission-card-title">{LAB_CARD_TITLE}</h2>
+            <p className="mission-card-blurb">{LAB_CARD_SUMMARY}</p>
+            <ul className="mission-card-facts">
+              <li>
+                <strong>Learning:</strong> {LAB_CARD_LEARNING}
+              </li>
+              <li>
+                <strong>Destination:</strong> {LAB_CARD_DESTINATION}
+              </li>
+              <li>
+                <strong>Frameworks:</strong> {LAB_CARD_FRAMEWORKS}
+              </li>
+            </ul>
+            <Link className="game-primary mission-card-cta" href={LAB_CARD_HREF}>
+              {LAB_CARD_CTA}
+            </Link>
+          </article>
           {publishedMissions().map((mission) => (
             <article
               key={mission.id}

@@ -12,5 +12,9 @@ describe("homepage layout", () => {
     expect(html).not.toContain("Featured mission");
     expect(html).not.toContain("Play mission");
     expect(html.indexOf("how-it-works")).toBeLessThan(html.indexOf("Playable missions"));
+    expect(html).toContain("Architecture Defence Lab");
+    expect(html).toContain("Enter the lab");
+    expect(html).toMatch(/href="\/lab\/?"/);
+    expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Inbox Under Siege"));
   });
 });

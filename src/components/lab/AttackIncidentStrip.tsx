@@ -1,6 +1,6 @@
 "use client";
 
-import { nodeById } from "@/lib/lab/catalog";
+import { TECHNIQUE_COUNT, nodeById } from "@/lib/lab/catalog";
 import { compactOutcome, type AttackBeat } from "@/lib/lab/animation";
 import { OUTCOME_LABELS } from "@/lib/lab/copy";
 import type { ResolvedStage } from "@/lib/lab/types";
@@ -32,18 +32,11 @@ export function AttackIncidentStrip({
     );
   }
 
-  const pivot = beat?.kind === "pivot";
   const showResult = beat?.kind === "result" || !beat;
   const target = nodeById(beat?.toNode ?? beat?.markerNode ?? stage.stopNode);
-  const headline = pivot
-    ? "Blocked — Red Team changes technique"
-    : showResult
-      ? stage.explanation
-      : stage.attackerAction;
-  const kicker = pivot
-    ? `ATTACK STEP ${stage.number} OF 7 · PIVOT · ${stage.name}`
-    : `ATTACK STEP ${stage.number} OF 7 · ${stage.name}`;
-  const outcome = showResult && !pivot ? (OUTCOME_LABELS[stage.outcome] ?? compactOutcome(stage.outcome)) : null;
+  const headline = showResult ? stage.explanation : stage.attackerAction;
+  const kicker = `ATTACK STEP ${stage.number} OF ${TECHNIQUE_COUNT} · ${stage.name}`;
+  const outcome = showResult ? (OUTCOME_LABELS[stage.outcome] ?? compactOutcome(stage.outcome)) : null;
 
   return (
     <aside className="attack-strip" aria-label="Incident strip">
@@ -55,6 +48,7 @@ export function AttackIncidentStrip({
         <p className="attack-strip__detail">
           Target: {target.name}
           {outcome ? ` · ${outcome}` : null}
+          {showResult ? ` · Control: ${stage.choiceTitle}` : null}
         </p>
       </div>
       <div className="attack-strip__controls">

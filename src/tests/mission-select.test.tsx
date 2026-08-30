@@ -18,7 +18,13 @@ describe("mission select cards", () => {
     expect(html).toContain("mission-card-cta");
     expect(html).toContain("mission-select-card");
     expect(html).toContain("mission-select-thumb");
-    expect(html).toContain("practise the hard calls");
+    expect(html).toContain("Architecture Defence Lab");
+    expect(html).toContain("Enter the lab");
+    expect(html).toContain("mission-card-lab");
+    expect(html).toContain("lab-mission-thumb");
+    expect(html).toMatch(/href="\/lab\/?"/);
+    expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Inbox Under Siege"));
+    expect(html).toContain("design a claims system");
   });
 
   it("keeps card summaries to a short, similar length", () => {

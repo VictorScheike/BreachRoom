@@ -1272,7 +1272,11 @@ summary::-webkit-details-marker {
 }
 
 .mission-select .mission-card-cta.game-primary {
+  display: flex;
+  justify-content: center;
   margin-top: auto;
+  text-align: center;
+  text-decoration: none;
 }
 
 .mission-select-card .mission-card-facts {
