@@ -3,6 +3,7 @@ import {
   ATTACK_TECHNIQUE_IDS,
   BOARD_ZONES,
   DECISION_IDS,
+  EFFECT_LEVELS,
   FINAL_RESULTS,
   LAB_DIFFICULTIES,
   LAB_PHASES,
@@ -11,6 +12,7 @@ import {
 } from "./types";
 
 const nonEmpty = z.string().trim().min(1);
+const effect = z.union([z.literal(EFFECT_LEVELS[0]), z.literal(EFFECT_LEVELS[1]), z.literal(EFFECT_LEVELS[2])]);
 
 export const architectureOptionSchema = z
   .object({
@@ -21,11 +23,21 @@ export const architectureOptionSchema = z
     challengeDescription: nonEmpty,
     tradeOff: nonEmpty,
     confirmation: nonEmpty,
+    architectureUpdate: nonEmpty,
+    riskReduced: nonEmpty,
+    residualRisk: nonEmpty,
     recommended: z.boolean(),
     strength: z.enum(["strong", "medium", "weak"]),
     icon: nonEmpty,
     mapTitle: nonEmpty,
     mapDetail: nonEmpty,
+    addsNodes: z.array(z.enum(MAP_NODE_IDS)),
+    highlightNodes: z.array(z.enum(MAP_NODE_IDS)).min(1),
+    preventionEffect: effect,
+    detectionEffect: effect,
+    blastRadiusEffect: effect,
+    recoveryEffect: effect,
+    campaignStageIds: z.array(z.enum(ATTACK_TECHNIQUE_IDS)).min(1),
   })
   .strict();
 
@@ -33,6 +45,7 @@ export const architectureDecisionSchema = z
   .object({
     id: z.enum(DECISION_IDS),
     number: z.number().int().min(1).max(10),
+    area: nonEmpty,
     question: nonEmpty,
     nodeId: z.enum(MAP_NODE_IDS),
     options: z.tuple([architectureOptionSchema, architectureOptionSchema, architectureOptionSchema]),
@@ -60,35 +73,20 @@ export const mapEdgeSchema = z
     id: nonEmpty,
     from: z.enum(MAP_NODE_IDS),
     to: z.enum(MAP_NODE_IDS),
-  })
-  .strict();
-
-export const techniqueCheckSchema = z
-  .object({
-    decisionId: z.enum(DECISION_IDS),
-    strongOptionId: nonEmpty,
-    stopNode: z.enum(MAP_NODE_IDS),
-    outcome: z.enum(["blocked", "contained", "partial", "detected"]),
-    attackerAction: nonEmpty,
-    controlResponse: nonEmpty,
-    explanation: nonEmpty,
-    impact: nonEmpty,
+    hiddenWhen: z.array(z.enum(MAP_NODE_IDS)).optional(),
   })
   .strict();
 
 export const attackTechniqueSchema = z
   .object({
     id: z.enum(ATTACK_TECHNIQUE_IDS),
-    number: z.number().int().min(1).max(7),
+    number: z.number().int().min(1).max(8),
     name: nonEmpty,
     summary: nonEmpty,
     entryNode: z.enum(MAP_NODE_IDS),
     path: z.array(z.enum(MAP_NODE_IDS)).min(2),
-    checks: z.array(techniqueCheckSchema).min(1),
-    successAction: nonEmpty,
-    successResponse: nonEmpty,
-    successExplanation: nonEmpty,
-    successImpact: nonEmpty,
+    primaryDecisionId: z.enum(DECISION_IDS),
+    influencingDecisionIds: z.array(z.enum(DECISION_IDS)),
   })
   .strict();
 
@@ -102,9 +100,9 @@ export const labMissionSchema = z
     tagline: nonEmpty,
     scenario: nonEmpty,
     decisions: z.array(architectureDecisionSchema).length(10),
-    nodes: z.array(mapNodeSchema).length(13),
+    nodes: z.array(mapNodeSchema).min(13).max(16),
     edges: z.array(mapEdgeSchema).min(10),
-    techniques: z.array(attackTechniqueSchema).length(7),
+    techniques: z.array(attackTechniqueSchema).length(8),
   })
   .strict()
   .superRefine((mission, ctx) => {
@@ -128,20 +126,23 @@ export const labMissionSchema = z
           ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Duplicate option ${option.id}` });
         }
         optionIds.add(option.id);
+        for (const nodeId of option.addsNodes) {
+          if (!mission.nodes.some((node) => node.id === nodeId)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Option ${option.id} adds unknown node ${nodeId}`,
+            });
+          }
+        }
       }
     }
+    const nodeIds = new Set(mission.nodes.map((item) => item.id));
     for (const technique of mission.techniques) {
-      for (const check of technique.checks) {
-        if (!optionIds.has(check.strongOptionId)) {
+      for (const nodeId of technique.path) {
+        if (!nodeIds.has(nodeId)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Technique ${technique.id} points at unknown option ${check.strongOptionId}`,
-          });
-        }
-        if (!technique.path.includes(check.stopNode)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Technique ${technique.id} stop node ${check.stopNode} is not on its path`,
+            message: `Technique ${technique.id} path includes unknown node ${nodeId}`,
           });
         }
       }

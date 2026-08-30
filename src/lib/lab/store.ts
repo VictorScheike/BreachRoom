@@ -11,8 +11,8 @@ import type {
 } from "./types";
 import { DECISION_IDS } from "./types";
 
-export const LAB_STORAGE_KEY = "breachroom.lab.v2";
-export const LAB_SCHEMA_VERSION = 2;
+export const LAB_STORAGE_KEY = "breachroom.lab.v3";
+export const LAB_SCHEMA_VERSION = 3;
 const LAB_CHANGE_EVENT = "breachroom-lab";
 
 export const EMPTY_LAB_STATE: LabPersistedState = {
@@ -78,16 +78,9 @@ const LEGACY_OPTION_MAP: Record<string, OptionId> = {
   "identity-password": "identity-password",
   "guard-full": "input-sandbox",
   "guard-prompt-only": "input-typecheck",
-  "model-private": "model-private",
-  "model-public": "model-public",
   "data-api": "api-restricted",
   "data-direct": "api-broad",
-  "agency-human": "oversight-human",
-  "agency-auto": "oversight-auto",
-  "secrets-vault": "secrets-vault",
   "secrets-config": "secrets-key",
-  "supply-protected": "supply-signed",
-  "supply-open": "supply-latest",
   "monitor-siem": "detection-siem",
   "monitor-logs": "detection-logs",
 };
@@ -153,7 +146,10 @@ export function loadLabState(): LabPersistedState {
     return EMPTY_LAB_STATE;
   }
   try {
-    const raw = window.localStorage.getItem(LAB_STORAGE_KEY) ?? window.localStorage.getItem("breachroom.lab.v1");
+    const raw =
+      window.localStorage.getItem(LAB_STORAGE_KEY) ??
+      window.localStorage.getItem("breachroom.lab.v2") ??
+      window.localStorage.getItem("breachroom.lab.v1");
     if (raw === cachedRaw) {
       return cachedState;
     }

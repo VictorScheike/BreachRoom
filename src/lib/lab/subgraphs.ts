@@ -58,312 +58,238 @@ function edge(id: string, from: SubgraphNode, to: SubgraphNode): SubgraphEdge {
   return { id, from: from.id, to: to.id, path: curve(from.x, from.y, to.x, to.y) };
 }
 
-const identitySource = node("source", "Stolen password", "source", 70, 140);
-const identityControl = node("identity", "Identity", "control", 300, 140);
-const identityPortal = node("portal", "Claims Portal", "core", 560, 140);
-const identityApp = node("app", "AI Claims App", "core", 860, 140);
-
-const uploadSource = node("source", "Poisoned file", "source", 70, 140);
-const uploadControl = node("input", "Document upload", "control", 300, 140);
-const uploadApp = node("app", "AI Claims App", "core", 560, 140);
-const uploadModel = node("model", "AI model", "control", 860, 140);
-
-const modelApp = node("app", "AI Claims App", "core", 160, 140);
-const modelControl = node("model", "AI model", "control", 430, 140);
-const modelRetrieval = node("retrieval", "Retrieval", "control", 700, 80);
-const modelPortal = node("portal", "Claims Portal", "core", 700, 200);
-
-const retrievalApp = node("app", "AI Claims App", "core", 140, 140);
-const retrievalControl = node("retrieval", "Retrieval", "control", 400, 140);
-const retrievalApi = node("data-access", "Claims API", "control", 660, 140);
-const retrievalDb = node("database", "Claims Database", "asset", 900, 140);
-
-const secretsApp = node("app", "AI Claims App", "core", 160, 140);
-const secretsControl = node("secrets", "Secrets + tools", "control", 450, 140);
-const secretsApi = node("data-access", "Claims API", "control", 760, 140);
-
-const apiApp = node("app", "AI Claims App", "core", 140, 140);
-const apiControl = node("data-access", "Claims API", "control", 430, 140);
-const apiDb = node("database", "Claims Database", "asset", 720, 80);
-const apiOversight = node("oversight", "Human approval", "control", 720, 200);
-
-const oversightApp = node("app", "AI Claims App", "core", 160, 140);
-const oversightControl = node("oversight", "Human approval", "control", 450, 140);
-const oversightDb = node("database", "Claims Database", "asset", 760, 140);
-
-const networkApp = node("app", "AI Claims App", "core", 160, 90);
-const networkControl = node("network", "Network", "control", 450, 140);
-const networkDb = node("database", "Internal systems", "asset", 760, 90);
-const networkSupply = node("supply-chain", "Software delivery", "control", 760, 200);
-
-const supplyApp = node("app", "AI Claims App", "core", 160, 140);
-const supplyControl = node("supply-chain", "Software delivery", "control", 470, 140);
-const supplyProd = node("database", "Production", "asset", 780, 140);
-
-const detectApp = node("app", "AI Claims App", "core", 160, 90);
-const detectPortal = node("portal", "Claims Portal", "core", 160, 200);
-const detectControl = node("detection", "Monitoring", "control", 500, 140);
-const detectDb = node("database", "Claims Database", "asset", 820, 140);
+function slice(
+  decisionId: DecisionId,
+  domain: string,
+  control: SubgraphNode,
+  upstream: SubgraphNode,
+  downstream: SubgraphNode,
+  held: SubgraphOutcome,
+  exposed: SubgraphOutcome,
+): DecisionSubgraph {
+  return {
+    decisionId,
+    domain,
+    nodes: [upstream, control, downstream],
+    edges: [edge(`${upstream.id}-${control.id}`, upstream, control), edge(`${control.id}-${downstream.id}`, control, downstream)],
+    controlNodeId: control.id,
+    downstreamNodeIds: [downstream.id],
+    held,
+    exposed,
+  };
+}
 
 export const LAB_SUBGRAPHS: readonly DecisionSubgraph[] = [
-  {
-    decisionId: "identity",
-    domain: "Identity",
-    nodes: [identitySource, identityControl, identityPortal, identityApp],
-    edges: [
-      edge("src-identity", identitySource, identityControl),
-      edge("identity-portal", identityControl, identityPortal),
-      edge("portal-app", identityPortal, identityApp),
-    ],
-    controlNodeId: "identity",
-    downstreamNodeIds: ["portal", "app"],
-    held: {
-      headline: "Stolen credentials stop at Identity",
-      explanation:
-        "The attacker is stopped before reaching the Claims Portal. The next attack step will be a new technique, not a continuation through a control that already held.",
-      controlStatus: "held",
-      controlLabel: "Blocked",
-      downstreamLabel: "Not reached",
-    },
-    exposed: {
-      headline: "Valid attacker session",
-      explanation: "The attacker enters as a valid staff user. Later controls still get their own chance to limit the damage.",
-      controlStatus: "exposed",
-      controlLabel: "Exposed",
-      downstreamLabel: "Still reachable",
-    },
-  },
-  {
-    decisionId: "input",
-    domain: "Document upload",
-    nodes: [uploadSource, uploadControl, uploadApp, uploadModel],
-    edges: [
-      edge("src-input", uploadSource, uploadControl),
-      edge("input-app", uploadControl, uploadApp),
-      edge("app-model", uploadApp, uploadModel),
-    ],
-    controlNodeId: "input",
-    downstreamNodeIds: ["app", "model"],
-    held: {
-      headline: "Poisoned document stops at upload",
-      explanation: "The sandbox strips the payload before the AI Claims App retrieves it. A later technique must start from a new route.",
-      controlStatus: "held",
-      controlLabel: "Blocked",
-      downstreamLabel: "Not reached",
-    },
-    exposed: {
-      headline: "Hidden content survives",
-      explanation: "A type check lets the file through. The model and retrieval layers still get their own chance to limit the blast radius.",
-      controlStatus: "exposed",
-      controlLabel: "Exposed",
-      downstreamLabel: "Still reachable",
-    },
-  },
-  {
-    decisionId: "model",
-    domain: "AI model",
-    nodes: [modelApp, modelControl, modelRetrieval, modelPortal],
-    edges: [
-      edge("app-model", modelApp, modelControl),
-      edge("model-retrieval", modelControl, modelRetrieval),
-      edge("app-portal", modelApp, modelPortal),
-    ],
-    controlNodeId: "model",
-    downstreamNodeIds: ["retrieval"],
-    held: {
-      headline: "Prompts stay inside the private model boundary",
-      explanation: "A private endpoint limits where injected context can leak. Retrieval still decides how wide the search can go.",
+  slice(
+    "exposure",
+    "External exposure",
+    node("waf", "WAF", "control", 400, 140),
+    node("employee", "Internet", "source", 80, 140),
+    node("portal", "Claims Portal", "core", 720, 140),
+    {
+      headline: "API stays off the public internet",
+      explanation: "A WAF and private endpoint keep scanners off the Claims API.",
       controlStatus: "held",
       controlLabel: "Limited",
       downstreamLabel: "Still gated",
     },
-    exposed: {
-      headline: "Prompts leave for a public model",
-      explanation: "Less control over logs and retention. Later retrieval and API controls still get an independent chance.",
+    {
+      headline: "Portal and API are internet-facing",
+      explanation: "Anything that can reach the internet can try both services.",
       controlStatus: "exposed",
       controlLabel: "Exposed",
       downstreamLabel: "Still reachable",
     },
-  },
-  {
-    decisionId: "retrieval",
-    domain: "Retrieval",
-    nodes: [retrievalApp, retrievalControl, retrievalApi, retrievalDb],
-    edges: [
-      edge("app-retrieval", retrievalApp, retrievalControl),
-      edge("retrieval-api", retrievalControl, retrievalApi),
-      edge("api-db", retrievalApi, retrievalDb),
-    ],
-    controlNodeId: "retrieval",
-    downstreamNodeIds: ["data-access", "database"],
-    held: {
-      headline: "Search stays on the current claim",
-      explanation: "Case-scoped retrieval refuses neighbouring customer documents. The attacker cannot turn one claim into a book-wide search.",
+  ),
+  slice(
+    "identity",
+    "Identity and access",
+    node("identity", "Identity Provider", "control", 400, 140),
+    node("employee", "Stolen password", "source", 80, 140),
+    node("portal", "Claims Portal", "core", 720, 140),
+    {
+      headline: "Stolen credentials stop at identity",
+      explanation: "MFA refuses the password before a claims session opens.",
       controlStatus: "held",
       controlLabel: "Blocked",
       downstreamLabel: "Not reached",
     },
-    exposed: {
-      headline: "Shared index is searchable",
-      explanation: "One manipulated request may pull unrelated claims. The API and approval layers still get their own chance.",
+    {
+      headline: "Valid attacker session",
+      explanation: "The attacker enters as a staff user. Later controls still get their own chance.",
       controlStatus: "exposed",
       controlLabel: "Exposed",
       downstreamLabel: "Still reachable",
     },
-  },
-  {
-    decisionId: "secrets",
-    domain: "Secrets and tools",
-    nodes: [secretsApp, secretsControl, secretsApi],
-    edges: [
-      edge("app-secrets", secretsApp, secretsControl),
-      edge("secrets-api", secretsControl, secretsApi),
-    ],
-    controlNodeId: "secrets",
-    downstreamNodeIds: ["data-access"],
-    held: {
-      headline: "No reusable key to steal",
-      explanation: "Managed identity issues a short-lived token. Compromising the app does not hand over a portable credential.",
-      controlStatus: "held",
-      controlLabel: "Blocked",
-      downstreamLabel: "Not reached",
-    },
-    exposed: {
-      headline: "Static key can be reused",
-      explanation: "A leaked key works outside the application. API permissions still decide how far that key can read.",
-      controlStatus: "exposed",
-      controlLabel: "Exposed",
-      downstreamLabel: "Still reachable",
-    },
-  },
-  {
-    decisionId: "data-access",
-    domain: "Claims API",
-    nodes: [apiApp, apiControl, apiDb, apiOversight],
-    edges: [
-      edge("app-api", apiApp, apiControl),
-      edge("api-db", apiControl, apiDb),
-      edge("api-oversight", apiControl, apiOversight),
-    ],
-    controlNodeId: "data-access",
-    downstreamNodeIds: ["database", "oversight"],
-    held: {
-      headline: "Bulk reads are refused",
-      explanation: "The restricted API allows only the active claim and approved reads. Least privilege stops the blast radius.",
-      controlStatus: "held",
-      controlLabel: "Blocked",
-      downstreamLabel: "Not reached",
-    },
-    exposed: {
-      headline: "Broad service account accepts the call",
-      explanation: "A manipulated workflow can read widely. Human approval still gets an independent chance on payouts.",
-      controlStatus: "exposed",
-      controlLabel: "Exposed",
-      downstreamLabel: "Still reachable",
-    },
-  },
-  {
-    decisionId: "oversight",
-    domain: "Human oversight",
-    nodes: [oversightApp, oversightControl, oversightDb],
-    edges: [
-      edge("app-oversight", oversightApp, oversightControl),
-      edge("oversight-db", oversightControl, oversightDb),
-    ],
-    controlNodeId: "oversight",
-    downstreamNodeIds: ["database"],
-    held: {
-      headline: "Payout changes wait for a person",
-      explanation: "Manipulated output cannot become a business action on its own. This technique ends at human approval.",
-      controlStatus: "held",
-      controlLabel: "Blocked",
-      downstreamLabel: "Not reached",
-    },
-    exposed: {
-      headline: "The assistant can complete the payout",
-      explanation: "Automatic execution treats a draft as an approved action. Monitoring still gets a later chance to see the campaign.",
-      controlStatus: "exposed",
-      controlLabel: "Exposed",
-      downstreamLabel: "Still reachable",
-    },
-  },
-  {
-    decisionId: "network",
-    domain: "Network segmentation",
-    nodes: [networkApp, networkControl, networkDb, networkSupply],
-    edges: [
-      edge("app-network", networkApp, networkControl),
-      edge("network-db", networkControl, networkDb),
-      edge("network-supply", networkControl, networkSupply),
-    ],
-    controlNodeId: "network",
-    downstreamNodeIds: ["database", "supply-chain"],
-    held: {
+  ),
+  slice(
+    "network",
+    "Network segmentation",
+    node("network", "Network zones", "control", 400, 140),
+    node("app", "AI Claims App", "core", 80, 140),
+    node("database", "Claims Database", "asset", 720, 140),
+    {
       headline: "East-west movement is refused",
-      explanation: "Private segments stop a foothold in the assistant becoming a tour of the estate.",
+      explanation: "Separate zones stop a foothold in the assistant becoming a tour of the estate.",
       controlStatus: "held",
-      controlLabel: "Blocked",
+      controlLabel: "Limited",
       downstreamLabel: "Not reached",
     },
-    exposed: {
+    {
       headline: "Internal trust lets the attempt through",
-      explanation: "A flat network lets one compromised service move toward others. Supply-chain controls still get their own chance.",
+      explanation: "A flat network lets one compromised service move toward others.",
       controlStatus: "exposed",
       controlLabel: "Exposed",
       downstreamLabel: "Still reachable",
     },
-  },
-  {
-    decisionId: "supply-chain",
-    domain: "Software delivery",
-    nodes: [supplyApp, supplyControl, supplyProd],
-    edges: [
-      edge("app-supply", supplyApp, supplyControl),
-      edge("supply-prod", supplyControl, supplyProd),
-    ],
-    controlNodeId: "supply-chain",
-    downstreamNodeIds: ["database"],
-    held: {
-      headline: "Unsigned artefacts are rejected",
-      explanation: "Pinned, scanned and signed builds stop a tainted package reaching production.",
+  ),
+  slice(
+    "gateway",
+    "API protection",
+    node("gateway", "API Gateway", "control", 400, 140),
+    node("portal", "Claims Portal", "core", 80, 140),
+    node("api", "Claims API", "core", 720, 140),
+    {
+      headline: "Requests meet a gateway",
+      explanation: "Authentication, validation and rate limiting sit on the portal-to-API path.",
+      controlStatus: "held",
+      controlLabel: "Limited",
+      downstreamLabel: "Still gated",
+    },
+    {
+      headline: "Direct API with an application token",
+      explanation: "A leaked token is a working key to the Claims API.",
+      controlStatus: "exposed",
+      controlLabel: "Exposed",
+      downstreamLabel: "Still reachable",
+    },
+  ),
+  slice(
+    "secrets",
+    "Service authentication",
+    node("secrets", "Secrets Vault", "control", 400, 140),
+    node("app", "AI Claims App", "core", 80, 140),
+    node("api", "Claims API", "core", 720, 140),
+    {
+      headline: "No reusable key to steal",
+      explanation: "Managed identity issues a short-lived token.",
       controlStatus: "held",
       controlLabel: "Blocked",
       downstreamLabel: "Not reached",
     },
-    exposed: {
-      headline: "Latest versions enter with light checks",
-      explanation: "A compromised dependency may ship. Monitoring still gets a later chance to correlate the campaign.",
+    {
+      headline: "Static key can be reused",
+      explanation: "A leaked key works outside the application.",
       controlStatus: "exposed",
       controlLabel: "Exposed",
       downstreamLabel: "Still reachable",
     },
-  },
-  {
-    decisionId: "detection",
-    domain: "Monitoring and response",
-    nodes: [detectApp, detectPortal, detectControl, detectDb],
-    edges: [
-      edge("app-detect", detectApp, detectControl),
-      edge("portal-detect", detectPortal, detectControl),
-      edge("detect-db", detectControl, detectDb),
-    ],
-    controlNodeId: "detection",
-    downstreamNodeIds: ["database"],
-    held: {
+  ),
+  slice(
+    "data-access",
+    "Database permissions",
+    node("api", "Claims API", "control", 400, 140),
+    node("app", "AI Claims App", "core", 80, 140),
+    node("database", "Claims Database", "asset", 720, 140),
+    {
+      headline: "Bulk reads are refused",
+      explanation: "The API allows only the open claim and approved reads.",
+      controlStatus: "held",
+      controlLabel: "Blocked",
+      downstreamLabel: "Not reached",
+    },
+    {
+      headline: "Broad service account accepts the call",
+      explanation: "A steered workflow can read widely.",
+      controlStatus: "exposed",
+      controlLabel: "Exposed",
+      downstreamLabel: "Still reachable",
+    },
+  ),
+  slice(
+    "retrieval",
+    "AI retrieval",
+    node("retrieval", "Retrieval Service", "control", 400, 140),
+    node("app", "AI Claims App", "core", 80, 140),
+    node("database", "Claims Database", "asset", 720, 140),
+    {
+      headline: "Search stays on the current claim",
+      explanation: "Case-scoped retrieval refuses neighbouring customer documents.",
+      controlStatus: "held",
+      controlLabel: "Blocked",
+      downstreamLabel: "Not reached",
+    },
+    {
+      headline: "Shared index is searchable",
+      explanation: "One manipulated request may pull unrelated claims.",
+      controlStatus: "exposed",
+      controlLabel: "Exposed",
+      downstreamLabel: "Still reachable",
+    },
+  ),
+  slice(
+    "input",
+    "Malicious input",
+    node("scanner", "Document Scanner", "control", 400, 140),
+    node("portal", "Claims Portal", "core", 80, 140),
+    node("app", "AI Claims App", "core", 720, 140),
+    {
+      headline: "Poisoned document stops at the scanner",
+      explanation: "The file is validated, scanned and isolated before the AI reads it.",
+      controlStatus: "held",
+      controlLabel: "Blocked",
+      downstreamLabel: "Not reached",
+    },
+    {
+      headline: "Hidden content survives",
+      explanation: "A type check lets the file through to the AI Claims App.",
+      controlStatus: "exposed",
+      controlLabel: "Exposed",
+      downstreamLabel: "Still reachable",
+    },
+  ),
+  slice(
+    "detection",
+    "Logging and detection",
+    node("detection", "Monitoring / SIEM", "control", 400, 140),
+    node("app", "AI Claims App", "core", 80, 90),
+    node("database", "Claims Database", "asset", 720, 140),
+    {
       headline: "Events become one incident",
-      explanation: "The SIEM correlates identity, upload, AI and API traces so the organisation can contain what is still in motion.",
+      explanation: "The SIEM correlates identity, API, AI and database traces.",
       controlStatus: "held",
       controlLabel: "Detected",
       downstreamLabel: "Containment possible",
     },
-    exposed: {
+    {
       headline: "Each service keeps its own log",
       explanation: "Isolated events may be reconstructable later. They do not show a campaign now.",
       controlStatus: "exposed",
       controlLabel: "Blind",
       downstreamLabel: "Uncorrelated",
     },
-  },
+  ),
+  slice(
+    "recovery",
+    "Containment and recovery",
+    node("backup", "Protected Backup", "control", 400, 140),
+    node("database", "Claims Database", "asset", 80, 140),
+    node("detection", "Monitoring", "core", 720, 140),
+    {
+      headline: "Isolation and restore are practised",
+      explanation: "Credential revocation and protected backups reduce lasting damage.",
+      controlStatus: "held",
+      controlLabel: "Recovered",
+      downstreamLabel: "Damage reduced",
+    },
+    {
+      headline: "No practised isolation path",
+      explanation: "Live-account copies do not give Nordic Shield a clean restore.",
+      controlStatus: "exposed",
+      controlLabel: "Exposed",
+      downstreamLabel: "Damage remains",
+    },
+  ),
 ];
 
 const subgraphSchema = z

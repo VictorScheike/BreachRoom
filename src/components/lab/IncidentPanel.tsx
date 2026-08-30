@@ -50,7 +50,7 @@ export function IncidentPanel({
 
   return (
     <aside className="lab-incident" aria-live="polite" aria-label="Incident panel">
-      <p className="lab-kicker">Technique {stage.number} of 7</p>
+      <p className="lab-kicker">Technique {stage.number} of 8</p>
       <h2>{stage.name}</h2>
       <p className="lab-incident__target">Target: {target.name}</p>
       <p className="lab-incident__response">{showResult ? stage.explanation : stage.attackerAction}</p>

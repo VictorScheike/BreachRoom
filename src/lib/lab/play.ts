@@ -246,5 +246,5 @@ export function persistLab(state: LabPersistedState): void {
 }
 
 export function currentDecisionId(state: LabPersistedState): DecisionId {
-  return DECISION_IDS[state.currentDecisionIndex] ?? "identity";
+  return DECISION_IDS[state.currentDecisionIndex] ?? "exposure";
 }

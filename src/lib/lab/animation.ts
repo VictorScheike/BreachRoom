@@ -1,5 +1,6 @@
+import { optionFromPreview, visibleNodeIds } from "./campaign";
 import { LAB_MISSION, nodeById, optionForChoice } from "./catalog";
-import { findEdge } from "./map-layout";
+import { edgesForVisible, findEdge } from "./map-layout";
 import type {
   AttackBeatKind,
   AttackSimulation,
@@ -39,7 +40,7 @@ export type NodeVisualStatus =
   | "history-partial"
   | "history-hit";
 
-export type EdgeVisualKind = "idle" | "live" | "history" | "history-block" | "pivot" | "pivot-live";
+export type EdgeVisualKind = "idle" | "live" | "history" | "history-block" | "history-limited" | "pivot" | "pivot-live";
 
 export interface BoardEdgeVisual {
   id: string;
@@ -55,9 +56,10 @@ export interface BoardVisualState {
   markerNode: MapNodeId | null;
   markerVisible: boolean;
   markerMoving: boolean;
-  stopBadge: { nodeId: MapNodeId; label: "BLOCKED" | "PARTIAL" | "EXPOSED" } | null;
+  stopBadge: { nodeId: MapNodeId; label: "BLOCKED" | "LIMITED" | "DETECTED" | "EXPOSED" | "RECOVERED" } | null;
   pivotBanner: boolean;
   enteringNode: MapNodeId | null;
+  affectedNodes: readonly MapNodeId[];
 }
 
 export function beatsForStage(stage: ResolvedStage): AttackBeat[] {
@@ -135,26 +137,35 @@ export function hudStatus(args: {
     return "Pivot";
   }
   if (args.beat.kind === "result") {
-    if (args.stage.outcome === "successful") {
+    if (args.stage.outcome === "compromised") {
       return "Attacking";
     }
-    if (args.stage.outcome === "partial") {
-      return "Partial";
+    if (args.stage.outcome === "limited") {
+      return "Limited";
     }
-    if (args.stage.outcome === "detected" || args.stage.outcome === "contained") {
-      return "Contained";
+    if (args.stage.outcome === "detected") {
+      return "Detected";
+    }
+    if (args.stage.outcome === "recovered") {
+      return "Recovered";
     }
     return "Blocked";
   }
   return "Attacking";
 }
 
-export function compactOutcome(outcome: StageOutcomeKind): "BLOCKED" | "PARTIAL" | "EXPOSED" {
-  if (outcome === "successful") {
+export function compactOutcome(outcome: StageOutcomeKind): "BLOCKED" | "LIMITED" | "DETECTED" | "EXPOSED" | "RECOVERED" {
+  if (outcome === "compromised") {
     return "EXPOSED";
   }
-  if (outcome === "partial") {
-    return "PARTIAL";
+  if (outcome === "limited") {
+    return "LIMITED";
+  }
+  if (outcome === "detected") {
+    return "DETECTED";
+  }
+  if (outcome === "recovered") {
+    return "RECOVERED";
   }
   return "BLOCKED";
 }
@@ -176,10 +187,10 @@ function edgeId(from: MapNodeId, to: MapNodeId, fallback: string): string {
 }
 
 function historyStatus(outcome: StageOutcomeKind): NodeVisualStatus {
-  if (outcome === "successful") {
+  if (outcome === "compromised") {
     return "history-hit";
   }
-  if (outcome === "partial") {
+  if (outcome === "limited" || outcome === "detected") {
     return "history-partial";
   }
   return "history-block";
@@ -193,24 +204,18 @@ export function deriveBoardVisual(args: {
   attackBeat: number;
   phase: LabPhase;
 }): BoardVisualState {
-  const visible = new Set<MapNodeId>(["portal", "app", "database"]);
-  for (const node of LAB_MISSION.nodes) {
-    if (node.decisionId && args.choices[node.decisionId]) {
-      visible.add(node.id);
-    }
-  }
+  const visible = visibleNodeIds(args.choices, args.previewOptionId);
+  const preview = optionFromPreview(args.previewOptionId);
   let enteringNode: MapNodeId | null = null;
-  if (args.previewOptionId) {
-    const option = LAB_MISSION.decisions.flatMap((item) => [...item.options]).find((item) => item.id === args.previewOptionId);
-    if (option) {
-      const node = LAB_MISSION.nodes.find((item) => item.decisionId === option.decisionId);
-      if (node) {
-        visible.add(node.id);
-        if (!args.choices[option.decisionId]) {
-          enteringNode = node.id;
-        }
+  const affectedNodes: MapNodeId[] = [];
+  if (preview) {
+    const alreadyChosen = args.choices[preview.decisionId] === preview.id;
+    for (const nodeId of preview.addsNodes) {
+      if (!alreadyChosen) {
+        enteringNode = enteringNode ?? nodeId;
       }
     }
+    affectedNodes.push(...preview.highlightNodes.filter((id) => visible.has(id)));
   }
 
   const nodeStatus = {} as Record<MapNodeId, NodeVisualStatus>;
@@ -229,7 +234,13 @@ export function deriveBoardVisual(args: {
     for (const pair of pathPairs(stage.travelledPath)) {
       const id = edgeId(pair.from, pair.to, `${stage.id}-${pair.from}-${pair.to}`);
       const last = pair.to === stage.stopNode;
-      edgeKinds.set(id, last && stage.blocked ? "history-block" : "history");
+      const kind =
+        last && (stage.outcome === "blocked" || stage.outcome === "recovered")
+          ? "history-block"
+          : stage.outcome === "limited" || stage.outcome === "detected"
+            ? "history-limited"
+            : "history";
+      edgeKinds.set(id, kind);
     }
     for (const nodeId of stage.travelledPath) {
       if (nodeId === stage.stopNode) {
@@ -279,12 +290,18 @@ export function deriveBoardVisual(args: {
           continue;
         }
         if (nodeId === current.stopNode && beat.kind === "result") {
-          if (current.id === "detection" && current.outcome === "detected") {
-            nodeStatus[nodeId] = nodeStatus[nodeId] === "idle" ? "history-hit" : nodeStatus[nodeId];
-            nodeStatus.detection = "blocked";
+          if (current.outcome === "detected") {
+            nodeStatus[current.responsibleNode] = "partial";
+            if (nodeId !== current.responsibleNode) {
+              nodeStatus[nodeId] = nodeStatus[nodeId] === "idle" ? "history-hit" : nodeStatus[nodeId];
+            }
+          } else if (current.outcome === "compromised") {
+            nodeStatus[nodeId] = "success";
+          } else if (current.outcome === "limited") {
+            nodeStatus[nodeId] = "partial";
           } else {
-            nodeStatus[nodeId] =
-              current.outcome === "successful" ? "success" : current.outcome === "partial" ? "partial" : "blocked";
+            nodeStatus[nodeId] = "blocked";
+            nodeStatus[current.responsibleNode] = "blocked";
           }
         } else if (nodeId === beat.markerNode) {
           nodeStatus[nodeId] = beat.kind === "entry" ? "entry" : "attack";
@@ -299,34 +316,32 @@ export function deriveBoardVisual(args: {
       }
       markerMoving = beat.kind === "travel";
       if (beat.showResult) {
-        const badgeNode = current.id === "detection" && current.outcome === "detected" ? "detection" : current.stopNode;
-        stopBadge = { nodeId: badgeNode, label: compactOutcome(current.outcome) };
+        stopBadge = { nodeId: current.responsibleNode, label: compactOutcome(current.outcome) };
       }
-      if (current.id === "detection" && current.outcome === "detected") {
-        nodeStatus.detection = beat.kind === "result" ? "blocked" : "attack";
+      if (current.outcome === "detected" && beat.kind === "result") {
+        nodeStatus[current.responsibleNode] = "partial";
       }
     }
   }
 
   for (const stage of history) {
-    if (stage.id === "detection" && stage.outcome === "detected") {
-      nodeStatus.detection = "history-block";
+    if (stage.outcome === "detected") {
+      nodeStatus[stage.responsibleNode] = "history-partial";
+    }
+    if (stage.outcome === "recovered") {
+      nodeStatus[stage.responsibleNode] = "history-block";
     }
   }
 
   if (args.phase === "result") {
     const last = stages[stages.length - 1];
     if (last) {
-      const badgeNode = last.id === "detection" && last.outcome === "detected" ? "detection" : last.stopNode;
-      stopBadge = { nodeId: badgeNode, label: compactOutcome(last.outcome) };
+      stopBadge = { nodeId: last.responsibleNode, label: compactOutcome(last.outcome) };
     }
   }
 
   const edges: BoardEdgeVisual[] = [];
-  for (const edge of LAB_MISSION.edges) {
-    if (!visible.has(edge.from) || !visible.has(edge.to)) {
-      continue;
-    }
+  for (const edge of edgesForVisible(visible)) {
     edges.push({
       id: edge.id,
       from: edge.from,
@@ -362,6 +377,7 @@ export function deriveBoardVisual(args: {
     stopBadge,
     pivotBanner,
     enteringNode,
+    affectedNodes,
   };
 }
 
@@ -411,21 +427,27 @@ export function incidentLog(args: {
 }
 
 function logTone(outcome: StageOutcomeKind): IncidentLogEvent["tone"] {
-  if (outcome === "successful") {
+  if (outcome === "compromised") {
     return "success";
   }
-  if (outcome === "partial") {
+  if (outcome === "limited" || outcome === "detected") {
     return "partial";
   }
   return "block";
 }
 
 function logText(stage: ResolvedStage): string {
-  if (stage.outcome === "successful") {
-    return `${stage.name} succeeded`;
+  if (stage.outcome === "compromised") {
+    return `${stage.name} exposed`;
   }
-  if (stage.outcome === "partial") {
-    return `${stage.name} partially held`;
+  if (stage.outcome === "limited") {
+    return `${stage.name} limited`;
+  }
+  if (stage.outcome === "detected") {
+    return `${stage.name} detected`;
+  }
+  if (stage.outcome === "recovered") {
+    return `${stage.name} recovered`;
   }
   return `${stage.name} blocked`;
 }

@@ -13,7 +13,7 @@ describe("About page", () => {
     expect(html).toContain("Architecture Defence Lab");
     expect(html).toContain("one layer at a time");
     expect(html).toContain("without being told whether a control held");
-    expect(html).toContain("toward the records");
+    expect(html).toContain("prevention, limitation, detection and recovery");
     expect(html).not.toContain("You assemble the controls");
     expect(html).not.toContain("after you lock it");
     expect(html).toContain("defence in depth");

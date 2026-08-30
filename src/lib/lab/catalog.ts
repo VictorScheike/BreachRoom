@@ -21,7 +21,7 @@ const rawMission = {
     "Nordic Shield Insurance and this incident are fictional. They exist so you can practise architecture choices, not to describe a real insurer.",
   tagline: "Build it. Then let the attack loose.",
   scenario:
-    "Nordic Shield Insurance has introduced an AI assistant that helps claims handlers summarise cases, search documents and prepare customer responses. You make ten architecture decisions. Then one adaptive Red Team campaign tests the system you actually chose.",
+    "Nordic Shield Insurance is building a claims-handling architecture. An AI assistant sits inside that system to summarise cases and search documents — one component, not the whole design. You configure ten architecture controls. Then one Red Team campaign tests the exact system you built: what it prevents, how far a hit can spread, what gets detected, and whether the organisation can recover.",
   decisions: LAB_DECISIONS,
   nodes: LAB_NODES,
   edges: LAB_EDGES,

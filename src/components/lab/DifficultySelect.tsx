@@ -17,8 +17,9 @@ export function DifficultySelect({
       <p className="lab-kicker">Architecture Defence Lab</p>
       <h2 id="lab-setup-heading">Choose a difficulty</h2>
       <p>
-        You will make ten architecture decisions for fictional Nordic Shield Insurance. Then one
-        adaptive Red Team campaign tests the system you actually chose.
+        You will configure ten architecture controls for fictional Nordic Shield Insurance. Then one
+        Red Team campaign tests the exact system you built — what it prevents, how far a hit can
+        spread, what gets detected, and whether the organisation can recover.
       </p>
       <div className="lab-setup__choices">
         <button
@@ -29,7 +30,7 @@ export function DifficultySelect({
         >
           <LabIcon name="shield" />
           <strong>Guided</strong>
-          <span>Short explanations, a Recommended label, and the practical trade-off on every option.</span>
+          <span>Recommended label, the practical trade-off, and which risk the control reduces. The campaign result stays hidden until the Red Team runs.</span>
         </button>
         <button
           type="button"
@@ -39,14 +40,14 @@ export function DifficultySelect({
         >
           <LabIcon name="scan" />
           <strong>Challenge</strong>
-          <span>Same architecture. No Recommended label. Consequences show in the campaign, not while you pick.</span>
+          <span>Same architecture. No Recommended label. You see the change and the trade-off. Full consequences show in the campaign.</span>
         </button>
       </div>
       <div className="lab-setup__start">
         <p className="lab-kicker">Ready to begin</p>
         <p className="lab-setup__start-copy">
-          Ten decisions. Pick a control and press Next. The path stays neutral so the answer is not
-          given away. Then the Red Team tests the live path toward the Claims Database.
+          Ten decisions. Each one changes the live architecture. Then the Red Team tests the system
+          you built — not to promise that attacks can be avoided, but to see how the design holds.
         </p>
         <button type="button" className="lab-primary lab-setup__start-button" onClick={onBegin}>
           Start the ten decisions

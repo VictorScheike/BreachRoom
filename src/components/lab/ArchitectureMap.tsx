@@ -10,6 +10,7 @@ import type {
   LabChoices,
   LabPhase,
   MapNodeId,
+  NodeKind,
   OptionId,
 } from "@/lib/lab/types";
 
@@ -32,6 +33,9 @@ function edgeState(kind: string): string {
   if (kind === "history-block") {
     return "held";
   }
+  if (kind === "history-limited") {
+    return "limited";
+  }
   if (kind === "history") {
     return "exposed";
   }
@@ -52,7 +56,7 @@ function pathHasHop(path: readonly MapNodeId[], from: MapNodeId, to: MapNodeId):
   return false;
 }
 
-function nodeCaption(status: NodeVisualStatus | undefined, fallback: string): { state: string; caption: string } {
+function nodeCaption(status: NodeVisualStatus | undefined, kind: NodeKind): { state: string; caption: string } {
   if (status === "blocked" || status === "history-block") {
     return { state: "held", caption: "Blocked" };
   }
@@ -65,7 +69,16 @@ function nodeCaption(status: NodeVisualStatus | undefined, fallback: string): { 
   if (status === "partial" || status === "history-partial") {
     return { state: "limited", caption: "Limited" };
   }
-  return { state: "idle", caption: fallback };
+  if (kind === "actor") {
+    return { state: "idle", caption: "External actor" };
+  }
+  if (kind === "asset") {
+    return { state: "idle", caption: "Protected asset" };
+  }
+  if (kind === "system") {
+    return { state: "idle", caption: "System" };
+  }
+  return { state: "idle", caption: "Control" };
 }
 
 export function ArchitectureMap({
@@ -113,8 +126,13 @@ export function ArchitectureMap({
   const focused = focusedStageId ? simulation?.stages.find((item) => item.id === focusedStageId) : null;
   const inspectNode = selectedNodeId ? LAB_MISSION.nodes.find((item) => item.id === selectedNodeId) : null;
   const inspectChoice = inspectNode?.decisionId ? optionForChoice(choices, inspectNode.decisionId) : null;
-  const inspectTechnique = inspectNode?.decisionId
-    ? LAB_MISSION.techniques.find((item) => item.checks.some((check) => check.decisionId === inspectNode.decisionId))
+  const inspectTechnique = inspectNode
+    ? LAB_MISSION.techniques.find(
+        (item) =>
+          item.primaryDecisionId === inspectNode.decisionId ||
+          item.influencingDecisionIds.some((id) => id === inspectNode.decisionId) ||
+          item.path.includes(inspectNode.id),
+      )
     : null;
   const liveEdge = visual.edges.find((item) => item.kind === "live");
   const liveFrom = liveEdge ? LAB_MISSION.nodes.find((item) => item.id === liveEdge.from) : null;
@@ -125,7 +143,7 @@ export function ArchitectureMap({
     <div className="lab-map-wrap">
     <div
       className={["lab-map", "architecture-canvas", compact ? "lab-map--compact" : "", `lab-map--${layout}`].filter(Boolean).join(" ")}
-      aria-label="Nordic Shield claims AI architecture"
+      aria-label="Nordic Shield claims architecture"
     >
       <div className="lab-map__zones" aria-hidden="true">
         {LAB_ZONE_LABELS.map((zone) => (
@@ -173,8 +191,8 @@ export function ArchitectureMap({
         const weak = (previewOption ?? choice)?.strength === "weak";
         const label = nodeLabel(choices, node.id, previewOptionId);
         const icon = previewOption?.icon ?? choice?.icon ?? node.icon;
-        const mapped = nodeCaption(status, node.kind === "asset" ? "Protected asset" : node.kind === "core" ? "Core system" : "Control");
-        const dimmed = focused ? !focused.travelledPath.includes(node.id) && focused.stopNode !== node.id : false;
+        const mapped = nodeCaption(status, node.kind);
+        const dimmed = focused ? !focused.travelledPath.includes(node.id) && focused.stopNode !== node.id && focused.responsibleNode !== node.id : false;
         const nodeState = dimmed ? "idle" : mapped.state;
         const className = [
           "lab-node",
@@ -182,7 +200,7 @@ export function ArchitectureMap({
           `lab-node--${node.kind}`,
           `architecture-node--${node.kind}`,
           weak ? "is-weak" : "",
-          visual.enteringNode === node.id ? "is-entering" : "",
+          visual.enteringNode === node.id || visual.affectedNodes.includes(node.id) ? "is-entering" : "",
           selectedNodeId === node.id ? "is-selected" : "",
           dimmed ? "is-dimmed" : "",
           nodeState !== "idle" ? `is-${nodeState}` : "",
@@ -192,7 +210,9 @@ export function ArchitectureMap({
           .join(" ");
         const body = (
           <>
-            <span className="architecture-node__domain">{node.kind === "control" ? node.name : mapped.caption}</span>
+            <span className="architecture-node__domain">
+              {node.kind === "actor" ? "Actor" : node.kind === "asset" ? "Asset" : node.kind === "system" ? "System" : "Control"}
+            </span>
             <LabIcon name={icon} />
             <strong>{label}</strong>
             <span className="architecture-node__caption">{mapped.caption}</span>

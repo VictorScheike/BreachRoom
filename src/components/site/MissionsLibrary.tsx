@@ -51,9 +51,9 @@ export function MissionsLibrary() {
     <div>
       <section className="lab-library" aria-labelledby="lab-library-heading">
         <p className="training-lede lab-library-intro">
-          Architecture Defence Lab is a different exercise from the maps below. You build a secure
-          architecture, then you watch one coherent attack move through the system you actually
-          chose — stolen credentials and a poisoned document, not a walk across a workplace.
+          Architecture Defence Lab is a different exercise from the maps below. You configure a
+          claims architecture — identity, networks, APIs, an AI assistant, monitoring and recovery —
+          then watch one attack chain test the system you actually built.
         </p>
         <article className="mission-card lab-library-card">
           <div className="mission-card__body">
@@ -64,9 +64,9 @@ export function MissionsLibrary() {
               </h2>
               <p className="mission-card__destination">The Poisoned Claim</p>
               <p className="mission-card__description mission-card__description--four">
-                Build a claims-handling architecture for fictional Nordic Shield Insurance, then watch
-                one coherent attack — stolen credentials plus a poisoned document — move through the
-                system you built.
+                Build a claims-handling architecture for fictional Nordic Shield Insurance. An AI
+                assistant is one component. Then one attack chain tests prevention, blast radius,
+                detection and recovery on the system you built.
               </p>
               <ul className="topic-chips">
                 <li>AI security</li>

@@ -1,10 +1,8 @@
 "use client";
 
-import { LocalImpactGraph } from "@/components/lab/LocalImpactGraph";
-import { DecisionImpactStrip } from "@/components/lab/DecisionImpactStrip";
+import { ArchitectureMap } from "@/components/lab/ArchitectureMap";
 import { LabIcon } from "@/components/lab/LabIcon";
-import { chosenCount } from "@/lib/lab/catalog";
-import { subgraphFor } from "@/lib/lab/subgraphs";
+import { chosenCount, optionById } from "@/lib/lab/catalog";
 import type { ArchitectureDecision, LabChoices, LabDifficulty, OptionId } from "@/lib/lab/types";
 
 export function DecisionScreen({
@@ -27,22 +25,26 @@ export function DecisionScreen({
   canGoBack: boolean;
 }) {
   const guided = difficulty === "guided";
-  const subgraph = subgraphFor(decision.id);
-  const pending = decision.options.find((item) => item.id === pendingOptionId) ?? null;
   const lockedCount = chosenCount(choices);
 
   return (
     <section className="lab-decision" aria-labelledby="lab-decision-heading" data-decision={decision.id}>
       <div className="lab-decision__copy">
         <p className="lab-kicker">
-          Decision {decision.number} of 10 · {subgraph.domain} · {lockedCount} of 10 controls selected
+          Decision {decision.number} of 10 · {decision.area} · {lockedCount} of 10 controls selected
         </p>
         <h2 id="lab-decision-heading">{decision.question}</h2>
       </div>
       <div className="lab-decision__map">
-        <p className="lab-kicker">What this choice changes</p>
-        <LocalImpactGraph subgraph={subgraph} option={pending} outcome={null} />
-        <DecisionImpactStrip outcome={null} awaitingLock={Boolean(pending)} />
+        <p className="lab-kicker">Live architecture</p>
+        <ArchitectureMap
+          choices={choices}
+          previewOptionId={pendingOptionId}
+          phase="decide"
+          inspectable={false}
+          compact
+        />
+        <ArchitectureUpdateNote optionId={pendingOptionId} guided={guided} />
       </div>
       <div className="lab-decision__choices">
         <div className="lab-options" role="radiogroup" aria-label="Architecture options">
@@ -80,5 +82,22 @@ export function DecisionScreen({
         </div>
       </div>
     </section>
+  );
+}
+
+function ArchitectureUpdateNote({ optionId, guided }: { optionId: OptionId | null; guided: boolean }) {
+  if (!optionId) {
+    return (
+      <p className="decision-strip is-idle" role="status">
+        Select a control to add or change it on the architecture.
+      </p>
+    );
+  }
+  const option = optionById(optionId);
+  return (
+    <p className="decision-strip is-updated" role="status" aria-live="polite">
+      <strong>{option.architectureUpdate}</strong>
+      {guided ? <span>{option.riskReduced}</span> : <span>Trade-off: {option.tradeOff}</span>}
+    </p>
   );
 }

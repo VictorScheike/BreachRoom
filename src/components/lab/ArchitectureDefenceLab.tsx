@@ -59,7 +59,7 @@ export function ArchitectureDefenceLabView({
   const revealed = state.phase === "attack" || state.phase === "result" ? state.revealedStageCount : 0;
   const activeStage = simulation && revealed > 0 ? simulation.stages[revealed - 1] ?? null : null;
   const beat = currentBeat(activeStage, state.attackBeat);
-  const currentDecision = decisionById(DECISION_IDS[state.currentDecisionIndex] ?? "identity");
+  const currentDecision = decisionById(DECISION_IDS[state.currentDecisionIndex] ?? "exposure");
   const status = hudStatus({
     phase: state.phase,
     stage: activeStage,
@@ -90,7 +90,7 @@ export function ArchitectureDefenceLabView({
   const campaignPhase = state.phase === "review" || state.phase === "attack" || state.phase === "result";
   const progressCurrent =
     state.phase === "attack" ? (activeStage?.number ?? 1) : state.phase === "decide" ? currentDecision.number : 10;
-  const progressTotal = state.phase === "attack" || state.phase === "result" ? 7 : 10;
+  const progressTotal = state.phase === "attack" || state.phase === "result" ? 8 : 10;
   const resultFocusId =
     state.phase === "result" && simulation
       ? (focusedStageId ?? defaultFocusedStage(simulation)?.id ?? null)
@@ -121,7 +121,7 @@ export function ArchitectureDefenceLabView({
               : state.phase === "review"
                 ? "Architecture complete · 10/10"
                 : state.phase === "attack"
-                  ? `Red Team · Step ${activeStage?.number ?? 1} of 7`
+                  ? `Red Team · Step ${activeStage?.number ?? 1} of 8`
                   : "Final assessment"
           }
           status={status}
@@ -198,7 +198,7 @@ export function ArchitectureDefenceLabView({
                 <p className="lab-kicker">Architecture locked</p>
                 <h2 className="lab-launch__title">Run the complete attack</h2>
                 <p className="lab-launch__copy">
-                  Ten controls are now on the board. The Red Team will test the live paths, not a static scorecard.
+                  Ten controls are now on the board. The Red Team will walk one attack chain through the architecture you built.
                 </p>
                 {missingMessage ? <p className="lab-missing">{missingMessage}</p> : null}
               </div>
@@ -251,7 +251,7 @@ export function ArchitectureDefenceLabView({
               onPrevious={() => update(previousAttackStep(state))}
               onPause={() => update(pauseAttack(state, !state.paused))}
               onNext={() => update(nextAttackStep(state))}
-              readyMessage="The architecture is ready. Run the Red Team campaign to see how each defensive layer changes the attack."
+              readyMessage="The architecture is ready. The Red Team will use every control you chose — stolen password, poisoned document, then the path toward the records."
             />
           ) : null}
 

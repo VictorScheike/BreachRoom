@@ -41,8 +41,8 @@ export function AttackIncidentStrip({
       ? stage.explanation
       : stage.attackerAction;
   const kicker = pivot
-    ? `ATTACK STEP ${stage.number} OF 7 · PIVOT · ${stage.name}`
-    : `ATTACK STEP ${stage.number} OF 7 · ${stage.name}`;
+    ? `ATTACK STEP ${stage.number} OF 8 · PIVOT · ${stage.name}`
+    : `ATTACK STEP ${stage.number} OF 8 · ${stage.name}`;
   const outcome = showResult && !pivot ? (OUTCOME_LABELS[stage.outcome] ?? compactOutcome(stage.outcome)) : null;
 
   return (
@@ -55,6 +55,7 @@ export function AttackIncidentStrip({
         <p className="attack-strip__detail">
           Target: {target.name}
           {outcome ? ` · ${outcome}` : null}
+          {showResult && !pivot ? ` · Control: ${stage.choiceTitle}` : null}
         </p>
       </div>
       <div className="attack-strip__controls">
