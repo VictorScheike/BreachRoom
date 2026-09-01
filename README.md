@@ -1,22 +1,64 @@
 # BreachRoom
 
-BreachRoom is an open-source educational tabletop for practising cybersecurity incident decisions. The public site is a small professional webpage: why the project exists (`/`), the exercise (`/play`), and who is behind it (`/about`). The first exercise walks through a fictional ransomware scenario, records eight response choices, and produces a structured after-action report.
+Playable cybersecurity training. You practise the decisions people actually make — in an incident, in architecture, and when a digital solution is being built.
 
-It is meant for people in security, operations, communications, product and leadership who want a short, self-paced rehearsal without accounts, live data or attacker tooling.
+**Live site:** [https://breachroom.victorscheike.com](https://breachroom.victorscheike.com)
 
-## What it does
+Free to play. No account required. Questions are reviewed in the codebase, not generated at runtime.
 
-- Presents a fictional organisation, **Northstar Logistics**, as a compact pixel campus.
-- Eight incident decisions appear along the route to the Core Server Room.
-- Covers identification, containment, escalation, evidence, continuity, communication, supplier coordination, recovery and lessons learned.
-- Calculates a deterministic **BreachRoom simulation score** across five areas.
-- Shows strengths, gaps and recommended follow-up actions only after the exercise is complete.
+It is meant for people in security, operations, product, communications, development and leadership who want a short rehearsal without live data or attacker tooling.
+
+## Play
+
+| | |
+| --- | --- |
+| Home | [breachroom.victorscheike.com](https://breachroom.victorscheike.com/) |
+| Missions | [/missions/](https://breachroom.victorscheike.com/missions/) |
+| Architecture Defence Lab | [/lab/](https://breachroom.victorscheike.com/lab/) |
+| Secure Solution Builder | [/secure-solution-builder/](https://breachroom.victorscheike.com/secure-solution-builder/) |
+| Training by role | [/training/](https://breachroom.victorscheike.com/training/) |
+| My progress | [/progress/](https://breachroom.victorscheike.com/progress/) |
+
+## What you can play
+
+### Decision exercises
+
+These sit on their own in the mission library, side by side.
+
+- **Architecture Defence Lab** — ten architecture questions for a fictional claims system (front door, AI, customer data). Then one attack walks the path you built.
+- **Secure Solution Builder** — 15 decisions from idea to launch. A security architect guides you with a speech bubble. You can reset the game back to the intro without losing your best score.
+
+### Map missions
+
+Walking maps with locked doors. A wrong answer keeps the door shut until you choose a stronger response. Progress is saved in the browser.
+
+| Mission | Topic | Length |
+| --- | --- | --- |
+| Inbox Under Siege | Phishing and social engineering | 8 decisions |
+| Locked Out | Ransomware on the Northstar campus | 8 decisions |
+| Northstar: Zero Hour | Organisation-wide incident coordination | 15 decisions |
+| The AI Forge | Launching AI with rails | 8 decisions |
+| Dependency Depths | Packages, pipelines and cloud | 8 decisions |
+
+### Training by role
+
+[/training/](https://breachroom.victorscheike.com/training/) assembles a short deck from reviewed questions for:
+
+- General employees
+- Finance & HR
+- Developers & DevOps
+- IT & Security
+- Leaders, Risk & Governance
+
+### My progress
+
+Completed sessions stay in **this browser** (`localStorage`). There is no login and no server-side history. Clearing site data clears progress.
 
 ## What it does not do
 
-- It does not create user accounts or store exercise history.
-- It does not connect to a database, AI model or external API.
-- It does not use real organisation data.
+- It does not create user accounts or store progress in a database.
+- It does not connect to a live organisation, SIEM or AI model for answers.
+- It does not use real customer data.
 - It does not include offensive security functionality, real malware, network scanning or exploit material.
 - It does not provide legal advice, compliance certification, NIS2 certification, or a complete assessment of an organisation’s incident readiness.
 
@@ -24,50 +66,49 @@ It is meant for people in security, operations, communications, product and lead
 
 > BreachRoom is an educational tabletop simulation. It does not provide legal advice, compliance certification or a complete assessment of an organisation’s incident readiness.
 
-The numeric result is a **BreachRoom simulation score**. It must not be described as an official maturity, compliance or security certification.
+Scores are teaching models. They must not be described as an official maturity, compliance or security certification.
 
 ## Technology stack
 
 - TypeScript
-- Next.js App Router
+- Next.js App Router (static export)
 - Tailwind CSS
-- Zod for scenario validation
-- Vitest for unit tests
-- npm
+- Zod for catalog validation
+- Vitest
+- Cloudflare Workers for hosting
 
-The first version is a single Next.js application. Scenario data lives in typed TypeScript objects and is validated before use.
+Question banks live in typed TypeScript modules and are validated before use.
 
 ## Local installation
 
 Requirements: Node.js 20 or later, and npm.
 
 ```bash
-git clone <repository-url>
-cd breachroom
+git clone https://github.com/VictorScheike/BreachRoom.git
+cd BreachRoom
 npm install
 ```
 
 ## Development commands
 
 ```bash
-npm run dev         # start the local Next.js development server
+npm run dev         # local Next.js server
 npm run build       # production static export to /out
 npm run preview:cf  # build and preview the Cloudflare Worker locally
-npm run deploy      # build and publish to Cloudflare Workers (free)
+npm run deploy      # build and publish to Cloudflare Workers
 npm run lint        # ESLint
 npm run typecheck   # TypeScript without emitting files
+npm test            # Vitest unit tests
+npm run test:watch  # Vitest watch mode
 ```
 
-Open [http://localhost:3000](http://localhost:3000) while `npm run dev` is running.
+Open [http://localhost:3000](http://localhost:3000) while `npm run dev` is running. Tests are local. They do not use the network.
 
-## Deploy on Cloudflare (free)
+## Deploy on Cloudflare
 
-BreachRoom is a static site. You can host it on the Cloudflare Workers free plan the same way as a personal site on `*.workers.dev`.
+The public hostname is `https://breachroom.victorscheike.com`.
 
 ### From your machine
-
-1. Create a free [Cloudflare account](https://dash.cloudflare.com/sign-up).
-2. In the project folder:
 
 ```bash
 npm install
@@ -75,179 +116,63 @@ npx wrangler login
 npm run deploy
 ```
 
-3. Wrangler prints the public URLs, for example:
+The Worker config in `wrangler.jsonc` attaches `breachroom.victorscheike.com` as a custom domain.
 
-`https://breachroom.victorscheike.com`
+### From git (auto-deploy)
 
-and the Workers preview:
+Cloudflare Workers Builds currently deploys the **production branch** `cursor/breachroom-simulator-103f`. That branch is what the live site tracks.
 
-`https://breachroom.<your-subdomain>.workers.dev`
+`main` is the GitHub default branch. Keep it in sync with production so people who clone the repo get the same app as the live site.
 
-The production hostname is the custom domain. Later deploys are the same command: `npm run deploy`.
+1. Open the BreachRoom Worker → **Settings** → **Build**.
+2. Production branch: `cursor/breachroom-simulator-103f` (or `main` once you point Cloudflare at it).
+3. Build command: `npm run build`
+4. Deploy command: `npx wrangler deploy`
 
-The Worker config attaches `breachroom.victorscheike.com` as a Custom Domain (`routes` with `custom_domain: true` in `wrangler.jsonc`). That only works if `victorscheike.com` is a zone in the same Cloudflare account. Cloudflare then creates the DNS record and certificate.
-
-### From the Cloudflare dashboard (auto-deploy on git push)
-
-Cloudflare builds whatever branch is set as **Production branch**. That branch must contain `package.json`. Right now the app is on `cursor/breachroom-simulator-103f`. `main` only has the licence file, so a build of `main` fails with `Could not read package.json`.
-
-1. Open [Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages).
-2. Open the BreachRoom Worker → **Settings** → **Build**.
-3. Set **Production branch** to `cursor/breachroom-simulator-103f` (or merge the pull request into `main` first, then keep `main`).
-4. Build command: `npm run build`
-5. Deploy command: `npx wrangler deploy`
-6. Retry the deployment.
-
-After the pull request is merged, switch the production branch back to `main`.
-
-You can later add more hostnames the same way. The free plan is enough for this app: no database, no accounts, no server APIs.
-
-## Test command
-
-```bash
-npm test
-```
-
-Tests are local unit tests. They do not use the network.
-
-```bash
-npm run test:watch
-```
+The free plan is enough: no database, no accounts, no server APIs.
 
 ## Project structure
 
 ```text
 src/
-  app/                         # Site pages: home, /play, /about
+  app/                         # Routes: /, /missions, /play, /lab,
+                               # /secure-solution-builder, /training, /progress, /about
   components/
-    game/                      # Pixel campus exercise
-    SimulationView.tsx
-    IncidentTimeline.tsx
-    DecisionCard.tsx
-    ProgressHeader.tsx
-    AfterActionReport.tsx
-    ScoreSummary.tsx
-    DecisionReview.tsx
-  lib/game/                    # Map, encounters, HUD
-  lib/site/                    # Site copy
-  lib/simulation/              # Scenario data, scoring, report, reducer
-    types.ts
-    schemas.ts
-    scenario.ts
-    scoring.ts
-    report.ts
-    reducer.ts
-  tests/
-    scenario.test.ts
-    scoring.test.ts
-    report.test.ts
+    site/                      # Marketing pages, mission cards, progress
+    game/                      # Walking-map missions
+    lab/                       # Architecture Defence Lab
+    builder/                   # Secure Solution Builder
+  lib/
+    missions/                  # Map catalogs and reviewed question banks
+    lab/                       # Lab catalog, attack campaign, scoring
+    builder/                   # Builder questions, play flow, scoring
+    training/                  # Role groups, curriculum, reviewed decks
+    progress/                  # Browser progress store
+    game/                      # Maps, doors, walkability
+    site/                      # Site copy
+  tests/                       # Vitest
+public/builder/                # Architect illustration
 ```
 
-Application state uses a reducer in `src/lib/simulation/reducer.ts`. There is no global state library.
+Map progress, lab progress and builder progress each have their own `localStorage` key, and completed sessions also sync into the shared My Progress store.
 
-## Scoring explanation
+## Scoring in short
 
-All weights and thresholds live in `src/lib/simulation/scoring.ts` (`SCORING_CONFIG`).
+Each exercise type has its own model. The same answers always produce the same result.
 
-Five dimensions are scored:
+- **Map missions** score a small set of dimensions (for example containment, operations and trust) from the options you lock in at each door.
+- **Architecture Defence Lab** scores the controls you chose, then shows how one attack fared on that path.
+- **Secure Solution Builder** scores 15 decisions (0–15) across categories such as Security by Design, data protection, identity, cloud, AI and secure delivery.
 
-| Dimension       | What it reflects                                              |
-|-----------------|---------------------------------------------------------------|
-| Containment     | Limiting spread and reducing immediate harm                   |
-| Governance      | Escalation, decision rights and supplier coordination         |
-| Communication   | Timely, accurate updates to the people who need them          |
-| Continuity      | Keeping or recovering time-sensitive operations safely        |
-| Evidence        | Preserving devices, logs and records for later investigation  |
-
-Rules:
-
-1. Each category starts at **50**.
-2. Each confirmed decision adds or subtracts integer points from one or more categories.
-3. Category scores are **clamped between 0 and 100**.
-4. The overall score is the **rounded average** of the five category scores.
-5. The same decisions always produce the same result.
-
-Result labels:
-
-| Overall score | Label                      |
-|---------------|----------------------------|
-| 80–100        | Strong response            |
-| 60–79         | Solid response with gaps   |
-| 40–59         | Developing response        |
-| 0–39          | Major readiness gaps       |
-
-During the live exercise the interface only shows “Assessment in progress”. Numeric scores, rationales and trade-off analysis appear in the after-action report.
-
-A high score in one area can sit next to a gap in another. Some options are written as trade-offs rather than obviously correct or incorrect answers. No option is presented as universally correct in every real organisation.
-
-Category strengths are recorded at **70 or above**. Category gaps are recorded **below 50**. The report also collects strengths, gaps and follow-up actions from the selected options.
-
-## Scenario structure
-
-The bundled scenario is **Locked Out: A Ransomware Incident**.
-
-Northstar Logistics is a **fictional** Danish logistics company with 320 employees, serving customers across the EU. It uses Microsoft 365, Azure and an on-premises logistics platform, with parts of IT outsourced, and depends on those systems for time-sensitive deliveries.
-
-The exercise starts at **08:15 on a Monday** and runs through eight stages:
-
-1. Initial detection and triage
-2. Containment of affected devices and systems
-3. Suspected privileged-account compromise
-4. Operational disruption affecting deliveries
-5. Possible theft of employee or customer data
-6. Communication with management, customers and media
-7. Backup validation and recovery decision
-8. Post-incident actions and lessons learned
-
-Each stage has a unique id, simulated timestamp, clock time, fictional incident severity, event type, title, incident update, available facts, known unknowns, and exactly three decision options.
-
-Event types used in the bundled scenario include System alert, IT update, Management request, Media enquiry, Attacker message and Recovery update. Confirmed choices appear on the timeline as “Decision recorded”. Incident severity (SEV-1 to SEV-3) is part of the fictional narrative and does not change with the hidden simulation score.
-
-Each option has a unique id, title, description, score impacts, rationale, trade-offs, strengths, potential gaps and recommended follow-up actions.
-
-Zod validates this shape, uniqueness of ids, and the presence of at least one score impact per option before the app uses the scenario.
-
-## Adding a new scenario
-
-The first version ships one scenario. To add another:
-
-1. Copy the object in `src/lib/simulation/scenario.ts` into a new file, for example `src/lib/simulation/scenarios/supplier-compromise.ts`.
-2. Keep the same fields: organisation profile, initial situation, player brief, and exactly eight stages with three options each.
-3. Use unique stage and option ids.
-4. Put score impacts only in the five known dimensions, as integers.
-5. Validate with `parseScenario()` from `src/lib/simulation/schemas.ts`.
-6. Point the app at the new scenario (or add a selector later) from `src/components/BreachRoomApp.tsx`.
-7. Add tests that the new definition parses and that a full eight-decision path can generate a report.
-
-Do not put live customer data, real malware, exploit steps or offensive tooling in a scenario file.
+During play, the interface does not present a certificate. The debrief is a discussion aid.
 
 ## Limitations
 
-- One scenario only.
-- No saved history; refreshing the browser resets the exercise.
-- No facilitator mode or team session.
-- No authentication, database or PDF export.
-- Scoring is a teaching model, not a measurement of a real organisation.
-- The report cannot know your actual controls, legal duties or supplier contracts.
-
-## Roadmap
-
-Not included in this version:
-
-- additional ransomware scenarios
-- supplier compromise scenario
-- cloud account compromise scenario
-- personal data breach scenario
-- custom organisation profiles
-- facilitator mode
-- team-based exercises
-- saved exercise history
-- finding owners and deadlines
-- evidence tracking
-- NIS2-oriented scenario guidance
-- PDF after-action reports
-- multilingual scenarios
-- scenario import and export
+- Progress is local to the browser.
+- There is no facilitator mode or live team session.
+- There is no authentication, database or PDF export.
+- Scoring cannot know your actual controls, legal duties or supplier contracts.
+- Map, lab and builder are separate exercises. One does not replace another.
 
 ## Licence
 
