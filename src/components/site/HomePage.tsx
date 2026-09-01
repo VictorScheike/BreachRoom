@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BuilderMissionCard } from "@/components/site/BuilderMissionCard";
 import { HowItWorks } from "@/components/site/HowItWorks";
 import { LabMissionCard } from "@/components/site/LabMissionCard";
 import { MissionCard } from "@/components/site/MissionCard";
@@ -43,11 +44,19 @@ export function HomePage() {
         <section className="home-section" aria-labelledby="playable-missions-heading">
           <h2 id="playable-missions-heading">Playable missions</h2>
           <p className="section-lede missions-intro">{LAB_HOME_INTRO}</p>
-          <div className="mission-grid">
-            <LabMissionCard />
-            {missions.map((mission) => (
-              <MissionCard key={mission.id} mission={mission} />
-            ))}
+          <div className="decision-exercises">
+            <div className="mission-grid">
+              <LabMissionCard />
+              <BuilderMissionCard />
+            </div>
+          </div>
+          <div className="map-missions-block">
+            <h3 id="map-missions-home-heading">Map missions</h3>
+            <div className="mission-grid">
+              {missions.map((mission) => (
+                <MissionCard key={mission.id} mission={mission} />
+              ))}
+            </div>
           </div>
           <p>
             <Link className="btn-tertiary" href="/missions/">

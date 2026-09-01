@@ -43,6 +43,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/secure-solution-builder/" className="text-cyan underline underline-offset-4">
+                Secure Solution Builder
+              </Link>
+            </li>
+            <li>
               <Link href="/training/" className="text-cyan underline underline-offset-4">
                 Training by role
               </Link>

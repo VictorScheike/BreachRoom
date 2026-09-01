@@ -55,4 +55,4 @@ export const LAB_CARD_DESCRIPTION =
 export const LAB_PLAY_INTRO =
   "The Architecture Defence Lab lets you design a claims system, then watch one attack walk it. The maps are workplaces under pressure — after you pick a map, you choose a relevant role or the standard version.";
 export const LAB_HOME_INTRO =
-  "The Architecture Defence Lab lets you build the system first. The maps are workplaces under pressure — phishing, ransomware, a risky AI launch, a poisoned build, a lockout.";
+  "Architecture Defence Lab and Secure Solution Builder sit on their own. One lets you build a system and test it. The other is 15 security decisions from idea to launch. The maps below are workplaces under pressure — phishing, ransomware, a risky AI launch, a poisoned build, a lockout.";

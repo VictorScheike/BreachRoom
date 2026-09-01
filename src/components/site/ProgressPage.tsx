@@ -65,7 +65,8 @@ function topicCounts(sessions: readonly ProgressSession[]): { id: string; label:
 
 function CompletedSessionCard({ session }: { session: ProgressSession }) {
   const isLab = session.kind === "lab" || session.missionId.startsWith("lab-");
-  const report = isLab ? null : reportFromProgressSession(session);
+  const isBuilder = session.kind === "builder" || session.missionId === "secure-solution-builder";
+  const report = isLab || isBuilder ? null : reportFromProgressSession(session);
   const preview = report?.journey.slice(0, 8) ?? [];
   const extra = report ? Math.max(0, report.journey.length - preview.length) : 0;
   const score = report?.score.overall ?? session.overall;
@@ -76,7 +77,7 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
       <span>
         {session.perspectiveLabel}
         {score !== null ? ` · Score ${score}` : ""}
-        {isLab && session.phaseLabel ? ` · ${session.phaseLabel}` : ""}
+        {(isLab || isBuilder) && session.phaseLabel ? ` · ${session.phaseLabel}` : ""}
       </span>
       {report ? (
         <>
@@ -96,6 +97,11 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
         <p className="progress-answer-summary">
           Architecture Defence Lab · The Poisoned Claim. Open the lab to review the build and rerun the attack.
         </p>
+      ) : isBuilder ? (
+        <p className="progress-answer-summary">
+          Secure Solution Builder · 15 decisions from idea to launch. Open the mission to review your result or play
+          again.
+        </p>
       ) : (
         <p className="progress-answer-summary">
           This session was saved before answers were stored. Replay it to keep a full score next time.
@@ -110,7 +116,7 @@ function CompletedSessionCard({ session }: { session: ProgressSession }) {
           <span className="progress-score-fallback">Score {score}</span>
         ) : null}
         <Link className="btn-tertiary" href={sessionResumeHref(session)}>
-          {isLab ? "Open lab" : "Replay"}
+          {isLab ? "Open lab" : isBuilder ? "Open mission" : "Replay"}
         </Link>
       </div>
     </li>
