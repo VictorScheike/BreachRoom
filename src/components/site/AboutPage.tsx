@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ABOUT_ACTIONS,
   ABOUT_BODY,
   ABOUT_CLOSE,
   ABOUT_HEADLINE,
@@ -54,18 +55,19 @@ export function AboutPage() {
       </ul>
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link
-          href="/play/"
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-cyan-strong px-5 py-3 text-sm font-semibold text-navy-950 hover:bg-cyan"
-        >
-          Play a mission
-        </Link>
-        <Link
-          href="/lab/"
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-cyan px-5 py-3 text-sm font-semibold text-cyan hover:bg-navy-800"
-        >
-          Enter the lab
-        </Link>
+        {ABOUT_ACTIONS.map((action, index) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className={
+              index === 0
+                ? "inline-flex min-h-11 items-center justify-center rounded-md bg-cyan-strong px-5 py-3 text-sm font-semibold text-navy-950 hover:bg-cyan"
+                : "inline-flex min-h-11 items-center justify-center rounded-md border border-cyan px-5 py-3 text-sm font-semibold text-cyan hover:bg-navy-800"
+            }
+          >
+            {action.label}
+          </Link>
+        ))}
       </div>
     </main>
   );

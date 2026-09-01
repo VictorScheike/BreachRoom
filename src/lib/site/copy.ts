@@ -55,21 +55,37 @@ export const ABOUT_INTRO =
 
 export const ABOUT_BODY = [
   "I studied a Master of Science in Digital Innovation & Management (Cand.it.) in Copenhagen. I built this because I want a bigger focus on what cybersecurity actually means: not a product you buy, not a policy on a shelf, and not only the people with security in their job title.",
+  "It started as one ransomware walk across a fictional campus. It is now a small library: walking-map missions, an architecture lab, a security-by-design builder, and short training decks by role. Same idea throughout. You make the decision. Then you see what it meant.",
 ] as const;
 
 export const ABOUT_SECTIONS = [
   {
     title: "Practising the incident",
-    body: "It means noticing when something is wrong, containing it before it spreads, telling the right people, keeping evidence, and keeping the organisation moving when the picture is still incomplete. Those are human decisions under pressure. The map missions are a short, open tabletop for rehearsing that conversation — product, operations, communications, leadership, not only specialists.",
+    body: "It means noticing when something is wrong, containing it before it spreads, telling the right people, keeping evidence, and keeping the organisation moving when the picture is still incomplete. Those are human decisions under pressure. The map missions are a short, open tabletop for rehearsing that conversation — product, operations, communications, leadership, not only specialists. You walk a workplace, decide at locked doors, and get a debrief: phishing in Inbox Under Siege, ransomware in Locked Out and Northstar: Zero Hour, a risky AI launch in The AI Forge, and a poisoned pipeline in Dependency Depths.",
   },
   {
-    title: "Building resilient cybersecurity",
-    body: "It also means designing the system so that one stolen password or one poisoned document does not become the whole story. Architecture cannot promise that a cyberattack is avoided. It can prevent some paths, limit the blast radius, detect suspicious activity, and support recovery. Architecture Defence Lab is the other half of that idea. You take ten architecture decisions, one layer at a time, without being told whether a control held. Then one campaign tests prevention, limitation, detection and recovery on the path you actually built. Secure Solution Builder is the quieter companion: 15 decisions from the first idea to production, with a security architect in the room.",
+    title: "Architecture Defence Lab",
+    body: "Building resilient cybersecurity also means designing the system so that one stolen password or one poisoned document does not become the whole story. Architecture cannot promise that a cyberattack is avoided. It can prevent some paths, limit the blast radius, detect suspicious activity, and support recovery. In Architecture Defence Lab you take ten architecture decisions, one layer at a time, without being told whether a control held. Then one campaign tests prevention, limitation, detection and recovery on the path you actually built.",
+  },
+  {
+    title: "Secure Solution Builder",
+    body: "Security is cheaper when it starts before production. Secure Solution Builder is the quieter exercise: 15 reviewed decisions from the first idea to launch — data, identity, cloud, applications, AI and secure delivery. A security architect stays in the room. You choose a practical response, see why it matters, and can reset the game back to the start without losing your best score.",
+  },
+  {
+    title: "Training by role",
+    body: "The hard call is different if you work in finance, write code, run IT, or lead the organisation. Training by role assembles a short deck from reviewed questions for general employees, Finance & HR, Developers & DevOps, IT & Security, and Leaders, Risk & Governance. My progress keeps completed sessions in this browser. There is no account and no server-side history.",
   },
 ] as const;
 
 export const ABOUT_CLOSE =
-  "If a control fails, the next layer still gets a chance. That is defence in depth, not a badge. If you want the usual vendor pitch, this is the wrong site.";
+  "If a control fails, the next layer still gets a chance. That is defence in depth, not a badge. Scores are a discussion aid, not a certificate. If you want the usual vendor pitch, this is the wrong site.";
+
+export const ABOUT_ACTIONS = [
+  { href: "/missions/", label: "See all missions" },
+  { href: "/lab/", label: "Enter the lab" },
+  { href: "/secure-solution-builder/", label: "Start the builder" },
+  { href: "/training/", label: "Find training for my role" },
+] as const;
 
 export const ABOUT_LINKS = [
   {
