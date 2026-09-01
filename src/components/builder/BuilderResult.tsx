@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BuilderResetButton } from "@/components/builder/BuilderResetButton";
 import { categoryLabel } from "@/lib/builder/scoring";
 import { BUILDER_QUESTION_COUNT } from "@/lib/builder/types";
 import type { BuilderScore } from "@/lib/builder/types";
@@ -8,11 +9,13 @@ export function BuilderResult({
   bestScore,
   onReview,
   onReplay,
+  onReset,
 }: {
   score: BuilderScore;
   bestScore: number | null;
   onReview: () => void;
   onReplay: () => void;
+  onReset: () => void;
 }) {
   const circumference = 2 * Math.PI * 42;
   const offset = circumference - (score.percent / 100) * circumference;
@@ -101,6 +104,7 @@ export function BuilderResult({
         <button type="button" className="builder-primary" onClick={onReplay}>
           Play again
         </button>
+        <BuilderResetButton onReset={onReset} />
         <Link className="builder-secondary" href="/missions/">
           Back to missions
         </Link>

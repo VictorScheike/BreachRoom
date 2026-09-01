@@ -14,6 +14,7 @@ import {
   openBuilderReview,
   persistBuilder,
   replayBuilder,
+  resetBuilderGame,
   selectBuilderOption,
   startBuilderDecisions,
 } from "@/lib/builder/play";
@@ -59,6 +60,7 @@ export function SecureSolutionBuilderView({
           onSelect={(letter: BuilderOptionLetter) => update(selectBuilderOption(state, letter))}
           onConfirm={() => update(confirmBuilderDecision(state))}
           onNext={() => update(goToNextBuilderDecision(state))}
+          onReset={() => update(resetBuilderGame(state))}
         />
       ) : null}
       {state.phase === "result" && score ? (
@@ -67,10 +69,15 @@ export function SecureSolutionBuilderView({
           bestScore={state.bestScore}
           onReview={() => update(openBuilderReview(state))}
           onReplay={() => update(replayBuilder(state))}
+          onReset={() => update(resetBuilderGame(state))}
         />
       ) : null}
       {state.phase === "review" && score ? (
-        <BuilderReview missed={score.missed} onBack={() => update(closeBuilderReview(state))} />
+        <BuilderReview
+          missed={score.missed}
+          onBack={() => update(closeBuilderReview(state))}
+          onReset={() => update(resetBuilderGame(state))}
+        />
       ) : null}
       <EducationalDisclaimer variant="short" className="builder-disclaimer" />
     </div>

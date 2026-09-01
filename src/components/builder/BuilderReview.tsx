@@ -1,11 +1,14 @@
+import { BuilderResetButton } from "@/components/builder/BuilderResetButton";
 import type { BuilderMissedDecision } from "@/lib/builder/types";
 
 export function BuilderReview({
   missed,
   onBack,
+  onReset,
 }: {
   missed: readonly BuilderMissedDecision[];
   onBack: () => void;
+  onReset: () => void;
 }) {
   return (
     <section className="builder-review" aria-labelledby="builder-review-heading">
@@ -30,9 +33,12 @@ export function BuilderReview({
           </li>
         ))}
       </ol>
-      <button type="button" className="builder-primary" onClick={onBack}>
-        Back to result
-      </button>
+      <div className="builder-review__actions">
+        <button type="button" className="builder-primary" onClick={onBack}>
+          Back to result
+        </button>
+        <BuilderResetButton onReset={onReset} />
+      </div>
     </section>
   );
 }

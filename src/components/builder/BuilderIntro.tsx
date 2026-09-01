@@ -20,9 +20,11 @@ export function BuilderIntro({ onStart }: { onStart: () => void }) {
             <li key={chip}>{chip}</li>
           ))}
         </ul>
-        <button type="button" className="builder-primary" onClick={onStart}>
-          Start the 15 decisions
-        </button>
+        <div className="builder-intro__cta">
+          <button type="button" className="builder-primary" onClick={onStart}>
+            Start mission
+          </button>
+        </div>
       </div>
     </section>
   );

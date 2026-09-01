@@ -86,6 +86,10 @@ export function closeBuilderReview(state: BuilderPersistedState): BuilderPersist
 }
 
 export function replayBuilder(state: BuilderPersistedState): BuilderPersistedState {
+  return resetBuilderGame(state);
+}
+
+export function resetBuilderGame(state: BuilderPersistedState): BuilderPersistedState {
   return {
     ...EMPTY_BUILDER_STATE,
     bestScore: state.bestScore,

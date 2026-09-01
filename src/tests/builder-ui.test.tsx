@@ -18,7 +18,8 @@ describe("Secure Solution Builder UI", () => {
     );
     expect(html).toContain("Secure Solution Builder");
     expect(html).toContain("15 decisions from idea to launch");
-    expect(html).toContain("Start the 15 decisions");
+    expect(html).toContain("Start mission");
+    expect(html).not.toContain("Reset game");
     expect(html).toContain("Security by Design");
     expect(html).toContain("Data Protection");
     expect(html).toContain("I’ll guide you through 15 decisions");
@@ -34,14 +35,17 @@ describe("Secure Solution Builder UI", () => {
       ...idle,
       pendingLetter: "B",
     };
-    const idleHtml = renderToStaticMarkup(<BuilderQuiz state={idle} onSelect={noop} onConfirm={noop} onNext={noop} />);
+    const idleHtml = renderToStaticMarkup(
+      <BuilderQuiz state={idle} onSelect={noop} onConfirm={noop} onNext={noop} onReset={noop} />,
+    );
     const selectedHtml = renderToStaticMarkup(
-      <BuilderQuiz state={selected} onSelect={noop} onConfirm={noop} onNext={noop} />,
+      <BuilderQuiz state={selected} onSelect={noop} onConfirm={noop} onNext={noop} onReset={noop} />,
     );
     expect(idleHtml).toContain("Question 1 of 15");
     expect(idleHtml).toContain(BUILDER_DECISIONS[0]!.prompt);
     expect(idleHtml).toContain("disabled");
     expect(idleHtml).toContain("Make decision");
+    expect(idleHtml).toContain("Reset game");
     expect(idleHtml).toContain("During the design phase, before key technology decisions are locked");
     expect(selectedHtml).not.toMatch(/<button[^>]*disabled[^>]*>[\s\S]*Make decision/);
   });
@@ -54,7 +58,7 @@ describe("Secure Solution Builder UI", () => {
       answers: [{ questionId: "ssb-01", letter: "A" }],
     };
     const html = renderToStaticMarkup(
-      <BuilderQuiz state={locked} onSelect={noop} onConfirm={noop} onNext={noop} />,
+      <BuilderQuiz state={locked} onSelect={noop} onConfirm={noop} onNext={noop} onReset={noop} />,
     );
     expect(html).toContain("Why this matters");
     expect(html).toContain("Not quite — security should help shape the solution during design");
@@ -73,7 +77,9 @@ describe("Secure Solution Builder UI", () => {
       pendingLetter: "B",
       answers: [{ questionId: "ssb-15", letter: "B" }],
     };
-    const html = renderToStaticMarkup(<BuilderQuiz state={last} onSelect={noop} onConfirm={noop} onNext={noop} />);
+    const html = renderToStaticMarkup(
+      <BuilderQuiz state={last} onSelect={noop} onConfirm={noop} onNext={noop} onReset={noop} />,
+    );
     expect(html).toContain("Question 15 of 15");
     expect(html).toContain("See my result");
   });
@@ -99,6 +105,24 @@ describe("Secure Solution Builder UI", () => {
     expect(html).toContain("Data Protection");
     expect(html).toContain("Review missed decisions");
     expect(html).toContain("Involve security while the solution can still be shaped");
+    expect(html).toContain("Reset game");
+  });
+
+  it("shows Reset game during an in-progress session and keeps the intro start button on first visit", () => {
+    const midQuiz: BuilderPersistedState = {
+      ...EMPTY_BUILDER_STATE,
+      phase: "quiz",
+      currentIndex: 4,
+      pendingLetter: "A",
+      answers: [{ questionId: "ssb-01", letter: "B" }],
+      bestScore: 12,
+    };
+    const quizHtml = renderToStaticMarkup(
+      <SecureSolutionBuilderView state={midQuiz} onChange={noop} />,
+    );
+    expect(quizHtml).toContain("Reset game");
+    expect(quizHtml).toContain("Make decision");
+    expect(quizHtml).not.toContain("Start mission");
   });
 });
 
@@ -111,6 +135,11 @@ describe("Secure Solution Builder reachability", () => {
     expect(html).toContain("BEGINNER · 15 DECISIONS");
     expect(html).toContain("Learn how to build security into a digital solution from the first idea to production.");
     expect(html).toContain("Start mission");
+    expect(html).toContain("Decision exercises");
+    expect(html).toContain("Map missions");
+    expect(html).toContain("decision-exercises");
+    expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Secure Solution Builder"));
+    expect(html.indexOf("Secure Solution Builder")).toBeLessThan(html.indexOf("Inbox Under Siege"));
     expect(html).toContain("Security by Design");
     expect(html).toContain("DevSecOps");
     expect(html).toMatch(/href="\/secure-solution-builder\/?"/);

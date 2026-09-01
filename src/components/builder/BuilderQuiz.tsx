@@ -1,6 +1,7 @@
 import { BuilderArchitectGuide } from "@/components/builder/BuilderArchitectGuide";
 import { BuilderProgress } from "@/components/builder/BuilderProgress";
 import { BuilderQuestionCard } from "@/components/builder/BuilderQuestionCard";
+import { BuilderResetButton } from "@/components/builder/BuilderResetButton";
 import { BuilderVisual } from "@/components/builder/BuilderVisual";
 import { builderQuestionAt, isLastBuilderQuestion } from "@/lib/builder/catalog";
 import { BUILDER_SUBTITLE, BUILDER_TITLE } from "@/lib/builder/copy";
@@ -12,11 +13,13 @@ export function BuilderQuiz({
   onSelect,
   onConfirm,
   onNext,
+  onReset,
 }: {
   state: BuilderPersistedState;
   onSelect: (letter: BuilderOptionLetter) => void;
   onConfirm: () => void;
   onNext: () => void;
+  onReset: () => void;
 }) {
   const question = builderQuestionAt(state.currentIndex);
   const locked = isQuestionLocked(state);
@@ -55,15 +58,18 @@ export function BuilderQuiz({
             <li key={tag}>{tag}</li>
           ))}
         </ul>
-        {locked ? (
-          <button type="button" className="builder-primary" onClick={onNext}>
-            {last ? "See my result" : "Next decision"}
-          </button>
-        ) : (
-          <button type="button" className="builder-primary" onClick={onConfirm} disabled={pending === null}>
-            Make decision
-          </button>
-        )}
+        <div className="builder-quiz__cta">
+          <BuilderResetButton onReset={onReset} />
+          {locked ? (
+            <button type="button" className="builder-primary" onClick={onNext}>
+              {last ? "See my result" : "Next decision"}
+            </button>
+          ) : (
+            <button type="button" className="builder-primary" onClick={onConfirm} disabled={pending === null}>
+              Make decision
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

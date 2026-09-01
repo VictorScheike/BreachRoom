@@ -50,16 +50,17 @@ export function MissionsLibrary() {
 
   return (
     <div>
-      <section className="lab-library" aria-labelledby="lab-library-heading">
+      <section className="lab-library decision-exercises" aria-labelledby="decision-exercises-heading">
+        <h2 id="decision-exercises-heading">Decision exercises</h2>
         <p className="training-lede lab-library-intro">
           Architecture Defence Lab is a different exercise from the maps below. You answer ten
           architecture questions — front door, AI, and customer data — then watch one attack test
           the system you actually built. Secure Solution Builder is quieter: 15 decisions about
           building security in from the first idea to production.
         </p>
-        <div className="exercise-library-grid">
-          <LabMissionCard titleAs="h2" descriptionLines={4} headingId="lab-library-heading" />
-          <BuilderMissionCard titleAs="h2" headingId="builder-library-heading" />
+        <div className="mission-grid">
+          <LabMissionCard titleAs="h3" descriptionLines={4} headingId="lab-library-heading" />
+          <BuilderMissionCard titleAs="h3" headingId="builder-library-heading" />
         </div>
       </section>
       <section className="map-missions-block" aria-labelledby="map-missions-heading">

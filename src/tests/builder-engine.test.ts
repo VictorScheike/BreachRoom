@@ -7,6 +7,7 @@ import {
   goToNextBuilderDecision,
   isQuestionLocked,
   replayBuilder,
+  resetBuilderGame,
   selectBuilderOption,
   startBuilderDecisions,
 } from "@/lib/builder/play";
@@ -155,6 +156,25 @@ describe("Secure Solution Builder play flow", () => {
     expect(replayed.currentIndex).toBe(0);
     expect(replayed.bestScore).toBe(15);
     expect(replayed.completed).toBe(true);
+  });
+
+  it("returns to the intro from a mid-quiz session without clearing the best score", () => {
+    const midQuiz = {
+      ...EMPTY_BUILDER_STATE,
+      phase: "quiz" as const,
+      currentIndex: 6,
+      pendingLetter: "A" as const,
+      answers: [{ questionId: "ssb-01", letter: "B" as const }],
+      bestScore: 11,
+      bestPercent: 73,
+    };
+    const reset = resetBuilderGame(midQuiz);
+    expect(reset.phase).toBe("intro");
+    expect(reset.answers).toEqual([]);
+    expect(reset.currentIndex).toBe(0);
+    expect(reset.pendingLetter).toBeNull();
+    expect(reset.bestScore).toBe(11);
+    expect(reset.bestPercent).toBe(73);
   });
 
   it("ignores unrecognised persisted payloads", () => {

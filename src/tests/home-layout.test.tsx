@@ -14,7 +14,13 @@ describe("homepage layout", () => {
     expect(html.indexOf("how-it-works")).toBeLessThan(html.indexOf("Playable missions"));
     expect(html).toContain("Architecture Defence Lab");
     expect(html).toContain("Enter the lab");
+    expect(html).toContain("Secure Solution Builder");
+    expect(html).toContain("Start mission");
+    expect(html).toContain("Map missions");
+    expect(html).toContain("decision-exercises");
     expect(html).toMatch(/href="\/lab\/?"/);
+    expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Secure Solution Builder"));
     expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Inbox Under Siege"));
+    expect(html.indexOf("Secure Solution Builder")).toBeLessThan(html.indexOf("Inbox Under Siege"));
   });
 });
