@@ -1,28 +1,41 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AboutPage } from "@/components/site/AboutPage";
-import { ABOUT_CLOSE, ABOUT_SECTIONS } from "@/lib/site/copy";
+import { ABOUT_ACTIONS, ABOUT_CLOSE, ABOUT_SECTIONS } from "@/lib/site/copy";
 
 describe("About page", () => {
-  it("talks about both incident practice and building resilient cybersecurity", () => {
+  it("covers incidents, the lab, the builder and training by role", () => {
     const html = renderToStaticMarkup(<AboutPage />);
     expect(html).toContain("Who we are");
     expect(html).toContain("Practising the incident");
-    expect(html).toContain("Building resilient cybersecurity");
-    expect(html).toContain("map missions");
     expect(html).toContain("Architecture Defence Lab");
     expect(html).toContain("Secure Solution Builder");
+    expect(html).toContain("Training by role");
+    expect(html).toContain("map missions");
+    expect(html).toContain("Inbox Under Siege");
+    expect(html).toContain("Locked Out");
+    expect(html).toContain("Northstar: Zero Hour");
+    expect(html).toContain("The AI Forge");
+    expect(html).toContain("Dependency Depths");
     expect(html).toContain("one layer at a time");
     expect(html).toContain("without being told whether a control held");
     expect(html).toContain("prevention, limitation, detection and recovery");
+    expect(html).toContain("15 reviewed decisions");
+    expect(html).toContain("Finance &amp; HR");
+    expect(html).toContain("My progress");
     expect(html).not.toContain("You assemble the controls");
     expect(html).not.toContain("after you lock it");
     expect(html).toContain("defence in depth");
-    expect(html).toContain("Play a mission");
+    expect(html).toContain("See all missions");
     expect(html).toContain("Enter the lab");
-    expect(html).toMatch(/href="\/play\/?"/);
+    expect(html).toContain("Start the builder");
+    expect(html).toContain("Find training for my role");
+    expect(html).toMatch(/href="\/missions\/?"/);
     expect(html).toMatch(/href="\/lab\/?"/);
-    expect(ABOUT_SECTIONS).toHaveLength(2);
+    expect(html).toMatch(/href="\/secure-solution-builder\/?"/);
+    expect(html).toMatch(/href="\/training\/?"/);
+    expect(ABOUT_SECTIONS).toHaveLength(4);
+    expect(ABOUT_ACTIONS).toHaveLength(4);
     expect(ABOUT_CLOSE).toMatch(/defence in depth/i);
   });
 });
