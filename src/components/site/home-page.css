@@ -560,7 +560,8 @@
   }
 }
 
-.lab-library {
+.lab-library,
+.builder-library {
   margin-top: 3.4rem;
 }
 

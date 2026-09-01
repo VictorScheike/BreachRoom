@@ -1,5 +1,6 @@
 "use client";
 
+import { BuilderMissionCard } from "@/components/site/BuilderMissionCard";
 import { LabMissionCard } from "@/components/site/LabMissionCard";
 import { MissionCard } from "@/components/site/MissionCard";
 import { MissionFilter } from "@/components/site/MissionFilter";
@@ -56,6 +57,13 @@ export function MissionsLibrary() {
           the system you actually built.
         </p>
         <LabMissionCard titleAs="h2" descriptionLines={4} headingId="lab-library-heading" />
+      </section>
+      <section className="builder-library" aria-labelledby="builder-library-heading">
+        <p className="training-lede lab-library-intro">
+          Secure Solution Builder is a quieter exercise than the lab and the maps. You make 15 decisions
+          about how to build security into a digital solution before it reaches production.
+        </p>
+        <BuilderMissionCard titleAs="h2" headingId="builder-library-heading" />
       </section>
       <section className="map-missions-block" aria-labelledby="map-missions-heading">
         <h2 id="map-missions-heading">Map missions</h2>

@@ -26,7 +26,7 @@ export interface ProgressSession {
   topics: readonly string[];
   audienceMode: MissionPerspective["mode"];
   perspectiveLabel: string;
-  kind?: "map" | "lab";
+  kind?: "map" | "lab" | "builder";
 }
 
 export interface ProgressStore {
@@ -180,9 +180,12 @@ function asSession(value: unknown): ProgressSession | null {
         : "standard",
     perspectiveLabel:
       typeof value.perspectiveLabel === "string" ? value.perspectiveLabel : "Standard mission",
-    kind: value.kind === "lab" || (typeof value.missionId === "string" && value.missionId.startsWith("lab-"))
-      ? "lab"
-      : "map",
+    kind:
+      value.kind === "lab" || (typeof value.missionId === "string" && value.missionId.startsWith("lab-"))
+        ? "lab"
+        : value.kind === "builder" || value.missionId === "secure-solution-builder"
+          ? "builder"
+          : "map",
   };
 }
 
