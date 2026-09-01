@@ -771,6 +771,8 @@
 .builder-mission-thumb__figure {
   height: 100%;
   overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, #000 58%, transparent);
+  mask-image: linear-gradient(90deg, #000 58%, transparent);
 }
 
 .builder-mission-thumb__architect {
