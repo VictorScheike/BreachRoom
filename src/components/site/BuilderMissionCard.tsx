@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BuilderMissionThumbnail } from "@/components/site/BuilderMissionThumbnail";
 import {
   BUILDER_CARD_DESCRIPTION,
   BUILDER_CARD_LABEL,
@@ -18,20 +19,7 @@ export function BuilderMissionCard({ titleAs = "h3", headingId }: BuilderMission
   return (
     <article className="mission-card lab-library-card">
       <div className="mission-card__media">
-        <div className="mission-thumb builder-mission-thumb" aria-hidden="true">
-          <div className="lab-mission-thumb__chain">
-            {["Idea", "Design", "Build", "Launch"].map((name, index) => (
-              <span key={name} className="lab-mission-thumb__item">
-                {index > 0 ? <span className="lab-mission-thumb__arrow" /> : null}
-                <span className="lab-mission-thumb__node">{name}</span>
-              </span>
-            ))}
-          </div>
-          <span className="mission-thumb-label">
-            <span className="mission-thumb-mark__kicker">Mission</span>
-            {BUILDER_SUBTITLE}
-          </span>
-        </div>
+        <BuilderMissionThumbnail />
       </div>
       <div className="mission-card__body">
         <div className="mission-card__content">

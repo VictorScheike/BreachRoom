@@ -23,6 +23,8 @@ export const BUILDER_INTRO_BODY =
 export const BUILDER_INTRO_ARCHITECT =
   "I’ll guide you through 15 decisions. You do not need to know every framework — focus on understanding the risk and choosing a practical response.";
 
+export const BUILDER_CARD_BUBBLE = "I’ll guide you through 15 decisions.";
+
 export const BUILDER_ROUTE = "/secure-solution-builder/";
 export const BUILDER_STORAGE_KEY = "breachroom_secure_solution_builder_v1";
 export const BUILDER_SCHEMA_VERSION = 1;

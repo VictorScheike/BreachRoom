@@ -23,6 +23,7 @@ describe("Secure Solution Builder UI", () => {
     expect(html).toContain("Security by Design");
     expect(html).toContain("Data Protection");
     expect(html).toContain("I’ll guide you through 15 decisions");
+    expect(html).toContain("builder-bubble");
     expect(html).not.toContain("Make decision");
   });
 
@@ -138,6 +139,9 @@ describe("Secure Solution Builder reachability", () => {
     expect(html).toContain("Decision exercises");
     expect(html).toContain("Map missions");
     expect(html).toContain("decision-exercises");
+    expect(html).toContain("builder-mission-thumb");
+    expect(html).toContain("I’ll guide you through 15 decisions.");
+    expect(html).toContain("security-architect.webp");
     expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Secure Solution Builder"));
     expect(html.indexOf("Secure Solution Builder")).toBeLessThan(html.indexOf("Inbox Under Siege"));
     expect(html).toContain("Security by Design");

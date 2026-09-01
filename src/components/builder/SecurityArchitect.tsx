@@ -1,6 +1,12 @@
 import Image from "next/image";
 
-export function SecurityArchitect({ className }: { className?: string }) {
+export function SecurityArchitect({
+  className,
+  priority = false,
+}: {
+  className?: string;
+  priority?: boolean;
+}) {
   return (
     <Image
       className={className}
@@ -9,7 +15,7 @@ export function SecurityArchitect({ className }: { className?: string }) {
       width={800}
       height={1200}
       unoptimized
-      priority
+      priority={priority}
     />
   );
 }

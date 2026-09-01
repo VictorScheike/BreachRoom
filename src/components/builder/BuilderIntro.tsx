@@ -10,7 +10,7 @@ import { BuilderArchitectGuide } from "@/components/builder/BuilderArchitectGuid
 export function BuilderIntro({ onStart }: { onStart: () => void }) {
   return (
     <section className="builder-intro" aria-labelledby="builder-intro-heading">
-      <BuilderArchitectGuide message={BUILDER_INTRO_ARCHITECT} />
+      <BuilderArchitectGuide message={BUILDER_INTRO_ARCHITECT} priority />
       <div className="builder-intro__copy">
         <p className="builder-kicker">{BUILDER_TITLE}</p>
         <h1 id="builder-intro-heading">{BUILDER_SUBTITLE}</h1>
