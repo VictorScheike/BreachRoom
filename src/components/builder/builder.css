@@ -1,6 +1,12 @@
 .builder-page {
   background: #dce7f2;
   min-height: calc(100vh - 4.5rem);
+  width: 100%;
+}
+
+body:has(.builder-page) {
+  background: #dce7f2;
+  background-image: none;
 }
 
 .builder-page .site-page-main {
@@ -466,13 +472,25 @@
   color: #e8eef8;
 }
 
+.builder-result {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.builder-result > h1 {
+  margin: 0;
+}
+
 .builder-result__hero,
-.builder-result__actions,
-.builder-result__counts {
+.builder-result__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   align-items: center;
+}
+
+.builder-result__hero {
+  padding: 0.2rem 0 0.4rem;
 }
 
 .builder-score-ring {

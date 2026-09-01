@@ -54,16 +54,13 @@ export function MissionsLibrary() {
         <p className="training-lede lab-library-intro">
           Architecture Defence Lab is a different exercise from the maps below. You answer ten
           architecture questions — front door, AI, and customer data — then watch one attack test
-          the system you actually built.
+          the system you actually built. Secure Solution Builder is quieter: 15 decisions about
+          building security in from the first idea to production.
         </p>
-        <LabMissionCard titleAs="h2" descriptionLines={4} headingId="lab-library-heading" />
-      </section>
-      <section className="builder-library" aria-labelledby="builder-library-heading">
-        <p className="training-lede lab-library-intro">
-          Secure Solution Builder is a quieter exercise than the lab and the maps. You make 15 decisions
-          about how to build security into a digital solution before it reaches production.
-        </p>
-        <BuilderMissionCard titleAs="h2" headingId="builder-library-heading" />
+        <div className="exercise-library-grid">
+          <LabMissionCard titleAs="h2" descriptionLines={4} headingId="lab-library-heading" />
+          <BuilderMissionCard titleAs="h2" headingId="builder-library-heading" />
+        </div>
       </section>
       <section className="map-missions-block" aria-labelledby="map-missions-heading">
         <h2 id="map-missions-heading">Map missions</h2>

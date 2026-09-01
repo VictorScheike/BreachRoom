@@ -565,6 +565,19 @@
   margin-top: 3.4rem;
 }
 
+.exercise-library-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+
+@media (min-width: 900px) {
+  .exercise-library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+}
+
 .lab-library-intro {
   margin: 0 0 1.2rem;
   max-width: 62ch;

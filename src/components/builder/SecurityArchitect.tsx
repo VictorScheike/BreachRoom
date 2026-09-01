@@ -2,34 +2,36 @@ export function SecurityArchitect({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      viewBox="0 0 220 420"
+      viewBox="0 0 220 430"
       role="img"
-      aria-label="Security Architect in business casual clothing, pointing toward the question"
+      aria-label="Security Architect in a navy blazer and chinos, pointing toward the question"
     >
       <title>Security Architect</title>
-      <ellipse cx="110" cy="402" rx="64" ry="10" fill="#c5d3e4" />
-      <path d="M78 236c6 78 10 128 12 150h40c2-22 6-72 12-150" fill="#c4a574" />
-      <path d="M78 384c8 10 18 14 32 14s24-4 32-14c-10 6-21 8-32 8s-22-2-32-8Z" fill="#6b4a32" />
-      <path d="M86 388h16v10c-7 1-13-2-16-10Zm32 0h16c-3 8-9 11-16 10v-10Z" fill="#5a3c28" />
-      <path d="M74 168c4 28 10 56 14 68 18 8 26 8 44 0 4-12 10-40 14-68" fill="#d8b48a" />
-      <path d="M70 154c2 38 8 62 16 82 22 12 26 12 48 0 8-20 14-44 16-82-8 10-24 16-40 16s-32-6-40-16Z" fill="#1b2b44" />
-      <path d="M88 148c-2 22 4 36 22 38 18-2 24-16 22-38" fill="#d7ecf7" />
-      <path d="M84 150c8-18 52-18 60 0 2 8-4 14-12 16H96c-8-2-14-8-12-16Z" fill="#d7ecf7" />
-      <path d="M70 168c18 22 62 22 80 0" fill="none" stroke="#152338" strokeWidth="10" strokeLinecap="round" />
-      <path d="M58 176c-18 22-22 48-10 58 8-18 16-38 22-58Zm104 0c18 22 22 48 10 58-8-18-16-38-22-58Z" fill="#1b2b44" />
-      <path d="M46 228c8 4 16-8 20-18l8-22c-10 8-22 24-28 40Zm128-40 8 22c4 10 12 22 20 18-6-16-18-32-28-40Z" fill="#d8b48a" />
-      <path d="M168 188c18 8 28 4 34-8 4 16-8 28-24 30-8 0-14-8-10-22Z" fill="#d8b48a" />
-      <circle cx="110" cy="92" r="38" fill="#d8b48a" />
-      <path d="M78 86c4-28 22-46 40-48 22-2 40 14 44 38 2 8-2 14-10 16-8-18-22-28-34-28s-26 10-34 28c-8-2-12-8-6-16Z" fill="#5b3d2a" />
-      <path d="M84 78c10-18 44-18 54 0 4 8-4 12-12 10-8-8-22-8-30 0-8 2-16-2-12-10Z" fill="#4a301f" />
-      <rect x="84" y="90" width="52" height="8" rx="4" fill="#2b3c55" />
-      <circle cx="96" cy="94" r="11" fill="none" stroke="#1b2b44" strokeWidth="3" />
-      <circle cx="124" cy="94" r="11" fill="none" stroke="#1b2b44" strokeWidth="3" />
-      <path d="M107 94h6" stroke="#1b2b44" strokeWidth="3" />
-      <circle cx="96" cy="94" r="3.2" fill="#2a3d56" />
-      <circle cx="124" cy="94" r="3.2" fill="#2a3d56" />
-      <path d="M100 116c8 8 22 8 30 0" fill="none" stroke="#b57b62" strokeWidth="3" strokeLinecap="round" />
-      <path d="M108 104h4" stroke="#c48a74" strokeWidth="3" strokeLinecap="round" />
+      <ellipse cx="102" cy="412" rx="58" ry="9" fill="#c5d3e4" />
+      <path d="M74 248c4 72 8 118 10 140h38c2-22 6-68 10-140" fill="#c4a574" />
+      <path d="M74 386c10 12 22 16 38 16 16 0 28-4 38-16-12 7-25 10-38 10s-26-3-38-10Z" fill="#6b4a32" />
+      <path d="M82 392h18v9c-8 1-14-2-18-9Zm38 0h18c-4 7-10 10-18 9v-9Z" fill="#4e3423" />
+      <path d="M70 176c6 34 12 62 16 76 18 10 28 10 48 2 4-16 10-44 14-78" fill="#d8b48a" />
+      <path d="M64 162c4 42 10 70 18 90 24 14 32 14 56 2 8-22 14-50 16-92-10 12-28 20-46 20s-34-8-44-20Z" fill="#1b2b44" />
+      <path d="M84 148c-2 24 6 40 24 42 20-2 28-18 26-42" fill="#d7ecf7" />
+      <path d="M80 150c6-16 48-16 56 2 2 8-6 14-14 15H94c-8-1-16-8-14-17Z" fill="#d7ecf7" />
+      <path d="M64 172c20 24 68 24 88 0" fill="none" stroke="#152338" strokeWidth="11" strokeLinecap="round" />
+      <path d="M54 178c-16 18-22 42-12 56 8-20 16-40 22-56Zm100 4c22 8 42 6 50-8 6 18-6 34-24 38-10 2-18-8-14-22Z" fill="#1b2b44" />
+      <path d="M42 230c10 2 18-10 22-20l10-24c-12 8-24 26-32 44Zm118-40c8 4 28 18 40 8 2 14-12 26-30 28-8 0-14-10-10-20Z" fill="#d8b48a" />
+      <path d="M188 198h18" stroke="#d8b48a" strokeWidth="7" strokeLinecap="round" />
+      <path d="M206 198 214 192M206 198l8 6" stroke="#d8b48a" strokeWidth="5" strokeLinecap="round" />
+      <circle cx="108" cy="94" r="36" fill="#d8b48a" />
+      <path d="M78 78c6-22 20-34 36-36 18-2 32 10 38 28 1 6-4 10-10 10-6-16-16-24-28-24s-22 8-28 24c-6 0-10-4-8-12Z" fill="#4e3423" />
+      <path d="M80 70c10-8 24-10 36-8 10 2 18 8 22 16 2 4-2 6-7 5-5-8-12-12-21-13-10-1-20 3-26 10-6 1-8-4-4-10Z" fill="#3f291c" />
+      <path d="M76 88c2-10 8-16 14-16 2 8-2 16-8 20-4 2-7-1-6-4Zm50-16c6 0 12 6 14 16 1 3-2 6-6 4-6-4-10-12-8-20Z" fill="#d8b48a" />
+      <rect x="82" y="90" width="52" height="7" rx="3.5" fill="#24364f" />
+      <circle cx="94" cy="94" r="11" fill="none" stroke="#1b2b44" strokeWidth="3" />
+      <circle cx="122" cy="94" r="11" fill="none" stroke="#1b2b44" strokeWidth="3" />
+      <path d="M105 94h8" stroke="#1b2b44" strokeWidth="3" />
+      <circle cx="94" cy="94" r="3.1" fill="#24364f" />
+      <circle cx="122" cy="94" r="3.1" fill="#24364f" />
+      <path d="M102 108h10" stroke="#c48a74" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M98 118c8 7 20 7 28 0" fill="none" stroke="#b57b62" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }
