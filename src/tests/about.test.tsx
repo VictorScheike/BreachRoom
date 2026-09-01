@@ -11,6 +11,7 @@ describe("About page", () => {
     expect(html).toContain("Building resilient cybersecurity");
     expect(html).toContain("map missions");
     expect(html).toContain("Architecture Defence Lab");
+    expect(html).toContain("Secure Solution Builder");
     expect(html).toContain("one layer at a time");
     expect(html).toContain("without being told whether a control held");
     expect(html).toContain("prevention, limitation, detection and recovery");

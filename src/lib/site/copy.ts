@@ -64,7 +64,7 @@ export const ABOUT_SECTIONS = [
   },
   {
     title: "Building resilient cybersecurity",
-    body: "It also means designing the system so that one stolen password or one poisoned document does not become the whole story. Architecture cannot promise that a cyberattack is avoided. It can prevent some paths, limit the blast radius, detect suspicious activity, and support recovery. Architecture Defence Lab is the other half of that idea. You take ten architecture decisions, one layer at a time, without being told whether a control held. Then one campaign tests prevention, limitation, detection and recovery on the path you actually built.",
+    body: "It also means designing the system so that one stolen password or one poisoned document does not become the whole story. Architecture cannot promise that a cyberattack is avoided. It can prevent some paths, limit the blast radius, detect suspicious activity, and support recovery. Architecture Defence Lab is the other half of that idea. You take ten architecture decisions, one layer at a time, without being told whether a control held. Then one campaign tests prevention, limitation, detection and recovery on the path you actually built. Secure Solution Builder is the quieter companion: 15 decisions from the first idea to production, with a security architect in the room.",
   },
 ] as const;
 
@@ -81,7 +81,7 @@ export const ABOUT_LINKS = [
     label: "LinkedIn",
   },
   {
-    href: "https://github.com/VictorScheike",
+    href: "https://github.com/VictorScheike/BreachRoom",
     label: "GitHub",
   },
 ] as const;
