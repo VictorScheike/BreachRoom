@@ -1,6 +1,15 @@
 import Link from "next/link";
+import { BuilderMissionThumbnail } from "@/components/site/BuilderMissionThumbnail";
 import { LabMissionThumbnail } from "@/components/site/LabMissionThumbnail";
 import { MissionThumbnail } from "@/components/site/MissionThumbnail";
+import {
+  BUILDER_CARD_DESCRIPTION,
+  BUILDER_CARD_LABEL,
+  BUILDER_CARD_TAGS,
+  BUILDER_ROUTE,
+  BUILDER_SUBTITLE,
+  BUILDER_TITLE,
+} from "@/lib/builder/copy";
 import { DECISION_COUNT } from "@/lib/lab/catalog";
 import {
   LAB_CARD_CTA,
@@ -67,6 +76,28 @@ export function MissionSelect({ onSelect }: MissionSelectProps) {
             </ul>
             <Link className="game-primary mission-card-cta" href={LAB_CARD_HREF}>
               {LAB_CARD_CTA}
+            </Link>
+          </article>
+          <article className="mission-card mission-select-card mission-card-builder">
+            <div className="mission-select-thumb">
+              <BuilderMissionThumbnail />
+            </div>
+            <p className="game-kicker">{BUILDER_CARD_LABEL}</p>
+            <h2 className="mission-card-title">{BUILDER_TITLE}</h2>
+            <p className="mission-card-blurb">{BUILDER_CARD_DESCRIPTION}</p>
+            <ul className="mission-card-facts">
+              <li>
+                <strong>Learning:</strong> {BUILDER_CARD_TAGS.slice(0, 2).join(" · ")}
+              </li>
+              <li>
+                <strong>Destination:</strong> {BUILDER_SUBTITLE}
+              </li>
+              <li>
+                <strong>Frameworks:</strong> {BUILDER_CARD_TAGS[0]}
+              </li>
+            </ul>
+            <Link className="game-primary mission-card-cta" href={BUILDER_ROUTE}>
+              Start mission
             </Link>
           </article>
           {publishedMissions().map((mission) => (

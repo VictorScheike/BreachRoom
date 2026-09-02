@@ -18,6 +18,7 @@ import {
 import {
   CHECKPOINT_HINT,
   DOOR_LOCKED_BUMP,
+  DOOR_LOCKED_NOTICE_MS,
   coordsEqual,
   type DoorSpec,
 } from "@/lib/game/doors";
@@ -118,6 +119,8 @@ export function GameView({
   const prevOpenDoors = useRef<string[]>([]);
   const walkTimeout = useRef<number | null>(null);
   const bumpTimeout = useRef<number | null>(null);
+  const doorNoticeTimeout = useRef<number | null>(null);
+  const doorNoticeShownAt = useRef(0);
   const toastTimeout = useRef<number | null>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const swipeHandledRef = useRef(false);
@@ -184,7 +187,11 @@ export function GameView({
       bumpTimeout.current = window.setTimeout(() => setBumpKey(null), 320);
       if (door) {
         setDoorNotice(DOOR_LOCKED_BUMP);
-        window.setTimeout(() => setDoorNotice(null), 2200);
+        doorNoticeShownAt.current = Date.now();
+        if (doorNoticeTimeout.current !== null) {
+          window.clearTimeout(doorNoticeTimeout.current);
+          doorNoticeTimeout.current = null;
+        }
       }
       playTone(state.muted || reducedMotion, 110, 90);
     },
@@ -193,6 +200,9 @@ export function GameView({
 
   const move = useCallback(
     (direction: MoveDirection, source: "keyboard" | "touch" = "touch") => {
+      if (endConfirm) {
+        return;
+      }
       if (!acceptsMovementInput(state.screen) || !movementFromControl(state.screen, source, direction)) {
         return;
       }
@@ -209,7 +219,23 @@ export function GameView({
       }
       setShowMoveHint(false);
       setShowRouteHint(false);
-      setDoorNotice(null);
+      if (doorNoticeShownAt.current > 0) {
+        const remaining = DOOR_LOCKED_NOTICE_MS - (Date.now() - doorNoticeShownAt.current);
+        if (remaining <= 0) {
+          setDoorNotice(null);
+          doorNoticeShownAt.current = 0;
+          if (doorNoticeTimeout.current !== null) {
+            window.clearTimeout(doorNoticeTimeout.current);
+            doorNoticeTimeout.current = null;
+          }
+        } else if (doorNoticeTimeout.current === null) {
+          doorNoticeTimeout.current = window.setTimeout(() => {
+            setDoorNotice(null);
+            doorNoticeShownAt.current = 0;
+            doorNoticeTimeout.current = null;
+          }, remaining);
+        }
+      }
       setWalking(true);
       if (walkTimeout.current !== null) {
         window.clearTimeout(walkTimeout.current);
@@ -217,7 +243,7 @@ export function GameView({
       walkTimeout.current = window.setTimeout(() => setWalking(false), 140);
       onMove(direction);
     },
-    [access, bumpTile, doorsByTile, onMove, state.position, state.screen, world],
+    [access, bumpTile, doorsByTile, endConfirm, onMove, state.position, state.screen, world],
   );
 
   const onMapTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
@@ -277,6 +303,28 @@ export function GameView({
         }
       };
     }, [move, state.screen]);
+
+  useEffect(() => {
+    return () => {
+      if (doorNoticeTimeout.current !== null) {
+        window.clearTimeout(doorNoticeTimeout.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!endConfirm) {
+      return undefined;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setEndConfirm(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [endConfirm]);
 
   useEffect(() => {
     if (state.screen !== "exploring" || reducedMotion) {
@@ -662,6 +710,11 @@ export function GameView({
                 />
               ) : null}
             </div>
+            {doorNotice ? (
+              <p className="map-door-notice" role="status" data-testid="door-locked-notice">
+                {doorNotice}
+              </p>
+            ) : null}
           </div>
           {showMoveHint ? (
             <p className="map-move-hint">
@@ -700,18 +753,30 @@ export function GameView({
         </div>
 
           {endConfirm ? (
-            <div className="end-mission-modal" role="dialog" aria-labelledby="end-mission-title">
-              <h2 id="end-mission-title">End this mission?</h2>
-              <p>You can view an unfinished report. It will not count as a completed mission.</p>
-              <button type="button" className="game-primary" onClick={onEndEarly}>
-                End and view unfinished report
-              </button>
-              <button type="button" className="hud-button" onClick={onChooseAnother}>
-                Discard and leave
-              </button>
-              <button type="button" className="hud-button" onClick={() => setEndConfirm(false)}>
-                Keep playing
-              </button>
+            <div
+              className="end-mission-overlay"
+              role="presentation"
+              onClick={() => setEndConfirm(false)}
+            >
+              <div
+                className="end-mission-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="end-mission-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <h2 id="end-mission-title">End this mission?</h2>
+                <p>You can view an unfinished report. It will not count as a completed mission.</p>
+                <button type="button" className="game-primary" onClick={onEndEarly}>
+                  End and view unfinished report
+                </button>
+                <button type="button" className="hud-button" onClick={onChooseAnother}>
+                  Discard and leave
+                </button>
+                <button type="button" className="hud-button" onClick={() => setEndConfirm(false)}>
+                  Keep playing
+                </button>
+              </div>
             </div>
           ) : null}
 

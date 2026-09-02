@@ -502,8 +502,27 @@ summary::-webkit-details-marker {
 }
 
 .decision-toast-door {
-  background: rgba(127, 29, 29, 0.88);
+  background: rgba(127, 29, 29, 0.94);
   color: #fecaca;
+  border-color: #f87171;
+}
+
+.map-door-notice {
+  position: absolute;
+  left: 0.45rem;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  z-index: 12;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.7rem;
+  border: 1px solid #f87171;
+  background: rgba(127, 29, 29, 0.94);
+  color: #fecaca;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
 }
 
 @keyframes door-unlock {
@@ -1335,12 +1354,31 @@ summary::-webkit-details-marker {
     repeating-linear-gradient(90deg, #1e3a5f 0 10px, #0f172a 10px 20px);
 }
 
+.end-mission-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(5, 10, 20, 0.72);
+}
+
 .end-mission-modal {
-  margin-top: 0.75rem;
+  width: min(100%, 28rem);
+  margin: 0;
   padding: 1rem;
   border: 1px solid var(--amber);
   border-radius: 0.8rem;
   background: #121a2b;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.end-mission-modal .game-primary,
+.end-mission-modal .hud-button {
+  display: block;
+  width: 100%;
+  margin-top: 0.55rem;
 }
 
 .verdict-correct,

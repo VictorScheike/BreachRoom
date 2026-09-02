@@ -10,7 +10,7 @@ import {
 } from "@/lib/game/world";
 import { createInitialGameState, currentQuestion, gameReducer } from "@/lib/game/engine";
 import { ALL_MAPS, worldForMission } from "@/lib/game/maps";
-import { doorsForMap } from "@/lib/game/doors";
+import { DOOR_LOCKED_NOTICE_MS, doorsForMap } from "@/lib/game/doors";
 import { validateDoorProgression, validateWorld } from "@/lib/game/validateMap";
 import { publishedMissions } from "@/lib/missions/catalog";
 import { playthroughLength } from "@/lib/missions/types";
@@ -122,6 +122,24 @@ describe("locked-door progression", () => {
     expect(state.openDoorIds).toEqual([]);
     expect(state.unlockedCheckpointOrders).toEqual([]);
     expect(state.choices).toEqual([]);
+  });
+
+  it("keeps the locked-door notice visible for at least five seconds", () => {
+    expect(DOOR_LOCKED_NOTICE_MS).toBeGreaterThanOrEqual(5000);
+  });
+
+  it("opens an unfinished report when the mission is ended early", () => {
+    let state = createInitialGameState();
+    state = gameReducer(state, {
+      type: "START_DIRECT",
+      missionId: "locked-out",
+      roleId: null,
+      seed: 11,
+    });
+    state = gameReducer(state, { type: "BEGIN_MISSION" });
+    state = gameReducer(state, { type: "END_EARLY" });
+    expect(state.screen).toBe("report");
+    expect(state.endedEarly).toBe(true);
   });
 
   it("validates published maps including gated reachability", () => {
