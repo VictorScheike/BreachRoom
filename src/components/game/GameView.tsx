@@ -120,6 +120,7 @@ export function GameView({
   const walkTimeout = useRef<number | null>(null);
   const bumpTimeout = useRef<number | null>(null);
   const doorNoticeTimeout = useRef<number | null>(null);
+  const doorNoticeShownAt = useRef(0);
   const toastTimeout = useRef<number | null>(null);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const swipeHandledRef = useRef(false);
@@ -186,13 +187,11 @@ export function GameView({
       bumpTimeout.current = window.setTimeout(() => setBumpKey(null), 320);
       if (door) {
         setDoorNotice(DOOR_LOCKED_BUMP);
+        doorNoticeShownAt.current = Date.now();
         if (doorNoticeTimeout.current !== null) {
           window.clearTimeout(doorNoticeTimeout.current);
-        }
-        doorNoticeTimeout.current = window.setTimeout(() => {
-          setDoorNotice(null);
           doorNoticeTimeout.current = null;
-        }, DOOR_LOCKED_NOTICE_MS);
+        }
       }
       playTone(state.muted || reducedMotion, 110, 90);
     },
@@ -220,6 +219,23 @@ export function GameView({
       }
       setShowMoveHint(false);
       setShowRouteHint(false);
+      if (doorNoticeShownAt.current > 0) {
+        const remaining = DOOR_LOCKED_NOTICE_MS - (Date.now() - doorNoticeShownAt.current);
+        if (remaining <= 0) {
+          setDoorNotice(null);
+          doorNoticeShownAt.current = 0;
+          if (doorNoticeTimeout.current !== null) {
+            window.clearTimeout(doorNoticeTimeout.current);
+            doorNoticeTimeout.current = null;
+          }
+        } else if (doorNoticeTimeout.current === null) {
+          doorNoticeTimeout.current = window.setTimeout(() => {
+            setDoorNotice(null);
+            doorNoticeShownAt.current = 0;
+            doorNoticeTimeout.current = null;
+          }, remaining);
+        }
+      }
       setWalking(true);
       if (walkTimeout.current !== null) {
         window.clearTimeout(walkTimeout.current);
@@ -694,6 +710,11 @@ export function GameView({
                 />
               ) : null}
             </div>
+            {doorNotice ? (
+              <p className="map-door-notice" role="status" data-testid="door-locked-notice">
+                {doorNotice}
+              </p>
+            ) : null}
           </div>
           {showMoveHint ? (
             <p className="map-move-hint">

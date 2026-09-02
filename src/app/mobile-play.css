@@ -342,6 +342,14 @@
     font-size: 0.78rem;
   }
 
+  .game-shell-live .map-door-notice {
+    left: 0.3rem;
+    right: 0.3rem;
+    bottom: 0.3rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.78rem;
+  }
+
   .game-shell-live .game-pad {
     position: sticky;
     bottom: max(6px, env(safe-area-inset-bottom, 0px));
