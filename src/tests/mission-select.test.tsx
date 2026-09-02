@@ -7,7 +7,7 @@ describe("mission select cards", () => {
   it("uses a short summary on every card and pins Start mission in the card footer", () => {
     const html = renderToStaticMarkup(<MissionSelect onSelect={() => undefined} />);
     expect(html).toContain("Choose a mission");
-    expect(html.split("Start mission").length - 1).toBe(publishedMissions().length);
+    expect(html.split("Start mission").length - 1).toBe(publishedMissions().length + 1);
     expect(html).not.toContain("It is Monday at 06:55");
     expect(html).not.toContain("Funny enough to stay human");
     for (const mission of publishedMissions()) {
@@ -23,8 +23,15 @@ describe("mission select cards", () => {
     expect(html).toContain("mission-card-lab");
     expect(html).toContain("lab-mission-thumb");
     expect(html).toMatch(/href="\/lab\/?"/);
-    expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Inbox Under Siege"));
+    expect(html).toContain("Secure Solution Builder");
+    expect(html).toContain("mission-card-builder");
+    expect(html).toContain("builder-mission-thumb");
+    expect(html).toContain("15 DECISIONS");
+    expect(html).toMatch(/href="\/secure-solution-builder\/?"/);
+    expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Secure Solution Builder"));
+    expect(html.indexOf("Secure Solution Builder")).toBeLessThan(html.indexOf("Inbox Under Siege"));
     expect(html).toContain("design a claims system");
+    expect(html).toContain("15 security decisions");
   });
 
   it("keeps card summaries to a short, similar length", () => {

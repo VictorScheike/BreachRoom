@@ -1335,12 +1335,31 @@ summary::-webkit-details-marker {
     repeating-linear-gradient(90deg, #1e3a5f 0 10px, #0f172a 10px 20px);
 }
 
+.end-mission-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(5, 10, 20, 0.72);
+}
+
 .end-mission-modal {
-  margin-top: 0.75rem;
+  width: min(100%, 28rem);
+  margin: 0;
   padding: 1rem;
   border: 1px solid var(--amber);
   border-radius: 0.8rem;
   background: #121a2b;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.end-mission-modal .game-primary,
+.end-mission-modal .hud-button {
+  display: block;
+  width: 100%;
+  margin-top: 0.55rem;
 }
 
 .verdict-correct,

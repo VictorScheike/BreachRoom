@@ -532,22 +532,19 @@
     padding: 0.65rem 0.9rem;
   }
 
+  .game-shell-live .end-mission-overlay {
+    padding: 12px 12px max(12px, env(safe-area-inset-bottom, 0px));
+    align-items: end;
+  }
+
   .game-shell-live .end-mission-modal {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: max(12px, env(safe-area-inset-bottom, 0px));
-    z-index: 60;
-    margin: 0;
     max-height: 80dvh;
     overflow-y: auto;
   }
 
   .game-shell-live .end-mission-modal .game-primary,
   .game-shell-live .end-mission-modal .hud-button {
-    width: 100%;
     min-height: 44px;
-    margin-top: 0.45rem;
   }
 }
 

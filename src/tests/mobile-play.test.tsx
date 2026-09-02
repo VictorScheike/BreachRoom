@@ -124,6 +124,8 @@ describe("mobile mission chrome", () => {
     expect(html).toContain('class="game-pad-label">Down');
     expect(html).toContain('class="game-pad-label">Right');
     expect(html).toContain("game-pad-icon");
+    expect(html.split("End mission").length - 1).toBe(2);
+    expect(html).not.toContain("end-mission-overlay");
     expect(html).not.toContain("is-sheet-open");
   });
 

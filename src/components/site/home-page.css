@@ -830,6 +830,23 @@
   font-size: 0.48rem;
 }
 
+.mission-select-thumb .builder-mission-thumb,
+.mission-select-thumb .builder-mission-thumb__scene {
+  height: 100%;
+}
+
+.mission-select-thumb .builder-mission-thumb__scene {
+  grid-template-columns: minmax(58px, 34%) minmax(0, 1fr);
+  gap: 0.4rem;
+  padding: 0.05rem 0.35rem 1.3rem 0.05rem;
+}
+
+.mission-select-thumb .builder-mission-thumb__bubble {
+  max-width: none;
+  padding: 0.32rem 0.4rem;
+  font-size: 0.52rem;
+}
+
 .mission-card__body {
   display: flex;
   flex: 1;
