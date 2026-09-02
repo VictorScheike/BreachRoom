@@ -502,8 +502,12 @@ summary::-webkit-details-marker {
 }
 
 .decision-toast-door {
-  background: rgba(127, 29, 29, 0.88);
+  position: sticky;
+  bottom: 0.35rem;
+  z-index: 8;
+  background: rgba(127, 29, 29, 0.94);
   color: #fecaca;
+  border-color: #f87171;
 }
 
 @keyframes door-unlock {

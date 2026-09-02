@@ -168,6 +168,6 @@ export function openDoorIdsForUnlocks(
 export const DOOR_UNLOCK_MESSAGE = "Correct — security door unlocked.";
 export const EXIT_UNLOCK_MESSAGE = "All security checkpoints completed — exit unlocked.";
 export const DOOR_LOCKED_BUMP = "Door locked — complete the nearby security checkpoint.";
-export const DOOR_LOCKED_NOTICE_MS = 5000;
+export const DOOR_LOCKED_NOTICE_MS = 8000;
 export const CHECKPOINT_HINT =
   "Answer the nearby security question correctly to unlock the next area.";
