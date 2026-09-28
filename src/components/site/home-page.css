@@ -12,18 +12,21 @@
     linear-gradient(#07111f, #0b1a30);
   background-repeat: no-repeat;
   background-position: top center;
-  background-size: 100% min(72rem, 120vh);
+  background-size: 100% min(46rem, 92vh);
 }
 
 .home-wrap {
   width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 2.5rem 0 4rem;
+  padding: 1.4rem 0 2.4rem;
 }
 
 .home-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   color: #e8eef8;
-  padding: 2rem 0 4.75rem;
+  padding: 1.1rem 0 2.4rem;
 }
 
 .home-eyebrow {
@@ -176,8 +179,96 @@
   background: #0b1a30;
   color: #e8eef8;
   border-radius: 1.2rem;
-  padding: 2rem 1.4rem;
+  padding: 2.4rem 1.4rem 2.2rem;
   text-align: center;
+}
+
+.home-cta p {
+  margin: 0.45rem auto 1.1rem;
+  max-width: 36rem;
+  color: #c5d0e0;
+}
+
+.home-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: 100%;
+  height: 3px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #22d3ee, #f0b429);
+  pointer-events: none;
+}
+
+.home-hero-depth {
+  position: absolute;
+  inset: -18% -28% 8%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 46px,
+      rgba(125, 211, 252, 0.14) 46px 47px
+    );
+  clip-path: polygon(8% 100%, 92% 100%, 54% 0, 46% 0);
+  transform: perspective(920px) rotateX(62deg);
+  transform-origin: center top;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 72%, transparent);
+}
+
+.home-hero-depth::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 48.6%, rgba(240, 180, 41, 0.35) 50%, transparent 51.4%),
+    linear-gradient(to top left, transparent 48%, rgba(125, 211, 252, 0.28) 50%, transparent 52%),
+    linear-gradient(to top right, transparent 48%, rgba(125, 211, 252, 0.28) 50%, transparent 52%);
+}
+
+.home-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.home-root {
+    scroll-behavior: smooth;
+  }
+
+  html.home-root .home-reveal {
+    transition:
+      opacity 0.55s ease,
+      transform 0.55s ease;
+  }
+
+  html.home-root .home-reveal:not(.is-in-view) {
+    opacity: 0;
+    transform: translateY(1.1rem);
+  }
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  html.home-root {
+    scroll-snap-type: y proximity;
+  }
+
+  html.home-root .home-hero,
+  html.home-root .home-section,
+  html.home-root .home-cta {
+    scroll-snap-align: start;
+    scroll-margin-top: 4.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-scroll-progress,
+  .home-hero-depth {
+    display: none;
+  }
 }
 
 @media (max-width: 700px) {
@@ -550,13 +641,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: 1fr;
-  gap: 24px;
-  margin-top: 1.4rem;
+  gap: 1rem;
+  margin-top: 1.1rem;
 }
 
 @media (min-width: 900px) {
   .home-page .mission-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1120px) {
+  .home-page .map-missions-block .mission-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -576,8 +673,10 @@
   font-size: 1.55rem;
 }
 
+.home-page .map-missions-block,
 .home-page .home-section > .map-missions-block {
-  margin-top: 2.4rem;
+  margin-top: 1.55rem;
+  padding-top: 1.35rem;
 }
 
 .lab-library-intro {
@@ -924,8 +1023,8 @@
 }
 
 .how-section--in-hero {
-  margin: 1.75rem 0 0;
-  padding: 1.35rem 1.15rem 1.45rem;
+  margin: 1.2rem 0 0;
+  padding: 1.1rem 1rem 1.15rem;
 }
 
 .how-section::before {
@@ -979,7 +1078,7 @@
   flex-direction: column;
   width: 100%;
   height: 100%;
-  min-height: 16.5rem;
+  min-height: 13.5rem;
   padding: 1.2rem 1.15rem 1.3rem;
   border-radius: 1.1rem;
   border: 1px solid rgba(201, 214, 229, 0.16);
