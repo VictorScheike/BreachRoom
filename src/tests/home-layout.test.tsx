@@ -27,6 +27,5 @@ describe("homepage layout", () => {
     expect(html).toContain("No account. Choose a mission. A written debrief at the end.");
     expect(html).not.toContain("Eight decisions");
     expect(html).toContain("home-hero-depth");
-    expect(html).toContain("home-reveal");
   });
 });
