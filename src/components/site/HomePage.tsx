@@ -44,7 +44,7 @@ export function HomePage() {
           <HowItWorks className="how-section--in-hero" />
         </section>
 
-        <section className="home-section home-reveal" aria-labelledby="playable-missions-heading">
+        <section className="home-section" aria-labelledby="playable-missions-heading">
           <h2 id="playable-missions-heading">Playable missions</h2>
           <p className="section-lede missions-intro">{LAB_HOME_INTRO}</p>
           <div className="decision-exercises">
@@ -69,7 +69,7 @@ export function HomePage() {
           </p>
         </section>
 
-        <section className="home-section home-reveal" aria-labelledby="training-by-role-heading">
+        <section className="home-section" aria-labelledby="training-by-role-heading">
           <div className="section-intro">
             <div>
               <p className="home-eyebrow">TRAINING BY ROLE</p>
@@ -93,7 +93,7 @@ export function HomePage() {
           </RoleTrainingGrid>
         </section>
 
-        <section className="home-cta home-reveal">
+        <section className="home-cta">
           <h2>Play a free mission</h2>
           <p>No account. Choose a mission. A written debrief at the end.</p>
           <Link className="btn-primary" href="/play/">

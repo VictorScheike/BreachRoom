@@ -229,41 +229,6 @@
     linear-gradient(to top right, transparent 48%, rgba(125, 211, 252, 0.28) 50%, transparent 52%);
 }
 
-.home-reveal {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  html.home-root {
-    scroll-behavior: smooth;
-  }
-
-  html.home-root .home-reveal {
-    transition:
-      opacity 0.55s ease,
-      transform 0.55s ease;
-  }
-
-  html.home-root .home-reveal:not(.is-in-view) {
-    opacity: 0;
-    transform: translateY(1.1rem);
-  }
-}
-
-@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
-  html.home-root {
-    scroll-snap-type: y proximity;
-  }
-
-  html.home-root .home-hero,
-  html.home-root .home-section,
-  html.home-root .home-cta {
-    scroll-snap-align: start;
-    scroll-margin-top: 4.6rem;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .home-scroll-progress,
   .home-hero-depth {
