@@ -7,6 +7,7 @@ import { LabMissionCard } from "@/components/site/LabMissionCard";
 import { MissionCard } from "@/components/site/MissionCard";
 import { RoleTrainingCard } from "@/components/site/RoleTrainingCard";
 import { RoleTrainingGrid } from "@/components/site/RoleTrainingGrid";
+import { HomeScroll } from "@/components/site/HomeScroll";
 import { LAB_HOME_INTRO } from "@/lib/lab/copy";
 import { publishedMissions } from "@/lib/missions/catalog";
 import { ROLE_GROUPS } from "@/lib/training/groups";
@@ -17,8 +18,10 @@ export function HomePage() {
 
   return (
     <div className="home-page">
+      <HomeScroll />
       <main id="main-content" className="home-wrap">
         <section className="home-hero">
+          <div className="home-hero-depth" aria-hidden="true" />
           <p className="home-eyebrow">ROLE-BASED CYBERSECURITY TRAINING</p>
           <h1>Learn security by making the decisions yourself.</h1>
           <p className="home-lede">
@@ -41,7 +44,7 @@ export function HomePage() {
           <HowItWorks className="how-section--in-hero" />
         </section>
 
-        <section className="home-section" aria-labelledby="playable-missions-heading">
+        <section className="home-section home-reveal" aria-labelledby="playable-missions-heading">
           <h2 id="playable-missions-heading">Playable missions</h2>
           <p className="section-lede missions-intro">{LAB_HOME_INTRO}</p>
           <div className="decision-exercises">
@@ -66,7 +69,7 @@ export function HomePage() {
           </p>
         </section>
 
-        <section className="home-section" aria-labelledby="training-by-role-heading">
+        <section className="home-section home-reveal" aria-labelledby="training-by-role-heading">
           <div className="section-intro">
             <div>
               <p className="home-eyebrow">TRAINING BY ROLE</p>
@@ -90,9 +93,9 @@ export function HomePage() {
           </RoleTrainingGrid>
         </section>
 
-        <section className="home-cta">
+        <section className="home-cta home-reveal">
           <h2>Play a free mission</h2>
-          <p>No account. Eight decisions. A written debrief at the end.</p>
+          <p>No account. Choose a mission. A written debrief at the end.</p>
           <Link className="btn-primary" href="/play/">
             Play free
           </Link>

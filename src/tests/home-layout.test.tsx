@@ -24,5 +24,9 @@ describe("homepage layout", () => {
     expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Secure Solution Builder"));
     expect(html.indexOf("Architecture Defence Lab")).toBeLessThan(html.indexOf("Inbox Under Siege"));
     expect(html.indexOf("Secure Solution Builder")).toBeLessThan(html.indexOf("Inbox Under Siege"));
+    expect(html).toContain("No account. Choose a mission. A written debrief at the end.");
+    expect(html).not.toContain("Eight decisions");
+    expect(html).toContain("home-hero-depth");
+    expect(html).toContain("home-reveal");
   });
 });
