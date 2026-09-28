@@ -52,9 +52,15 @@
 }
 
 html,
+html.home-root,
 body {
   background: var(--site);
   color: var(--site-ink);
+  scroll-snap-type: none !important;
+  scroll-snap-align: none !important;
+  scroll-snap-stop: normal !important;
+  scroll-behavior: auto !important;
+  scroll-padding: 0 !important;
 }
 
 .site-shell {

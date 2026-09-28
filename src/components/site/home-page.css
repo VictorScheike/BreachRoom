@@ -175,6 +175,18 @@
   letter-spacing: 0.04em;
 }
 
+html.home-root,
+.home-page,
+.home-hero,
+.home-section,
+.home-cta,
+.home-wrap {
+  scroll-snap-type: none !important;
+  scroll-snap-align: none !important;
+  scroll-snap-stop: normal !important;
+  scroll-margin-top: 0 !important;
+}
+
 .home-cta {
   background: #0b1a30;
   color: #e8eef8;
